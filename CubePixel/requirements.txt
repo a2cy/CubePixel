@@ -1,0 +1,3 @@
+git+https://github.com/pokepetter/ursina.git
+perlin_noise
+pypresence
