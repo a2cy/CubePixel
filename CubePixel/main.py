@@ -50,10 +50,7 @@ if __name__ == '__main__':
         if key == 'down arrow':
             game.player.y -= 1
 
-    def update():
-        game.terrain.player_position = game.player.position
-
-        if held_keys['escape']:
+        if key == 'escape':
             application.quit()
 
     game = CubePixel()
