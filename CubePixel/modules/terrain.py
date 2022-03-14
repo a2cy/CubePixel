@@ -48,10 +48,11 @@ class TerrainMesh(Entity):
 
                 i % self.terrain_with % self.terrain_with * self.chunk_with -
                 ((self.terrain_with-1)/2 * self.chunk_with) + self.player_chunk[2])
-
-            self.chunk_dict[chunk].entities = self.getChunkentities(chunk_pos)
-            self.chunk_dict[chunk].position = chunk_pos
-            self.chunk_dict[chunk].generateChunk()
+      
+            if not chunk == chunk_pos:
+                self.chunk_dict[chunk].entities = self.getChunkentities(chunk_pos)
+                self.chunk_dict[chunk].position = chunk_pos
+                self.chunk_dict[chunk].generateChunk()
 
             temp_chunk_dict[chunk_pos] = self.chunk_dict[chunk]
 
