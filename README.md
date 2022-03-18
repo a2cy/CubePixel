@@ -1,2 +1,2 @@
 # CubePixel
-Install the dependencies with `pip install -r requirements.txt
+Install the dependencies with `pip install -r requirements.txt`
