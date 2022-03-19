@@ -1,3 +1,5 @@
+import os
+
 from direct.stdpy import thread
 from perlin_noise import PerlinNoise
 from ursina import *
@@ -8,55 +10,73 @@ class TerrainMesh(Entity):
         super().__init__()
         self.game = game
 
-        self.noise = PerlinNoise(octaves=2, seed=2021)
+        self.seed = 2021
+        self.render_distance = 1
+        self.chunk_with = 15
+        self.saves_dir = "saves/"
+
+        os.makedirs(self.saves_dir, exist_ok=True)
+        
+        self.noise = PerlinNoise(octaves=2, seed=self.seed)
         self.amp = 16
         self.freq = 64
 
-        self.chunk_distance = 1
-        self.terrain_with = self.chunk_distance*2 + 1
-        self.chunk_with = 15
         self.chunk_dict = {}
-
         self.player_chunk = ()
-        self.collision_with = 1
 
-        for i in range(self.terrain_with**3):
-            chunk = Chunk(self)
-            self.chunk_dict[i] = chunk
 
     def update(self):
-        current_player_chunk = (
-            int(round_to_closest(self.game.player.position[0], self.chunk_with)),
-            int(round_to_closest(self.game.player.position[1], self.chunk_with)),
-            int(round_to_closest(self.game.player.position[2], self.chunk_with)))
-        if not self.player_chunk == current_player_chunk:
-            self.player_chunk = current_player_chunk
+        player = self.game.player
+
+        new_player_chunk = (
+            int(round_to_closest(player.position[0], self.chunk_with)),
+            int(round_to_closest(player.position[1], self.chunk_with)),
+            int(round_to_closest(player.position[2], self.chunk_with)))
+
+        if not self.player_chunk == new_player_chunk:
+            self.player_chunk = new_player_chunk
             thread.start_new_thread(function=self.updateChunks, args=[])
 
     def updateChunks(self):
-        temp_chunk_dict = {}
+        new_chunk_ids = []
 
-        for i, chunk in enumerate(self.chunk_dict):
-            chunk_pos = (
-                i//self.terrain_with//self.terrain_with * self.chunk_with -
-                ((self.terrain_with-1)/2 * self.chunk_with) +
-                self.player_chunk[0],
+        for x in range(-self.render_distance, self.render_distance+1):
+            for z in range(-self.render_distance, self.render_distance+1):
+                for y in range(-self.render_distance, self.render_distance+1):
+                    new_chunk_ids.append((x*self.chunk_with+self.player_chunk[0],
+                                          y*self.chunk_with +
+                                          self.player_chunk[1],
+                                          z*self.chunk_with+self.player_chunk[2]))
 
-                i//self.terrain_with % self.terrain_with * self.chunk_with -
-                ((self.terrain_with-1)/2 * self.chunk_with) +
-                self.player_chunk[1],
+        for chunk_id in self.chunk_dict.copy():
+            if chunk_id not in new_chunk_ids:
+                old_chunk = self.chunk_dict[chunk_id]
+                self.chunk_dict.pop(chunk_id)
+                destroy(old_chunk)
 
-                i % self.terrain_with % self.terrain_with * self.chunk_with -
-                ((self.terrain_with-1)/2 * self.chunk_with) + self.player_chunk[2])
-      
-            if not chunk == chunk_pos:
-                self.chunk_dict[chunk].entities = self.getChunkentities(chunk_pos)
-                self.chunk_dict[chunk].position = chunk_pos
-                self.chunk_dict[chunk].generateChunk()
+        for chunk_id in new_chunk_ids:
+            if not chunk_id in self.chunk_dict:
+                filename = self.saves_dir+f"{chunk_id}.txt"
 
-            temp_chunk_dict[chunk_pos] = self.chunk_dict[chunk]
+                if os.path.exists(filename):
+                    with open(filename, 'r') as f:
+                        entities = eval(f.read())
 
-        self.chunk_dict = temp_chunk_dict
+                    chunk = Chunk(self)
+                    chunk.position = chunk_id
+                    chunk.entities = entities
+                    chunk.generateChunk()
+                    self.chunk_dict[chunk_id] = chunk
+
+                else:
+                    chunk = Chunk(self)
+                    chunk.position = chunk_id
+                    chunk.entities = self.getChunkentities(chunk_id)
+                    chunk.generateChunk()
+                    self.chunk_dict[chunk_id] = chunk
+
+                    with open(filename, 'w+') as f:
+                        f.write(f"{chunk.entities}")
 
     def getChunkentities(self, pos):
         entities = {}
@@ -66,6 +86,7 @@ class TerrainMesh(Entity):
             z = i % self.chunk_with % self.chunk_with
             max_y = int(self.noise(
                 [(x+pos[0])/self.freq, (z+pos[2])/self.freq])*self.amp)
+
             if y+pos[1] <= max_y:
                 entities[(x, y, z)] = ('grass', Vec3(0, 0, 0))
 
@@ -77,7 +98,7 @@ class Chunk(Entity):
         self.chunk_with = terrain_mesh.chunk_with-1
         super().__init__(
             model=Mesh(mode='triangle', thickness=.05, static=False),
-            texture='white_cube',
+            texture='grass',
             origin=(self.chunk_with/2, self.chunk_with/2, self.chunk_with/2),
             scale=1)
 
