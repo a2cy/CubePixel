@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from direct.stdpy import thread
 from perlin_noise import PerlinNoise
 from ursina import *
@@ -11,19 +12,19 @@ class TerrainMesh(Entity):
         self.game = game
 
         self.seed = 2021
-        self.render_distance = 1
+        self.render_distance = 2
         self.chunk_with = 15
         self.saves_dir = "saves/"
 
         os.makedirs(self.saves_dir, exist_ok=True)
-        
+
         self.noise = PerlinNoise(octaves=2, seed=self.seed)
         self.amp = 16
         self.freq = 64
 
         self.chunk_dict = {}
         self.player_chunk = ()
-
+        self.chunk_updating = False
 
     def update(self):
         player = self.game.player
@@ -33,7 +34,8 @@ class TerrainMesh(Entity):
             int(round_to_closest(player.position[1], self.chunk_with)),
             int(round_to_closest(player.position[2], self.chunk_with)))
 
-        if not self.player_chunk == new_player_chunk:
+        if not self.player_chunk == new_player_chunk and not self.chunk_updating:
+            self.chunk_updating = True
             self.player_chunk = new_player_chunk
             thread.start_new_thread(function=self.updateChunks, args=[])
 
@@ -77,6 +79,8 @@ class TerrainMesh(Entity):
 
                     with open(filename, 'w+') as f:
                         f.write(f"{chunk.entities}")
+        
+        self.chunk_updating = False
 
     def getChunkentities(self, pos):
         entities = {}
@@ -125,4 +129,3 @@ class Chunk(Entity):
                     (vert[0] + entity[0], vert[1] + entity[1], vert[2] + entity[2]))
 
         self.model.generate()
-        #self.collider = 'mesh'

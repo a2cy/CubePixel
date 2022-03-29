@@ -7,19 +7,11 @@ from modules.terrain import *
 
 class CubePixel(Entity):
     def __init__(self):
-        self.cursor = Entity(parent=camera.ui,
-                             model='quad',
-                             color=color.pink,
-                             scale=.008,
-                             rotation_z=45)
-
         self.player = Player(self)
 
         self.terrain = TerrainMesh(self)
 
         self.sky = Sky()
-
-        self.camera = EditorCamera(position=Vec3(0, 1, 0))
 
 
 if __name__ == '__main__':
@@ -38,18 +30,6 @@ if __name__ == '__main__':
         print('RPC : Discord not found')
 
     def input(key):
-        if key == 'left arrow':
-            game.player.x -= 1
-
-        if key == 'right arrow':
-            game.player.x += 1
-
-        if key == 'up arrow':
-            game.player.y += 1
-
-        if key == 'down arrow':
-            game.player.y -= 1
-
         if key == 'escape':
             application.quit()
 
