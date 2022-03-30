@@ -55,6 +55,7 @@ class TerrainMesh(Entity):
                 old_chunk = self.chunk_dict[chunk_id]
                 self.chunk_dict.pop(chunk_id)
                 destroy(old_chunk)
+                time.sleep(.02)
 
         for chunk_id in new_chunk_ids:
             if not chunk_id in self.chunk_dict:
