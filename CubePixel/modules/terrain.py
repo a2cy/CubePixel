@@ -1,22 +1,20 @@
 import os
 
-import numpy as np
 from direct.stdpy import thread
 from perlin_noise import PerlinNoise
 from ursina import *
 
 
 class TerrainMesh(Entity):
-    def __init__(self, game):
-        super().__init__()
+    def __init__(self, game, **kwargs):
+        super().__init__(**kwargs)
         self.game = game
 
         self.seed = 2021
         self.render_distance = 2
         self.chunk_with = 15
-        self.saves_dir = "saves/"
 
-        os.makedirs(self.saves_dir, exist_ok=True)
+        os.makedirs("saves/", exist_ok=True)
 
         self.noise = PerlinNoise(octaves=2, seed=self.seed)
         self.amp = 16
@@ -24,7 +22,7 @@ class TerrainMesh(Entity):
 
         self.chunk_dict = {}
         self.player_chunk = ()
-        self.chunk_updating = False
+        self.updating = False
 
     def update(self):
         player = self.game.player
@@ -34,8 +32,8 @@ class TerrainMesh(Entity):
             int(round_to_closest(player.position[1], self.chunk_with)),
             int(round_to_closest(player.position[2], self.chunk_with)))
 
-        if not self.player_chunk == new_player_chunk and not self.chunk_updating:
-            self.chunk_updating = True
+        if self.player_chunk != new_player_chunk and not self.updating:
+            self.updating = True
             self.player_chunk = new_player_chunk
             thread.start_new_thread(function=self.updateChunks, args=[])
 
@@ -52,14 +50,12 @@ class TerrainMesh(Entity):
 
         for chunk_id in self.chunk_dict.copy():
             if chunk_id not in new_chunk_ids:
-                old_chunk = self.chunk_dict[chunk_id]
-                self.chunk_dict.pop(chunk_id)
-                destroy(old_chunk)
+                destroy(self.chunk_dict.pop(chunk_id))
                 time.sleep(.02)
 
         for chunk_id in new_chunk_ids:
             if not chunk_id in self.chunk_dict:
-                filename = self.saves_dir+f"{chunk_id}.txt"
+                filename = "saves/"+f"{chunk_id}.txt"
 
                 if os.path.exists(filename):
                     with open(filename, 'r') as f:
@@ -80,8 +76,8 @@ class TerrainMesh(Entity):
 
                     with open(filename, 'w+') as f:
                         f.write(f"{chunk.entities}")
-        
-        self.chunk_updating = False
+
+        self.updating = False
 
     def getChunkentities(self, pos):
         entities = {}
@@ -89,8 +85,8 @@ class TerrainMesh(Entity):
             x = i//self.chunk_with//self.chunk_with
             y = i//self.chunk_with % self.chunk_with
             z = i % self.chunk_with % self.chunk_with
-            max_y = int(self.noise(
-                [(x+pos[0])/self.freq, (z+pos[2])/self.freq])*self.amp)
+            max_y = int(self.noise([(x+pos[0])/self.freq,
+                                    (z+pos[2])/self.freq])*self.amp)
 
             if y+pos[1] <= max_y:
                 entities[(x, y, z)] = ('grass', Vec3(0, 0, 0))
@@ -99,13 +95,14 @@ class TerrainMesh(Entity):
 
 
 class Chunk(Entity):
-    def __init__(self, terrain_mesh):
+    def __init__(self, terrain_mesh, **kwargs):
         self.chunk_with = terrain_mesh.chunk_with-1
         super().__init__(
             model=Mesh(mode='triangle', thickness=.05, static=False),
             texture='grass',
             origin=(self.chunk_with/2, self.chunk_with/2, self.chunk_with/2),
-            scale=1)
+            scale=1,
+            **kwargs)
 
     @property
     def entities(self):
