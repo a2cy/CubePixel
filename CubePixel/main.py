@@ -25,6 +25,7 @@ class CubePixel(Entity):
 
         destroy(self.player)
 
+        self.terrain.unload()
         destroy(self.terrain)
 
         destroy(self.sky)

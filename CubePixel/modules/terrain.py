@@ -1,6 +1,7 @@
+import json
 import os
 
-from direct.stdpy import thread
+from direct.stdpy import threading
 from perlin_noise import PerlinNoise
 from ursina import *
 
@@ -24,6 +25,10 @@ class TerrainMesh(Entity):
         self.player_chunk = ()
         self.updating = False
 
+    def unload(self):
+        self.updating = False
+        self.update_thread.join()
+
     def update(self):
         player = self.game.player
 
@@ -35,7 +40,9 @@ class TerrainMesh(Entity):
         if self.player_chunk != new_player_chunk and not self.updating:
             self.updating = True
             self.player_chunk = new_player_chunk
-            thread.start_new_thread(function=self.updateChunks, args=[])
+            self.update_thread = threading.Thread(
+                target=self.updateChunks, args=[])
+            self.update_thread.start()
 
     def updateChunks(self):
         new_chunk_ids = []
@@ -54,28 +61,31 @@ class TerrainMesh(Entity):
                 time.sleep(.02)
 
         for chunk_id in new_chunk_ids:
+            if not self.updating:
+                        return
+
             if not chunk_id in self.chunk_dict:
-                filename = "saves/"+f"{chunk_id}.txt"
+                filename = f"saves/{chunk_id}.json"
 
                 if os.path.exists(filename):
                     with open(filename, 'r') as f:
-                        entities = eval(f.read())
+                        entities = eval(json.load(f)["entities"])
 
-                    chunk = Chunk(self)
+                    chunk = Chunk(self, parent=self)
                     chunk.position = chunk_id
                     chunk.entities = entities
                     chunk.generateChunk()
                     self.chunk_dict[chunk_id] = chunk
 
                 else:
-                    chunk = Chunk(self)
+                    chunk = Chunk(self, parent=self)
                     chunk.position = chunk_id
                     chunk.entities = self.getChunkentities(chunk_id)
                     chunk.generateChunk()
                     self.chunk_dict[chunk_id] = chunk
 
                     with open(filename, 'w+') as f:
-                        f.write(f"{chunk.entities}")
+                        json.dump({"entities" : f"{chunk.entities}"}, f)
 
         self.updating = False
 
