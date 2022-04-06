@@ -1,7 +1,7 @@
 # CubePixel
 
 ## Getting Started 
-1) Install Python 3.6 or newer.
+1) Install Python 3.7 or newer.
 2) Install the dependencies with `pip install -r requirements.txt`.
 3) Run [/CubePixel/main.py](/CubePixel/main.py).
 
