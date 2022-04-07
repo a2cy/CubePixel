@@ -5,6 +5,8 @@ from direct.stdpy import threading
 from perlin_noise import PerlinNoise
 from ursina import *
 
+from modules.entity_model_loader import instance as entity_model_loader
+
 
 class TerrainMesh(Entity):
     def __init__(self, game, **kwargs):
@@ -12,7 +14,7 @@ class TerrainMesh(Entity):
         self.game = game
 
         self.seed = 2021
-        self.render_distance = 2
+        self.render_distance = 4
         self.chunk_with = 15
 
         os.makedirs("saves/", exist_ok=True)
@@ -62,7 +64,7 @@ class TerrainMesh(Entity):
 
         for chunk_id in new_chunk_ids:
             if not self.updating:
-                        return
+                return
 
             if not chunk_id in self.chunk_dict:
                 filename = f"saves/{chunk_id}.json"
@@ -85,7 +87,7 @@ class TerrainMesh(Entity):
                     self.chunk_dict[chunk_id] = chunk
 
                     with open(filename, 'w+') as f:
-                        json.dump({"entities" : f"{chunk.entities}"}, f)
+                        json.dump({"entities": f"{chunk.entities}"}, f)
 
         self.updating = False
 
@@ -96,10 +98,16 @@ class TerrainMesh(Entity):
             y = i//self.chunk_with % self.chunk_with
             z = i % self.chunk_with % self.chunk_with
             max_y = int(self.noise([(x+pos[0])/self.freq,
-                                    (z+pos[2])/self.freq])*self.amp)
+                                    (z+pos[2])/self.freq])*
+                                    self.amp+self.amp/2)
 
             if y+pos[1] <= max_y:
-                entities[(x, y, z)] = ('grass', Vec3(0, 0, 0))
+                entities[(x, y, z)] = {'name': 'grass',
+                                       'rotation': Vec3(0, 0, 0)}
+
+            else:
+                entities[(x, y, z)] = {'name': 'air',
+                                       'rotation': Vec3(0, 0, 0)}
 
         return entities
 
@@ -107,33 +115,28 @@ class TerrainMesh(Entity):
 class Chunk(Entity):
     def __init__(self, terrain_mesh, **kwargs):
         self.chunk_with = terrain_mesh.chunk_with-1
+        self.entities = {}
         super().__init__(
             model=Mesh(mode='triangle', thickness=.05, static=False),
             texture='grass',
-            origin=(self.chunk_with/2, self.chunk_with/2, self.chunk_with/2),
             scale=1,
             **kwargs)
 
-    @property
-    def entities(self):
-        return self._entities
-
-    @entities.setter
-    def entities(self, value):
-        self._entities = value
-
     def generateChunk(self):
-        model = load_model('cube', use_deepcopy=True)
         self.model.vertices = []
         self.model.uvs = []
         self.model.normals = []
 
-        for entity in self.entities:
+        for entity_pos, entity in self.entities.items():
+            model = entity_model_loader.entity_model_dict[entity['name']]
+            if model == None:
+                continue
+
             self.model.uvs.extend(model.uvs)
             self.model.normals.extend(model.normals)
-
-            for vert in model.vertices:
-                self.model.vertices.append(
-                    (vert[0] + entity[0], vert[1] + entity[1], vert[2] + entity[2]))
+            for vertex in model.vertices:
+                self.model.vertices.append((vertex[0]+entity_pos[0],
+                                            vertex[1]+entity_pos[1],
+                                            vertex[2]+entity_pos[2]))
 
         self.model.generate()

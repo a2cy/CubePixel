@@ -13,10 +13,13 @@ class CubePixel(Entity):
 
     def start_game(self):
         self.player = Player(self)
+        self.player.position = Vec3(0, 10, 0)
 
         self.terrain = TerrainMesh(self)
 
         self.sky = Sky()
+
+        self.pos_text = DebugScreen(self)
 
         destroy(self.title_screen)
 
@@ -30,6 +33,8 @@ class CubePixel(Entity):
 
         destroy(self.sky)
 
+        destroy(self.pos_text)
+
         mouse.locked = False
 
     def input(self, key):
@@ -41,8 +46,7 @@ if __name__ == '__main__':
     app = Ursina(vsync=False,
                  borderless=False,
                  fullscreen=False,
-                 title='CubePixel',
-                 icon='CubePixel.png')
+                 title='CubePixel')
 
     application.hot_reloader.enabled = False
 
