@@ -9,7 +9,7 @@ def default_settings():
         "borderless": False,
         "fullscreen": False,
         "render_distance": 2,
-		"chunk_with": 15
+	"chunk_with": 15
     }
     with open("settings.json", "w+") as s:
         json.dump(setting_dict, s, indent=4)
