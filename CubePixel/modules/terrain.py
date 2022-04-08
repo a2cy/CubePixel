@@ -5,7 +5,7 @@ from direct.stdpy import threading
 from perlin_noise import PerlinNoise
 from ursina import *
 
-from modules.entity_model_loader import instance as entity_model_loader
+from modules.model_loader import instance as model_loader
 
 
 class TerrainMesh(Entity):
@@ -14,8 +14,8 @@ class TerrainMesh(Entity):
         self.game = game
 
         self.seed = 2021
-        self.render_distance = 4
-        self.chunk_with = 15
+        self.render_distance = self.game.settings.render_distance
+        self.chunk_with = self.game.settings.chunk_with
 
         os.makedirs("saves/", exist_ok=True)
 
@@ -98,8 +98,8 @@ class TerrainMesh(Entity):
             y = i//self.chunk_with % self.chunk_with
             z = i % self.chunk_with % self.chunk_with
             max_y = int(self.noise([(x+pos[0])/self.freq,
-                                    (z+pos[2])/self.freq])*
-                                    self.amp+self.amp/2)
+                                    (z+pos[2])/self.freq]) *
+                        self.amp+self.amp/2)
 
             if y+pos[1] <= max_y:
                 entities[(x, y, z)] = {'name': 'grass',
@@ -123,20 +123,24 @@ class Chunk(Entity):
             **kwargs)
 
     def generateChunk(self):
-        self.model.vertices = []
-        self.model.uvs = []
-        self.model.normals = []
+        vertices, triangles, uvs = [], [], []
 
         for entity_pos, entity in self.entities.items():
-            model = entity_model_loader.entity_model_dict[entity['name']]
+            model = model_loader.entity_model_dict[entity['name']]
             if model == None:
                 continue
 
-            self.model.uvs.extend(model.uvs)
-            self.model.normals.extend(model.normals)
+            uvs.extend(model.uvs)
+            triangles.extend(model.triangles)
+
             for vertex in model.vertices:
-                self.model.vertices.append((vertex[0]+entity_pos[0],
-                                            vertex[1]+entity_pos[1],
-                                            vertex[2]+entity_pos[2]))
+                vertices.append((vertex[0]+entity_pos[0],
+                                 vertex[1]+entity_pos[1],
+                                 vertex[2]+entity_pos[2]))
+
+
+        self.model.vertices, self.model.triangle, self.model.uvs = vertices, triangles, uvs
+
+        del vertices, triangles, uvs
 
         self.model.generate()

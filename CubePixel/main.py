@@ -4,11 +4,22 @@ from ursina import *
 from modules.gui import *
 from modules.player import *
 from modules.terrain import *
+from modules.settings import *
 
 
 class CubePixel(Entity):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        try:
+            self.rpc = Presence("959187008562008154")
+            self.rpc.connect()
+            self.rpc.update(state="Playing",
+                            large_image="large",
+                            start=time.time())
+        except:
+            print('RPC : Discord not found')
+
+        self.settings = settings
         self.title_screen = TitleScreen(self)
 
     def start_game(self):
@@ -19,7 +30,7 @@ class CubePixel(Entity):
 
         self.sky = Sky()
 
-        self.pos_text = DebugScreen(self)
+        self.debug_screen = DebugScreen(self)
 
         destroy(self.title_screen)
 
@@ -33,7 +44,7 @@ class CubePixel(Entity):
 
         destroy(self.sky)
 
-        destroy(self.pos_text)
+        destroy(self.debug_screen)
 
         mouse.locked = False
 
@@ -43,19 +54,12 @@ class CubePixel(Entity):
 
 
 if __name__ == '__main__':
-    app = Ursina(vsync=False,
-                 borderless=False,
-                 fullscreen=False,
+    app = Ursina(vsync=settings.vsync,
+                 borderless=settings.borderless,
+                 fullscreen=settings.fullscreen,
                  title='CubePixel')
 
     application.hot_reloader.enabled = False
-
-    try:
-        rpc = Presence("959187008562008154")
-        rpc.connect()
-        rpc.update(state="Playing", large_image="large", start=time.time())
-    except:
-        print('RPC : Discord not found')
 
     game = CubePixel()
 
