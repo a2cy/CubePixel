@@ -99,7 +99,7 @@ class TerrainMesh(Entity):
             z = i % self.chunk_with % self.chunk_with
             max_y = int(self.noise([(x+pos[0])/self.freq,
                                     (z+pos[2])/self.freq]) *
-                        self.amp+self.amp/2)
+                                    self.amp+self.amp/2)
 
             if y+pos[1] <= max_y:
                 entities[(x, y, z)] = {'name': 'grass',
