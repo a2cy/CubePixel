@@ -3,7 +3,7 @@ from ursina import *
 
 from modules.gui import *
 from modules.player import *
-from modules.terrain import *
+from modules.world import *
 from modules.settings import *
 
 
@@ -26,7 +26,7 @@ class CubePixel(Entity):
         self.player = Player(self)
         self.player.position = Vec3(0, 10, 0)
 
-        self.terrain = TerrainMesh(self)
+        self.terrain = ChunkHandler(self)
 
         self.sky = Sky()
 
@@ -54,9 +54,9 @@ class CubePixel(Entity):
 
 
 if __name__ == '__main__':
-    app = Ursina(vsync=settings.vsync,
-                 borderless=settings.borderless,
-                 fullscreen=settings.fullscreen,
+    app = Ursina(vsync=settings.settings.vsync,
+                 borderless=settings.settings.borderless,
+                 fullscreen=settings.settings.fullscreen,
                  title='CubePixel')
 
     application.hot_reloader.enabled = False

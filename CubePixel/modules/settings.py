@@ -5,12 +5,19 @@ from types import SimpleNamespace
 
 def default_settings():
     setting_dict = {
-        "vsync": False,
-        "borderless": False,
-        "fullscreen": False,
-        "render_distance": 2,
-	"chunk_with": 15
+        "settings": {
+            "vsync": False,
+            "borderless": False,
+            "fullscreen": False,
+            "render_distance": 2
+        },
+
+        "world": {
+            "chunk_with": 15,
+            "amp": 16
+        }
     }
+
     with open("settings.json", "w+") as s:
         json.dump(setting_dict, s, indent=4)
 

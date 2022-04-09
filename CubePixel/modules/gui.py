@@ -26,6 +26,7 @@ class TitleScreen(Entity):
                                   highlight_color=color.gray,
                                   on_click=Func(application.quit))
 
+
 class DebugScreen(Text):
     def __init__(self, game, **kwargs):
         super().__init__(ignore=False)
@@ -33,7 +34,6 @@ class DebugScreen(Text):
         self.position = window.top_left
         self.origin = (-0.5, 0.5)
         self.player = game.player
-    
+
     def update(self):
         self.text = str(self.player.position)
-        
