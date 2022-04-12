@@ -17,7 +17,7 @@ class TitleScreen(Entity):
                                    position=Vec2(0, .05),
                                    scale=Vec2(.25, .075),
                                    highlight_color=color.gray,
-                                   on_click=Func(self.game.start_game))
+                                   on_click=Func(self.game.join_world))
 
         self.exit_button = Button(parent=self,
                                   text='Quit',

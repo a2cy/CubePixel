@@ -9,7 +9,7 @@ from modules.model_loader import instance as model_loader
 
 
 class ChunkHandler(Entity):
-    def __init__(self, game, **kwargs):
+    def __init__(self, game, world, **kwargs):
         super().__init__(**kwargs)
         self.game = game
         self.settings = self.game.settings
@@ -17,7 +17,8 @@ class ChunkHandler(Entity):
         self.seed = 2021
         self.render_distance = self.settings.settings.render_distance
 
-        os.makedirs("saves/", exist_ok=True)
+        self.world_path = f'saves/{world}/chunks/'
+        os.makedirs(self.world_path, exist_ok=True)
 
         self.noise = OpenSimplex(seed=self.seed).noise2
         self.amp = self.settings.world.amp
@@ -63,6 +64,7 @@ class ChunkHandler(Entity):
         for chunk_id in self.chunk_dict.copy():
             if chunk_id not in new_chunk_ids:
                 destroy(self.chunk_dict.pop(chunk_id))
+                print(f'Unloaded chunk {chunk_id}')
                 time.sleep(.02)
 
         for chunk_id in new_chunk_ids:
@@ -70,7 +72,7 @@ class ChunkHandler(Entity):
                 return
 
             if not chunk_id in self.chunk_dict:
-                filename = f"saves/{chunk_id}.json"
+                filename = f"{self.world_path}{chunk_id}.json"
 
                 if os.path.exists(filename):
                     with open(filename, 'r') as f:
@@ -92,6 +94,7 @@ class ChunkHandler(Entity):
                     with open(filename, 'w+') as f:
                         json.dump({"entities": f"{chunk.entities}"}, f)
 
+            print(f'Loaded chunk {chunk_id}')
             time.sleep(.02)
 
         self.updating = False

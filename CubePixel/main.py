@@ -1,4 +1,3 @@
-from pypresence import Presence
 from ursina import *
 
 from modules.gui import *
@@ -10,23 +9,14 @@ from modules.settings import *
 class CubePixel(Entity):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        try:
-            self.rpc = Presence("959187008562008154")
-            self.rpc.connect()
-            self.rpc.update(state="Playing",
-                            large_image="large",
-                            start=time.time())
-        except:
-            print('RPC : Discord not found')
-
         self.settings = settings
         self.title_screen = TitleScreen(self)
 
-    def start_game(self):
+    def join_world(self):
         self.player = Player(self)
         self.player.position = Vec3(0, 10, 0)
 
-        self.terrain = ChunkHandler(self)
+        self.world = ChunkHandler(self, 'sees')
 
         self.sky = Sky()
 
@@ -39,8 +29,8 @@ class CubePixel(Entity):
 
         destroy(self.player)
 
-        self.terrain.unload()
-        destroy(self.terrain)
+        self.world.unload()
+        destroy(self.world)
 
         destroy(self.sky)
 
