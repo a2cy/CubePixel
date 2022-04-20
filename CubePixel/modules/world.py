@@ -130,7 +130,7 @@ class Chunk(Entity):
             **kwargs)
 
     def generateChunk(self):
-        self.model.vertices, self.model.triangles, self.model.uvs = [], [], []
+        self.model.vertices, self.model.uvs = [], []
 
         for entity_pos, entity in self.entities.items():
             model = model_loader.entity_model_dict[entity['name']]
@@ -138,7 +138,6 @@ class Chunk(Entity):
                 continue
 
             self.model.uvs.extend(model.uvs)
-            # self.model.triangles.extend(model.triangles)
 
             self.model.vertices.extend([(vertex[0]+entity_pos[0],
                                         vertex[1]+entity_pos[1],
