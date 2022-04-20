@@ -140,9 +140,9 @@ class Chunk(Entity):
             self.model.uvs.extend(model.uvs)
             # self.model.triangles.extend(model.triangles)
 
-            for vertex in model.vertices:
-                self.model.vertices.append((vertex[0]+entity_pos[0],
-                                            vertex[1]+entity_pos[1],
-                                            vertex[2]+entity_pos[2]))
+            self.model.vertices.extend([(vertex[0]+entity_pos[0],
+                                        vertex[1]+entity_pos[1],
+                                        vertex[2]+entity_pos[2])
+                                        for vertex in model.vertices])
 
         self.model.generate()
