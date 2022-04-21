@@ -15,9 +15,5 @@ class ModelLoader():
                 self.entity_model_dict[data['name']] = load_model(
                     data['model'], use_deepcopy=True)
 
-                if self.entity_model_dict[data['name']] != None and len(self.entity_model_dict[data['name']].triangles) < 1:
-                    self.entity_model_dict[data['name']].triangles = [
-                        i for i in range(len(self.entity_model_dict[data['name']].vertices))]
-
 
 instance = ModelLoader()

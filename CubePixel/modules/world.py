@@ -9,27 +9,28 @@ from modules.model_loader import instance as model_loader
 
 
 class ChunkHandler(Entity):
-    def __init__(self, game, world, **kwargs):
+    def __init__(self, game, **kwargs):
         super().__init__(**kwargs)
         self.game = game
         self.settings = self.game.settings
 
+    def load_world(self, world):
         self.seed = 2021
         self.render_distance = self.settings.settings.render_distance
 
-        self.world_path = f'saves/{world}/chunks/'
-        os.makedirs(self.world_path, exist_ok=True)
+        self.world_path = f'saves/{world}/'
+        os.makedirs(f'{self.world_path}chunks/', exist_ok=True)
 
         self.noise = OpenSimplex(seed=self.seed).noise2
         self.amp = self.settings.world.amp
-        self.freq = self.amp*2
+        self.freq = self.amp*self.settings.world.amp_multiplier
         self.chunk_with = self.settings.world.chunk_with
 
         self.chunk_dict = {}
         self.player_chunk = ()
         self.updating = False
 
-    def unload(self):
+    def unload_world(self):
         self.updating = False
         self.update_thread.join()
 
@@ -45,10 +46,10 @@ class ChunkHandler(Entity):
             self.updating = True
             self.player_chunk = new_player_chunk
             self.update_thread = threading.Thread(
-                target=self.updateChunks, args=[])
+                target=self.update_chunks, args=[])
             self.update_thread.start()
 
-    def updateChunks(self):
+    def update_chunks(self):
         new_chunk_ids = []
 
         world_with = self.render_distance*2+1
@@ -72,23 +73,21 @@ class ChunkHandler(Entity):
                 return
 
             if not chunk_id in self.chunk_dict:
-                filename = f"{self.world_path}{chunk_id}.json"
+                filename = f"{self.world_path}chunks/{chunk_id}.json"
 
                 if os.path.exists(filename):
                     with open(filename, 'r') as f:
                         entities = eval(json.load(f)["entities"])
 
-                    chunk = Chunk(parent=self)
-                    chunk.position = chunk_id
+                    chunk = Chunk(parent=self, position=chunk_id)
                     chunk.entities = entities
-                    chunk.generateChunk()
+                    chunk.generate_chunk()
                     self.chunk_dict[chunk_id] = chunk
 
                 else:
-                    chunk = Chunk(parent=self)
-                    chunk.position = chunk_id
-                    chunk.entities = self.getChunkentities(chunk_id)
-                    chunk.generateChunk()
+                    chunk = Chunk(parent=self, position=chunk_id)
+                    chunk.entities = self.get_chunkentities(chunk_id)
+                    chunk.generate_chunk()
                     self.chunk_dict[chunk_id] = chunk
 
                     with open(filename, 'w+') as f:
@@ -99,15 +98,15 @@ class ChunkHandler(Entity):
 
         self.updating = False
 
-    def getChunkentities(self, pos):
+    def get_chunkentities(self, pos):
         entities = {}
         for i in range(self.chunk_with**3):
             x = i//self.chunk_with//self.chunk_with-(self.chunk_with-1)/2
             y = i//self.chunk_with % self.chunk_with-(self.chunk_with-1)/2
             z = i % self.chunk_with % self.chunk_with-(self.chunk_with-1)/2
 
-            max_y = int(self.noise(
-                (x+pos[0])/self.freq, (z+pos[2])/self.freq)*self.amp+self.amp/2)
+            max_y = int(self.noise((x+pos[0])/self.freq,
+                                   (z+pos[2])/self.freq)*self.amp+self.amp/2)
 
             if y+pos[1] <= max_y:
                 entities[(x, y, z)] = {'name': 'grass',
@@ -124,12 +123,11 @@ class Chunk(Entity):
     def __init__(self, **kwargs):
         self.entities = {}
         super().__init__(
-            model=Mesh(mode='triangle', thickness=.05, static=False),
+            model=Mesh(mode='triangle'),
             texture='grass',
-            scale=1,
             **kwargs)
 
-    def generateChunk(self):
+    def generate_chunk(self):
         self.model.vertices, self.model.uvs = [], []
 
         for entity_pos, entity in self.entities.items():
@@ -138,10 +136,9 @@ class Chunk(Entity):
                 continue
 
             self.model.uvs.extend(model.uvs)
-
             self.model.vertices.extend([(vertex[0]+entity_pos[0],
-                                        vertex[1]+entity_pos[1],
-                                        vertex[2]+entity_pos[2])
+                                         vertex[1]+entity_pos[1],
+                                         vertex[2]+entity_pos[2])
                                         for vertex in model.vertices])
 
         self.model.generate()

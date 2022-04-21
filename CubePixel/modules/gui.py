@@ -3,8 +3,7 @@ from ursina import *
 
 class TitleScreen(Entity):
     def __init__(self, game, **kwargs):
-        super().__init__(parent=camera.ui, **kwargs)
-
+        super().__init__(**kwargs, parent=camera.ui)
         self.game = game
 
         self.background = Entity(parent=self,
@@ -13,27 +12,60 @@ class TitleScreen(Entity):
                                  scale=camera.aspect_ratio)
 
         self.start_button = Button(parent=self,
-                                   text='Start',
+                                   text='Join World',
                                    position=Vec2(0, .05),
                                    scale=Vec2(.25, .075),
                                    highlight_color=color.gray,
-                                   on_click=Func(self.game.join_world))
+                                   on_click=Func(self.game.join_world, 'world'))
 
         self.exit_button = Button(parent=self,
-                                  text='Quit',
+                                  text='Quit Game',
                                   position=Vec2(0, -.05),
                                   scale=Vec2(.25, .075),
                                   highlight_color=color.gray,
                                   on_click=Func(application.quit))
 
 
-class DebugScreen(Text):
+class PauseScreen(Entity):
     def __init__(self, game, **kwargs):
-        super().__init__(ignore=False)
-        self.parent = camera.ui
-        self.position = window.top_left
-        self.origin = (-0.5, 0.5)
-        self.player = game.player
+        super().__init__(**kwargs, parent=camera.ui)
+        self.game = game
+
+        self.continue_button = Button(parent=self,
+                                      text='Continue Playing',
+                                      position=Vec2(0, .05),
+                                      scale=Vec2(.25, .075),
+                                      highlight_color=color.gray,
+                                      on_click=Func(self._disable))
+
+        self.title_screen_button = Button(parent=self,
+                                          text='Title Screen',
+                                          position=Vec2(0, -.05),
+                                          scale=Vec2(.25, .075),
+                                          highlight_color=color.gray,
+                                          on_click=Func(self.game.leave_world))
+
+    def _disable(self):
+        mouse.locked = True
+        self.disable()
+
+
+class DebugScreen(Entity):
+    def __init__(self, game, **kwargs):
+        super().__init__(**kwargs, parent=camera.ui)
+        self.game = game
+
+        self.position_display = Text(parent=self,
+                                     position=window.top_left,
+                                     origin=(-0.5, 0.5),
+                                     text='')
+
+        self.update_display = Text(parent=self,
+                                   position=window.top_left,
+                                   origin=(-0.5, 1.5),
+                                   text='')
 
     def update(self):
-        self.text = str(self.player.position)
+        self.position_display.text = str(self.game.player.position)
+
+        self.update_display.text = str(self.game.world.updating)

@@ -14,7 +14,8 @@ def default_settings():
 
         "world": {
             "chunk_with": 15,
-            "amp": 16
+            "amp": 16,
+            "amp_multiplier": 2
         }
     }
 
