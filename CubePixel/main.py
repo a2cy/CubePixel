@@ -5,13 +5,14 @@ from modules.player import *
 from modules.world import *
 from modules.settings import *
 
+from modules.model_loader import instance as model_loader
+
 
 class CubePixel(Entity):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.settings = settings
-
-        self.game_state = 'main_menu'
+        self.model_loader = model_loader
 
         self.title_screen = TitleScreen(self)
         self.title_screen.enabled = True
@@ -31,15 +32,13 @@ class CubePixel(Entity):
         self.sky = Sky()
         self.sky.enabled = False
 
-    def join_world(self, world):
-        self.game_state = 'in_game'
-
+    def join_world(self):
         self.title_screen.enabled = False
 
         self.debug_screen.enabled = True
 
         self.world.enabled = True
-        self.world.load_world(world)
+        self.world.load_world()
 
         self.player.enabled = True
         self.player.position = Vec3(0, 10, 0)
@@ -47,8 +46,6 @@ class CubePixel(Entity):
         self.sky.enabled = True
 
     def leave_world(self):
-        self.game_state = 'main_menu'
-
         self.title_screen.enabled = True
 
         self.debug_screen.enabled = False
@@ -65,7 +62,7 @@ class CubePixel(Entity):
         mouse.locked = False
 
     def input(self, key):
-        if key == 'escape' and self.game_state == 'in_game':
+        if key == 'escape' and self.world.enabled == True:
             self.pause_screen.enabled = not self.pause_screen.enabled
             mouse.locked = not mouse.locked
 

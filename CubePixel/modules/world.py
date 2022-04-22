@@ -1,11 +1,10 @@
 import json
 import os
+from types import SimpleNamespace
 
 from direct.stdpy import threading
 from opensimplex import OpenSimplex
 from ursina import *
-
-from modules.model_loader import instance as model_loader
 
 
 class ChunkHandler(Entity):
@@ -14,17 +13,29 @@ class ChunkHandler(Entity):
         self.game = game
         self.settings = self.game.settings
 
-    def load_world(self, world):
-        self.seed = 2021
-        self.render_distance = self.settings.settings.render_distance
-
+    def load_world(self, world='world', seed=round(time.time())):
         self.world_path = f'saves/{world}/'
-        os.makedirs(f'{self.world_path}chunks/', exist_ok=True)
 
+        if not os.path.exists(self.world_path):
+            os.makedirs(f'{self.world_path}chunks/', exist_ok=False)
+            data_dict = {
+                "seed": seed
+            }
+
+            with open(f'{self.world_path}data.json', "w+") as s:
+                json.dump(data_dict, s, indent=4)
+
+        with open(f'{self.world_path}data.json') as data:
+            self.world_data = json.load(
+                data, object_hook=lambda d: SimpleNamespace(**d))
+
+        self.seed = self.world_data.seed
         self.noise = OpenSimplex(seed=self.seed).noise2
-        self.amp = self.settings.world.amp
-        self.freq = self.amp*self.settings.world.amp_multiplier
-        self.chunk_with = self.settings.world.chunk_with
+        self.amp = self.game.settings.world.amp
+        self.freq = self.game.settings.world.freq
+
+        self.chunk_with = self.game.settings.world.chunk_with
+        self.render_distance = self.game.settings.settings.render_distance
 
         self.chunk_dict = {}
         self.player_chunk = ()
@@ -73,25 +84,25 @@ class ChunkHandler(Entity):
                 return
 
             if not chunk_id in self.chunk_dict:
-                filename = f"{self.world_path}chunks/{chunk_id}.json"
+                filename = f'{self.world_path}chunks/{chunk_id}.json'
 
                 if os.path.exists(filename):
                     with open(filename, 'r') as f:
                         entities = eval(json.load(f)["entities"])
 
-                    chunk = Chunk(parent=self, position=chunk_id)
+                    chunk = Chunk(self.game, parent=self, position=chunk_id)
                     chunk.entities = entities
                     chunk.generate_chunk()
                     self.chunk_dict[chunk_id] = chunk
 
                 else:
-                    chunk = Chunk(parent=self, position=chunk_id)
+                    chunk = Chunk(self.game, parent=self, position=chunk_id)
                     chunk.entities = self.get_chunkentities(chunk_id)
                     chunk.generate_chunk()
                     self.chunk_dict[chunk_id] = chunk
 
                     with open(filename, 'w+') as f:
-                        json.dump({"entities": f"{chunk.entities}"}, f)
+                        json.dump({"entities": f'{chunk.entities}'}, f)
 
             print(f'Loaded chunk {chunk_id}')
             time.sleep(.02)
@@ -120,7 +131,8 @@ class ChunkHandler(Entity):
 
 
 class Chunk(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, game, **kwargs):
+        self.game = game
         self.entities = {}
         super().__init__(
             model=Mesh(mode='triangle'),
@@ -131,7 +143,7 @@ class Chunk(Entity):
         self.model.vertices, self.model.uvs = [], []
 
         for entity_pos, entity in self.entities.items():
-            model = model_loader.entity_model_dict[entity['name']]
+            model = self.game.model_loader.entity_model_dict[entity['name']]
             if model == None:
                 continue
 

@@ -11,12 +11,12 @@ class TitleScreen(Entity):
                                  texture='shore',
                                  scale=camera.aspect_ratio)
 
-        self.start_button = Button(parent=self,
-                                   text='Join World',
-                                   position=Vec2(0, .05),
-                                   scale=Vec2(.25, .075),
-                                   highlight_color=color.gray,
-                                   on_click=Func(self.game.join_world, 'world'))
+        self.join_button = Button(parent=self,
+                                  text='Join World',
+                                  position=Vec2(0, .05),
+                                  scale=Vec2(.25, .075),
+                                  highlight_color=color.gray,
+                                  on_click=Func(self.game.join_world))
 
         self.exit_button = Button(parent=self,
                                   text='Quit Game',
@@ -38,12 +38,12 @@ class PauseScreen(Entity):
                                       highlight_color=color.gray,
                                       on_click=Func(self._disable))
 
-        self.title_screen_button = Button(parent=self,
-                                          text='Title Screen',
-                                          position=Vec2(0, -.05),
-                                          scale=Vec2(.25, .075),
-                                          highlight_color=color.gray,
-                                          on_click=Func(self.game.leave_world))
+        self.leave_button = Button(parent=self,
+                                   text='Leave World',
+                                   position=Vec2(0, -.05),
+                                   scale=Vec2(.25, .075),
+                                   highlight_color=color.gray,
+                                   on_click=Func(self.game.leave_world))
 
     def _disable(self):
         mouse.locked = True
