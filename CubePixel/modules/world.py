@@ -9,9 +9,12 @@ from ursina import *
 
 class ChunkHandler(Entity):
     def __init__(self, game, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
         self.game = game
         self.settings = self.game.settings
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def load_world(self, world='world', seed=round(time.time())):
         self.world_path = f'saves/{world}/'
@@ -19,6 +22,7 @@ class ChunkHandler(Entity):
         if not os.path.exists(self.world_path):
             os.makedirs(f'{self.world_path}chunks/', exist_ok=False)
             data_dict = {
+                "name": world,
                 "seed": seed
             }
 
@@ -44,6 +48,8 @@ class ChunkHandler(Entity):
     def unload_world(self):
         self.updating = False
         self.update_thread.join()
+        for chunk_id in self.chunk_dict.copy():
+            destroy(self.chunk_dict.pop(chunk_id))
 
     def update(self):
         player = self.game.player
@@ -73,11 +79,11 @@ class ChunkHandler(Entity):
                                   int(y*self.chunk_with+self.player_chunk[1]),
                                   int(z*self.chunk_with+self.player_chunk[2])))
 
-        for chunk_id in self.chunk_dict.copy():
+        for chunk_id in list(self.chunk_dict.keys()):
             if chunk_id not in new_chunk_ids:
                 destroy(self.chunk_dict.pop(chunk_id))
-                print(f'Unloaded chunk {chunk_id}')
-                time.sleep(.02)
+
+        t = time.time()
 
         for chunk_id in new_chunk_ids:
             if not self.updating:
@@ -104,8 +110,7 @@ class ChunkHandler(Entity):
                     with open(filename, 'w+') as f:
                         json.dump({"entities": f'{chunk.entities}'}, f)
 
-            print(f'Loaded chunk {chunk_id}')
-            time.sleep(.02)
+        print(time.time() - t)
 
         self.updating = False
 
@@ -134,23 +139,24 @@ class Chunk(Entity):
     def __init__(self, game, **kwargs):
         self.game = game
         self.entities = {}
-        super().__init__(
-            model=Mesh(mode='triangle'),
-            texture='grass',
-            **kwargs)
+        super().__init__(model=Mesh(mode='triangle'),
+                         texture='grass')
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def generate_chunk(self):
         self.model.vertices, self.model.uvs = [], []
 
         for entity_pos, entity in self.entities.items():
-            model = self.game.model_loader.entity_model_dict[entity['name']]
+            model = self.game.entity_dict[entity['name']]
             if model == None:
                 continue
 
-            self.model.uvs.extend(model.uvs)
+            self.model.uvs.extend(model['uvs'])
             self.model.vertices.extend([(vertex[0]+entity_pos[0],
                                          vertex[1]+entity_pos[1],
                                          vertex[2]+entity_pos[2])
-                                        for vertex in model.vertices])
+                                        for vertex in model['vertices']])
 
         self.model.generate()

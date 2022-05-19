@@ -4,15 +4,14 @@ from modules.gui import *
 from modules.player import *
 from modules.world import *
 from modules.settings import *
-
-from modules.model_loader import instance as model_loader
+from modules.entity_loader import *
 
 
 class CubePixel(Entity):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
         self.settings = settings
-        self.model_loader = model_loader
+        self.entity_dict = entity_dict
 
         self.title_screen = TitleScreen(self)
         self.title_screen.enabled = True
@@ -23,8 +22,8 @@ class CubePixel(Entity):
         self.debug_screen = DebugScreen(self)
         self.debug_screen.enabled = False
 
-        self.world = ChunkHandler(self)
-        self.world.enabled = False
+        self.chunk_handler = ChunkHandler(self)
+        self.chunk_handler.enabled = False
 
         self.player = Player(self)
         self.player.enabled = False
@@ -32,13 +31,16 @@ class CubePixel(Entity):
         self.sky = Sky()
         self.sky.enabled = False
 
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
     def join_world(self):
         self.title_screen.enabled = False
 
         self.debug_screen.enabled = True
 
-        self.world.enabled = True
-        self.world.load_world()
+        self.chunk_handler.enabled = True
+        self.chunk_handler.load_world()
 
         self.player.enabled = True
         self.player.position = Vec3(0, 10, 0)
@@ -52,8 +54,8 @@ class CubePixel(Entity):
 
         self.pause_screen.enabled = False
 
-        self.world.unload_world()
-        self.world.enabled = False
+        self.chunk_handler.unload_world()
+        self.chunk_handler.enabled = False
 
         self.player.enabled = False
 
@@ -62,7 +64,7 @@ class CubePixel(Entity):
         mouse.locked = False
 
     def input(self, key):
-        if key == 'escape' and self.world.enabled == True:
+        if key == 'escape' and self.chunk_handler.enabled == True:
             self.pause_screen.enabled = not self.pause_screen.enabled
             mouse.locked = not mouse.locked
 

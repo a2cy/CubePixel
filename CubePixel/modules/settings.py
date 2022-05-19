@@ -30,4 +30,5 @@ def load_settings():
 
 if not os.path.isfile('settings.json'):
     default_settings()
+
 settings = load_settings()
