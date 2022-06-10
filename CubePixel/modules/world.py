@@ -49,20 +49,14 @@ class ChunkHandler(Entity):
     def update(self):
         player = self.game.player
 
-        new_player_chunk = (int(
-            round_to_closest(player.position[0], self.chunk_with)),
-                            int(
-                                round_to_closest(player.position[1],
-                                                 self.chunk_with)),
-                            int(
-                                round_to_closest(player.position[2],
-                                                 self.chunk_with)))
+        new_player_chunk = (int(round_to_closest(player.position[0], self.chunk_with)),
+                            int(round_to_closest(player.position[1], self.chunk_with)),
+                            int(round_to_closest(player.position[2], self.chunk_with)))
 
         if self.player_chunk != new_player_chunk and not self.updating:
             self.updating = True
             self.player_chunk = new_player_chunk
-            self.update_thread = threading.Thread(target=self.update_chunks,
-                                                  args=[])
+            self.update_thread = threading.Thread(target=self.update_chunks, args=[])
             self.update_thread.start()
 
     def update_chunks(self):
@@ -74,10 +68,9 @@ class ChunkHandler(Entity):
             y = i // world_with % world_with - (world_with - 1) / 2
             z = i % world_with % world_with - (world_with - 1) / 2
 
-            new_chunk_ids.append(
-                (int(x * self.chunk_with + self.player_chunk[0]),
-                 int(y * self.chunk_with + self.player_chunk[1]),
-                 int(z * self.chunk_with + self.player_chunk[2])))
+            new_chunk_ids.append((int(x * self.chunk_with + self.player_chunk[0]),
+                                  int(y * self.chunk_with + self.player_chunk[1]),
+                                  int(z * self.chunk_with + self.player_chunk[2])))
 
         for chunk_id in list(self.chunk_dict.keys()):
             if chunk_id not in new_chunk_ids:
@@ -113,15 +106,11 @@ class ChunkHandler(Entity):
     def get_chunkentities(self, pos):
         entities = {}
         for i in range(self.chunk_with**3):
-            x = i // self.chunk_with // self.chunk_with - (self.chunk_with -
-                                                           1) / 2
-            y = i // self.chunk_with % self.chunk_with - (self.chunk_with -
-                                                          1) / 2
-            z = i % self.chunk_with % self.chunk_with - (self.chunk_with -
-                                                         1) / 2
+            x = i // self.chunk_with // self.chunk_with - (self.chunk_with - 1) / 2
+            y = i // self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2
+            z = i % self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2
 
-            max_y = int(
-                self.noise((x + pos[0]) / self.freq,
+            max_y = int(self.noise((x + pos[0]) / self.freq,
                            (z + pos[2]) / self.freq) * self.amp + self.amp / 2)
             
             if y + pos[1] <= max_y:
@@ -159,9 +148,10 @@ class Chunk(Entity):
                 continue
 
             self.model.uvs.extend(model["uvs"])
-            self.model.vertices.extend([
-                (vertex[0] + entity_pos[0], vertex[1] + entity_pos[1],
-                 vertex[2] + entity_pos[2]) for vertex in model["vertices"]
-            ])
+            self.model.normals.extend(model["normals"])
+            self.model.vertices.extend([(vertex[0] + entity_pos[0],
+                                         vertex[1] + entity_pos[1],
+                                         vertex[2] + entity_pos[2])
+                                         for vertex in model["vertices"]])
 
         self.model.generate()
