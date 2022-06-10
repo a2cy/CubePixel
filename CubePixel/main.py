@@ -8,6 +8,7 @@ from modules.entity_loader import *
 
 
 class CubePixel(Entity):
+
     def __init__(self, **kwargs):
         super().__init__()
         self.settings = settings
@@ -64,16 +65,20 @@ class CubePixel(Entity):
         mouse.locked = False
 
     def input(self, key):
-        if key == 'escape' and self.chunk_handler.enabled == True:
+        if key == "escape" and self.chunk_handler.enabled == True:
             self.pause_screen.enabled = not self.pause_screen.enabled
             mouse.locked = not mouse.locked
 
+    def update(self):
+        if self.player.y < -20:
+            self.player.y = 10
 
-if __name__ == '__main__':
-    app = Ursina(vsync=settings.settings.vsync,
-                 borderless=settings.settings.borderless,
-                 fullscreen=settings.settings.fullscreen,
-                 title='CubePixel')
+
+if __name__ == "__main__":
+    app = Ursina(vsync=settings["settings"]["vsync"],
+                 borderless=settings["settings"]["borderless"],
+                 fullscreen=settings["settings"]["fullscreen"],
+                 title="CubePixel")
 
     application.hot_reloader.enabled = False
 

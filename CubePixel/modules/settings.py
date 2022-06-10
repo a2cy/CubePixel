@@ -1,6 +1,5 @@
 import os
 import json
-from types import SimpleNamespace
 
 
 def default_settings():
@@ -11,7 +10,6 @@ def default_settings():
             "fullscreen": False,
             "render_distance": 2
         },
-
         "world": {
             "chunk_with": 15,
             "amp": 16,
@@ -19,16 +17,16 @@ def default_settings():
         }
     }
 
-    with open('settings.json', 'w+') as s:
+    with open("settings.json", "w+") as s:
         json.dump(setting_dict, s, indent=4)
 
 
 def load_settings():
-    with open('settings.json') as data:
-        return json.load(data, object_hook=lambda d: SimpleNamespace(**d))
+    with open("settings.json") as data:
+        return json.load(data)
 
 
-if not os.path.isfile('settings.json'):
+if not os.path.isfile("settings.json"):
     default_settings()
 
 settings = load_settings()
