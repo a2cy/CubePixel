@@ -1,5 +1,6 @@
 import json
 import os
+import numpy as np
 
 from direct.stdpy import threading
 from opensimplex import OpenSimplex
@@ -15,6 +16,7 @@ class ChunkHandler(Entity):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
     def load_world(self, world="world", seed=round(time.time())):
         self.world_path = f"saves/{world}/"
@@ -40,11 +42,13 @@ class ChunkHandler(Entity):
         self.player_chunk = ()
         self.updating = False
 
+
     def unload_world(self):
         self.updating = False
         self.update_thread.join()
         for chunk_id in self.chunk_dict.copy():
             destroy(self.chunk_dict.pop(chunk_id))
+
 
     def update(self):
         player = self.game.player
@@ -58,6 +62,7 @@ class ChunkHandler(Entity):
             self.player_chunk = new_player_chunk
             self.update_thread = threading.Thread(target=self.update_chunks, args=[])
             self.update_thread.start()
+
 
     def update_chunks(self):
         new_chunk_ids = []
@@ -103,6 +108,7 @@ class ChunkHandler(Entity):
 
         self.updating = False
 
+
     def get_chunkentities(self, pos):
         entities = {}
         for i in range(self.chunk_with**3):
@@ -114,16 +120,10 @@ class ChunkHandler(Entity):
                            (z + pos[2]) / self.freq) * self.amp + self.amp / 2)
             
             if y + pos[1] <= max_y:
-                entities[f"{x} {y} {z}"] = {
-                    "name": "grass",
-                    "rotation": (0, 0, 0)
-                }
+                entities[f"{x} {y} {z}"] = "grass"
 
             else:
-                entities[f"{x} {y} {z}"] = {
-                    "name": "air",
-                    "rotation": (0, 0, 0)
-                }
+                entities[f"{x} {y} {z}"] = "air"
 
         return entities
 
@@ -138,20 +138,19 @@ class Chunk(Entity):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+
     def generate_chunk(self):
-        self.model.vertices, self.model.uvs = [], []
+        self.model.vertices, self.model.uvs, self.model.normals = [], [], []
 
         for entity_pos, entity in self.entities.items():
-            entity_pos = [float(i) for i in entity_pos.split()]
-            model = self.game.entity_dict[entity["name"]]
+            entity_pos = np.array([float(i) for i in entity_pos.split()])
+            model = self.game.entity_dict[entity]
             if model == None:
                 continue
 
             self.model.uvs.extend(model["uvs"])
-            self.model.normals.extend(model["normals"])
-            self.model.vertices.extend([(vertex[0] + entity_pos[0],
-                                         vertex[1] + entity_pos[1],
-                                         vertex[2] + entity_pos[2])
-                                         for vertex in model["vertices"]])
+            self.model.vertices.extend(model["vertices"]+entity_pos)
+        
+        #print(self.model.vertices)
 
         self.model.generate()

@@ -29,11 +29,12 @@ class CubePixel(Entity):
         self.player = Player(self)
         self.player.enabled = False
 
-        self.sky = Sky()
+        self.sky = Sky(texture = 'sky_default')
         self.sky.enabled = False
 
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
     def join_world(self):
         self.title_screen.enabled = False
@@ -47,6 +48,7 @@ class CubePixel(Entity):
         self.player.position = Vec3(0, 10, 0)
 
         self.sky.enabled = True
+
 
     def leave_world(self):
         self.title_screen.enabled = True
@@ -64,10 +66,18 @@ class CubePixel(Entity):
 
         mouse.locked = False
 
+    
+    def toggle_pause_screen(self):
+        self.pause_screen.enabled = not self.pause_screen.enabled
+        mouse.position = (0,0)
+        mouse.locked = False
+        self.player.enabled = not self.player.enabled
+
+
     def input(self, key):
         if key == "escape" and self.chunk_handler.enabled == True:
-            self.pause_screen.enabled = not self.pause_screen.enabled
-            mouse.locked = not mouse.locked
+            self.toggle_pause_screen()
+
 
     def update(self):
         if self.player.y < -20:

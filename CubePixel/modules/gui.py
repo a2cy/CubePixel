@@ -38,7 +38,7 @@ class PauseScreen(Entity):
                                       text="Continue Playing",
                                       position=Vec2(0, .05),
                                       scale=Vec2(.25, .075),
-                                      on_click=Func(self._disable))
+                                      on_click=Func(self.game.toggle_pause_screen))
 
         self.leave_button = Button(parent=self,
                                    text="Leave World",
@@ -48,10 +48,6 @@ class PauseScreen(Entity):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-    def _disable(self):
-        mouse.locked = True
-        self.disable()
 
 
 class DebugScreen(Entity):
@@ -77,6 +73,7 @@ class DebugScreen(Entity):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
     def update(self):
         self.position_display.text = f"{self.game.player.position}"

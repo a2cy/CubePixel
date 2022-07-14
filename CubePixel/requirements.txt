@@ -1,3 +1,4 @@
 https://github.com/pokepetter/ursina/archive/master.zip
 opensimplex
+numpy
 numba

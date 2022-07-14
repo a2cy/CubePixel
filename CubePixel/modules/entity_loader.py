@@ -1,5 +1,7 @@
 import os
 import json
+import numpy as np
+
 from ursina import *
 
 
@@ -13,9 +15,9 @@ def load_entities():
             model = load_model(data["model"], use_deepcopy=True)
             if model:
                 entity_dict[data["name"]] = {
-                    "vertices": model.vertices,
-                    "uvs": model.uvs,
-                    "normals": model.normals
+                    "vertices": np.array(model.vertices),
+                    "uvs": np.array(model.uvs),
+                    "normals": np.array(model.normals)
                 }
             else:
                 entity_dict[data["name"]] = None
