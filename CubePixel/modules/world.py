@@ -92,19 +92,26 @@ class ChunkHandler(Entity):
                     with open(filename) as f:
                         entities = json.load(f)
 
-                    chunk = Chunk(self.game, parent=self, position=chunk_id)
-                    chunk.entities = entities
-                    chunk.generate_chunk()
-                    self.chunk_dict[chunk_id] = chunk
-
                 else:
-                    chunk = Chunk(self.game, parent=self, position=chunk_id)
-                    chunk.entities = self.get_chunkentities(chunk_id)
-                    chunk.generate_chunk()
-                    self.chunk_dict[chunk_id] = chunk
+                    entities = self.get_chunkentities(chunk_id)
 
                     with open(filename, "w+") as f:
-                        json.dump(chunk.entities, f)
+                        json.dump(entities, f)
+
+                vertices, uvs = [], []
+                for entity_pos, entity in entities.items():
+                    entity_pos = np.array([float(i) for i in entity_pos.split()])
+                    model = self.game.entity_dict[entity]
+                    if model == None:
+                        continue
+
+                    uvs.extend(model["uvs"])
+                    vertices.extend(model["vertices"]+entity_pos)
+        
+
+                chunk = Chunk(parent=self, position=chunk_id, model=Mesh(mode="triangle",vertices=vertices,uvs=uvs), texture="grass")
+                self.chunk_dict[chunk_id] = chunk
+
 
         self.updating = False
 
@@ -130,27 +137,8 @@ class ChunkHandler(Entity):
 
 class Chunk(Entity):
 
-    def __init__(self, game, **kwargs):
-        self.game = game
-        self.entities = {}
-        super().__init__(model=Mesh(mode="triangle"), texture="grass")
+    def __init__(self, **kwargs):
+        super().__init__()
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-
-    def generate_chunk(self):
-        self.model.vertices, self.model.uvs, self.model.normals = [], [], []
-
-        for entity_pos, entity in self.entities.items():
-            entity_pos = np.array([float(i) for i in entity_pos.split()])
-            model = self.game.entity_dict[entity]
-            if model == None:
-                continue
-
-            self.model.uvs.extend(model["uvs"])
-            self.model.vertices.extend(model["vertices"]+entity_pos)
-        
-        #print(self.model.vertices)
-
-        self.model.generate()
