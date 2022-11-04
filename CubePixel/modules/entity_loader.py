@@ -2,11 +2,11 @@ import os
 import json
 import numpy as np
 
-from ursina import *
+from ursina.mesh_importer import load_model
 
 
 def load_entities():
-    entity_dict = {}
+    entity_data = {}
     dirs = os.listdir("data/entities/")
 
     for dir in dirs:
@@ -14,15 +14,15 @@ def load_entities():
             data = json.load(f)
             model = load_model(data["model"], use_deepcopy=True)
             if model:
-                entity_dict[data["name"]] = {
+                entity_data[data["name"]] = {
                     "vertices": np.array(model.vertices),
                     "uvs": np.array(model.uvs),
                     "normals": np.array(model.normals)
                 }
             else:
-                entity_dict[data["name"]] = None
+                entity_data[data["name"]] = None
 
-    return entity_dict
+    return entity_data
 
 
-entity_dict = load_entities()
+entity_data = load_entities()

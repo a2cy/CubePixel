@@ -10,58 +10,86 @@ from ursina import *
 class ChunkHandler(Entity):
 
     def __init__(self, game, **kwargs):
-        super().__init__()
         self.game = game
-        self.settings = self.game.settings
+        super().__init__()
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-
-    def load_world(self, world="world", seed=round(time.time())):
-        self.world_path = f"saves/{world}/"
-
-        if not os.path.exists(self.world_path):
-            os.makedirs(f"{self.world_path}chunks/", exist_ok=False)
-            data_dict = {"name": world, "seed": seed}
-
-            with open(f"{self.world_path}data.json", "w+") as f:
-                json.dump(data_dict, f, indent=4)
-
-        with open(f"{self.world_path}data.json") as f:
-            self.world_data = json.load(f)
-
-        self.seed = self.world_data["seed"]
-        self.noise = OpenSimplex(seed=self.seed).noise2
         self.amp = self.game.settings["world"]["amp"]
         self.freq = self.game.settings["world"]["freq"]
         self.chunk_with = self.game.settings["world"]["chunk_with"]
         self.render_distance = self.game.settings["settings"]["render_distance"]
 
         self.chunk_dict = {}
-        self.player_chunk = ()
+        self.player_chunk = []
         self.updating = False
+        self.world_loaded = False
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+    def create_world(self, world_name, seed):
+        world_path = f"saves/{world_name}/"
+        
+        os.makedirs(f"{world_path}chunks/", exist_ok=False)
+        self.world_data = {"name": world_name, "seed": seed}
+
+        with open(f"{world_path}data.json", "w+") as f:
+            json.dump(self.world_data, f, indent=4)
+
+        self.load_world(world_name)
+
+
+    def load_world(self, world_name):
+        self.world_path = f"saves/{world_name}/"
+
+        with open(f"{self.world_path}data.json") as f:
+            self.world_data = json.load(f)
+
+        self.noise = OpenSimplex(self.world_data["seed"]).noise2
+
+        self.world_loaded = True
 
 
     def unload_world(self):
+        self.world_loaded = False
         self.updating = False
         self.update_thread.join()
+        self.player_chunk = []
+
         for chunk_id in self.chunk_dict.copy():
             destroy(self.chunk_dict.pop(chunk_id))
 
 
-    def update(self):
-        player = self.game.player
+    def occlusion_check(self, entity_pos, entities):
+        for pos in np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], [0, 0, -1]]):
+            neighbour_pos = pos+entity_pos
+            try:
+                neighbour_entity = entities[f"{neighbour_pos[0]} {neighbour_pos[1]} {neighbour_pos[2]}"]
+                if neighbour_entity == "air":
+                    raise
+            except:
+                return False
 
-        new_player_chunk = (int(round_to_closest(player.position[0], self.chunk_with)),
-                            int(round_to_closest(player.position[1], self.chunk_with)),
-                            int(round_to_closest(player.position[2], self.chunk_with)))
+        return True
 
-        if self.player_chunk != new_player_chunk and not self.updating:
-            self.updating = True
-            self.player_chunk = new_player_chunk
-            self.update_thread = threading.Thread(target=self.update_chunks, args=[])
-            self.update_thread.start()
+
+    def get_chunkentities(self, position):
+        entities = {}
+        for i in range(self.chunk_with**3):
+            x = int(i // self.chunk_with // self.chunk_with - (self.chunk_with - 1) / 2)
+            y = int(i // self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
+            z = int(i % self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
+
+            max_y = int(self.noise((x + position[0]) / self.freq,
+                           (z + position[2]) / self.freq) * self.amp + self.amp / 2)
+            
+            if y + position[1] <= max_y:
+                entities[f"{x} {y} {z}"] = "grass"
+
+            else:
+                entities[f"{x} {y} {z}"] = "air"
+
+        return entities
 
 
     def update_chunks(self):
@@ -100,14 +128,14 @@ class ChunkHandler(Entity):
 
                 vertices, uvs = [], []
                 for entity_pos, entity in entities.items():
-                    entity_pos = np.array([float(i) for i in entity_pos.split()])
-                    model = self.game.entity_dict[entity]
+                    entity_pos = np.array([int(i) for i in entity_pos.split()])
+                    model = self.game.entity_data[entity]
                     if model == None:
                         continue
 
-                    uvs.extend(model["uvs"])
-                    vertices.extend(model["vertices"]+entity_pos)
-        
+                    if not self.occlusion_check(entity_pos, entities):
+                        uvs.extend(model["uvs"])
+                        vertices.extend(model["vertices"]+entity_pos)
 
                 chunk = Chunk(parent=self, position=chunk_id, model=Mesh(mode="triangle",vertices=vertices,uvs=uvs), texture="grass")
                 self.chunk_dict[chunk_id] = chunk
@@ -115,24 +143,22 @@ class ChunkHandler(Entity):
 
         self.updating = False
 
+        if self.game.profile_mode:
+            application.quit()
 
-    def get_chunkentities(self, pos):
-        entities = {}
-        for i in range(self.chunk_with**3):
-            x = i // self.chunk_with // self.chunk_with - (self.chunk_with - 1) / 2
-            y = i // self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2
-            z = i % self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2
 
-            max_y = int(self.noise((x + pos[0]) / self.freq,
-                           (z + pos[2]) / self.freq) * self.amp + self.amp / 2)
-            
-            if y + pos[1] <= max_y:
-                entities[f"{x} {y} {z}"] = "grass"
+    def update(self):
+        player = self.game.player
 
-            else:
-                entities[f"{x} {y} {z}"] = "air"
+        new_player_chunk = [int(round_to_closest(player.position[0], self.chunk_with)),
+                            int(round_to_closest(player.position[1], self.chunk_with)),
+                            int(round_to_closest(player.position[2], self.chunk_with))]
 
-        return entities
+        if not self.player_chunk == new_player_chunk and not self.updating and self.world_loaded:
+            self.updating = True
+            self.player_chunk = new_player_chunk
+            self.update_thread = threading.Thread(target=self.update_chunks, args=[])
+            self.update_thread.start()
 
 
 class Chunk(Entity):

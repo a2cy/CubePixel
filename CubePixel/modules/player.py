@@ -1,13 +1,14 @@
 from ursina import *
+
 from ursina.prefabs.first_person_controller import FirstPersonController
 
 
 class Player(FirstPersonController):
 
     def __init__(self, game, **kwargs):
-        self.game = game
-        self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=.008, rotation_z=45)
         super().__init__()
+
+        self.game = game
         self.speed = 5
         self.height = 2
         self.camera_pivot = Entity(parent=self, y=self.height)
@@ -30,8 +31,8 @@ class Player(FirstPersonController):
         self.camera_pivot.rotation_x= clamp(self.camera_pivot.rotation_x, -90, 90)
 
         self.direction = Vec3(
-            self.camera_pivot.forward * (held_keys['w'] - held_keys['s'])
-            + self.right * (held_keys['d'] - held_keys['a'])
+            self.camera_pivot.forward * (held_keys["w"] - held_keys["s"])
+            + self.right * (held_keys["d"] - held_keys["a"])
             ).normalized()
 
         self.position +=  self.direction * time.dt * self.speed
