@@ -1,10 +1,13 @@
 import json
 import os
+import numba
 import numpy as np
 
 from direct.stdpy import threading
 from opensimplex import OpenSimplex
 from ursina import *
+
+from modules.chunk_mesh import ChunkMesh
 
 
 class ChunkHandler(Entity):
@@ -23,14 +26,16 @@ class ChunkHandler(Entity):
         self.updating = False
         self.world_loaded = False
 
+        os.makedirs(f"./saves/", exist_ok=True)
+
         for key, value in kwargs.items():
             setattr(self, key, value)
 
 
     def create_world(self, world_name, seed):
-        world_path = f"saves/{world_name}/"
+        world_path = f"./saves/{world_name}/"
         
-        os.makedirs(f"{world_path}chunks/", exist_ok=False)
+        os.makedirs(f"{world_path}chunks/", exist_ok=True)
         self.world_data = {"name": world_name, "seed": seed}
 
         with open(f"{world_path}data.json", "w+") as f:
@@ -40,7 +45,7 @@ class ChunkHandler(Entity):
 
 
     def load_world(self, world_name):
-        self.world_path = f"saves/{world_name}/"
+        self.world_path = f"./saves/{world_name}/"
 
         with open(f"{self.world_path}data.json") as f:
             self.world_data = json.load(f)
@@ -60,21 +65,8 @@ class ChunkHandler(Entity):
             destroy(self.chunk_dict.pop(chunk_id))
 
 
-    def occlusion_check(self, entity_pos, entities):
-        for pos in np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], [0, 0, -1]]):
-            neighbour_pos = pos+entity_pos
-            try:
-                neighbour_entity = entities[f"{neighbour_pos[0]} {neighbour_pos[1]} {neighbour_pos[2]}"]
-                if neighbour_entity == "air":
-                    raise
-            except:
-                return False
-
-        return True
-
-
-    def get_chunkentities(self, position):
-        entities = {}
+    def generate_chunkentities(self, position):
+        entities = np.zeros((self.chunk_with, self.chunk_with, self.chunk_with), np.int16)
         for i in range(self.chunk_with**3):
             x = int(i // self.chunk_with // self.chunk_with - (self.chunk_with - 1) / 2)
             y = int(i // self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
@@ -84,10 +76,9 @@ class ChunkHandler(Entity):
                            (z + position[2]) / self.freq) * self.amp + self.amp / 2)
             
             if y + position[1] <= max_y:
-                entities[f"{x} {y} {z}"] = "grass"
-
+                entities[x][y][z] = self.game.entity_index["grass"]
             else:
-                entities[f"{x} {y} {z}"] = "air"
+                entities[x][y][z] = self.game.entity_index["air"]
 
         return entities
 
@@ -106,40 +97,57 @@ class ChunkHandler(Entity):
                                   int(z * self.chunk_with + self.player_chunk[2])))
 
         for chunk_id in list(self.chunk_dict.keys()):
-            if chunk_id not in new_chunk_ids:
+            if not chunk_id in new_chunk_ids:
                 destroy(self.chunk_dict.pop(chunk_id))
+
+            time.sleep(.002)
 
         for chunk_id in new_chunk_ids:
             if not self.updating:
                 return
 
             if not chunk_id in self.chunk_dict:
-                filename = f"{self.world_path}chunks/{chunk_id}.json"
+                filename = f"{self.world_path}chunks/{chunk_id}.npy"
 
                 if os.path.exists(filename):
-                    with open(filename) as f:
-                        entities = json.load(f)
+                    entities = np.load(filename)
 
                 else:
-                    entities = self.get_chunkentities(chunk_id)
+                    entities = self.generate_chunkentities(chunk_id)
 
-                    with open(filename, "w+") as f:
-                        json.dump(entities, f)
+                    np.save(filename, entities)
 
-                vertices, uvs = [], []
-                for entity_pos, entity in entities.items():
-                    entity_pos = np.array([int(i) for i in entity_pos.split()])
-                    model = self.game.entity_data[entity]
+                vertex_count = 0
+                for entity in self.game.entity_data:
+                    if self.game.entity_data[entity] == None:
+                        continue
+                    
+                    vertex_count += len(entities[entities==entity])*len(self.game.entity_data[entity]["vertices"])
+
+                vertices = np.zeros((vertex_count, 3), dtype=np.float32)
+                uvs = np.zeros((vertex_count, 2), dtype=np.float32)
+                normals = np.zeros((vertex_count, 3), dtype=np.float32)
+
+                slice_index = 0
+                for i in range(self.chunk_with**3):
+                    x = int(i // self.chunk_with // self.chunk_with - (self.chunk_with - 1) / 2)
+                    y = int(i // self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
+                    z = int(i % self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
+                    entity_pos = np.array([x, y, z])
+                    model = self.game.entity_data[entities[x, y, z]]
                     if model == None:
                         continue
 
-                    if not self.occlusion_check(entity_pos, entities):
-                        uvs.extend(model["uvs"])
-                        vertices.extend(model["vertices"]+entity_pos)
+                    new_slice_index = slice_index + len(model["vertices"])
 
-                chunk = Chunk(parent=self, position=chunk_id, model=Mesh(mode="triangle",vertices=vertices,uvs=uvs), texture="grass")
+                    vertices[slice_index:new_slice_index] = model["vertices"]+entity_pos
+                    uvs[slice_index:new_slice_index] = model["uvs"]
+                    normals[slice_index:new_slice_index] = model["normals"]
+
+                    slice_index = new_slice_index
+
+                chunk = Entity(parent=self, position=chunk_id, model=ChunkMesh(vertices.ravel(), uvs.ravel(), normals.ravel()), texture="grass")
                 self.chunk_dict[chunk_id] = chunk
-
 
         self.updating = False
 
@@ -154,17 +162,8 @@ class ChunkHandler(Entity):
                             int(round_to_closest(player.position[1], self.chunk_with)),
                             int(round_to_closest(player.position[2], self.chunk_with))]
 
-        if not self.player_chunk == new_player_chunk and not self.updating and self.world_loaded:
+        if self.player_chunk != new_player_chunk and not self.updating and self.world_loaded:
             self.updating = True
             self.player_chunk = new_player_chunk
             self.update_thread = threading.Thread(target=self.update_chunks, args=[])
             self.update_thread.start()
-
-
-class Chunk(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__()
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)

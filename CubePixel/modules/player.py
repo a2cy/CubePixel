@@ -35,6 +35,8 @@ class Player(FirstPersonController):
             + self.right * (held_keys["d"] - held_keys["a"])
             ).normalized()
 
+        self.direction += self.up * (held_keys["space"] - held_keys["shift"])
+
         self.position +=  self.direction * time.dt * self.speed
 
 

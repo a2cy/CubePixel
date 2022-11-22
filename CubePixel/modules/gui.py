@@ -21,32 +21,47 @@ class MainMenu(Entity):
                                   scale=Vec2(.03, .03),
                                   on_click=Func(application.quit))
 
-        self.world_name_input_field = InputField(parent=self,
-                                                 position=Vec2(0, .2))
+        self.world_name_input = InputField(parent=self,
+                                           position=Vec2(0, .3))
 
-        self.input_field_text = Text(parent=self,
+        self.world_seed_input = InputField(parent=self,
+                                           position=Vec2(0, .2),
+                                           limit_content_to='0123456789')
+        self.world_name_input.next_field = self.world_seed_input
+
+        self.world_name_text = Text(parent=self,
                                      text="World Name",
-                                     position=Vec2(0, .25),
+                                     position=Vec2(0, .34),
+                                     origin=Vec2(0, 0))
+
+        self.world_seed_text = Text(parent=self,
+                                     text="World Seed",
+                                     position=Vec2(0, .24),
                                      origin=Vec2(0, 0))
 
 
         def create_world_func():
-            world_name = self.world_name_input_field.text.lower()
-            if not world_name or os.path.exists(f"saves/{world_name}/"):
+            world_name = self.world_name_input.text.lower()
+            world_seed = self.world_seed_input.text
+            if not world_name or os.path.exists(f"./saves/{world_name}/"):
                 return
+
+            if not world_seed:
+                world_seed = round(time.time())
             
-            self.world_name_input_field.text = ""
+            self.world_name_input.text = ""
+            self.world_seed_input.text = ""
 
             self.game.ui_state_handler.state = "None"
             self.game.chunk_handler.enable()
-            self.game.chunk_handler.create_world(world_name, round(time.time()))
+            self.game.chunk_handler.create_world(world_name, int(world_seed))
             self.game.debug_screen.enable()
             self.game.player.enable()
             mouse.locked = True
 
         self.new_world = Button(parent=self,
                                 text="New World",
-                                position=Vec2(.4, .2),
+                                position=Vec2(.4, .25),
                                 scale=Vec2(.25, .075),
                                 on_click=Func(create_world_func))
 
@@ -58,25 +73,17 @@ class MainMenu(Entity):
     def on_enable(self):
         self.button_dict = {}
 
-        try:
-            dirs = os.listdir("saves/")
-        except:
-            dirs = []
-
-        for dir in dirs:
-            if not os.path.exists(f"saves/{dir}/data.json"):
-                continue
-
+        for file in os.listdir("./saves/"):
 
             def load_world_func():
                 self.game.ui_state_handler.state = "None"
                 self.game.chunk_handler.enable()
-                self.game.chunk_handler.load_world(dir)
+                self.game.chunk_handler.load_world(file)
                 self.game.debug_screen.enable()
                 self.game.player.enable()
                 mouse.locked = True
 
-            self.button_dict[dir] = Func(load_world_func)
+            self.button_dict[file] = Func(load_world_func)
 
         self.menu_buttons = ButtonList(self.button_dict, y=0, parent=self)
 

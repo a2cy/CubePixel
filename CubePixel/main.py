@@ -13,6 +13,7 @@ class CubePixel(Entity):
         super().__init__()
         self.settings = settings
         self.entity_data = entity_data
+        self.entity_index = entity_index
         self.profile_mode = profile_mode
 
         self.main_menu = MainMenu(self)
@@ -42,7 +43,7 @@ class CubePixel(Entity):
         if self.profile_mode:
             self.ui_state_handler.state = "None"
             self.chunk_handler.enable()
-            self.chunk_handler.load_world("world")
+            self.chunk_handler.create_world("profile_world", 1)
             self.debug_screen.enable()
             self.player.enable()
             mouse.locked = True

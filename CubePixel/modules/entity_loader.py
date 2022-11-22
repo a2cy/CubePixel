@@ -7,22 +7,23 @@ from ursina.mesh_importer import load_model
 
 def load_entities():
     entity_data = {}
-    dirs = os.listdir("data/entities/")
+    entity_index = {}
 
-    for dir in dirs:
-        with open(f"data/entities/{dir}", "r") as f:
-            data = json.load(f)
-            model = load_model(data["model"], use_deepcopy=True)
-            if model:
-                entity_data[data["name"]] = {
-                    "vertices": np.array(model.vertices),
-                    "uvs": np.array(model.uvs),
-                    "normals": np.array(model.normals)
-                }
+    for i, file in enumerate(os.listdir("data/entities/")):
+        with open(f"data/entities/{file}", "r") as file:
+            data = json.load(file)
+            entity_index[data["name"]] = i
+
+            if not data["model"] == "None":
+                model = load_model(data["model"])
+
+                entity_data[i] = {"vertices": np.array(model.vertices, dtype=np.float32),
+                                  "uvs": np.array(model.uvs, dtype=np.float32),
+                                  "normals": np.array(model.normals, dtype=np.float32)}
             else:
-                entity_data[data["name"]] = None
+                entity_data[i] = None
 
-    return entity_data
+    return (entity_data, entity_index)
 
 
-entity_data = load_entities()
+entity_data, entity_index = load_entities()
