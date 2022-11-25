@@ -1,6 +1,5 @@
 import json
 import os
-import numba
 import numpy as np
 
 from direct.stdpy import threading
@@ -75,8 +74,10 @@ class ChunkHandler(Entity):
             max_y = int(self.noise((x + position[0]) / self.freq,
                            (z + position[2]) / self.freq) * self.amp + self.amp / 2)
             
-            if y + position[1] <= max_y:
+            if y + position[1] == max_y:
                 entities[x][y][z] = self.game.entity_index["grass"]
+            elif y + position[1] < max_y:
+                entities[x][y][z] = self.game.entity_index["stone"]
             else:
                 entities[x][y][z] = self.game.entity_index["air"]
 
@@ -128,25 +129,27 @@ class ChunkHandler(Entity):
                 uvs = np.zeros((vertex_count, 2), dtype=np.float32)
                 normals = np.zeros((vertex_count, 3), dtype=np.float32)
 
+                entity_data = self.game.entity_data
+
                 slice_index = 0
                 for i in range(self.chunk_with**3):
                     x = int(i // self.chunk_with // self.chunk_with - (self.chunk_with - 1) / 2)
                     y = int(i // self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
                     z = int(i % self.chunk_with % self.chunk_with - (self.chunk_with - 1) / 2)
-                    entity_pos = np.array([x, y, z])
-                    model = self.game.entity_data[entities[x, y, z]]
+                    entity_position = np.array([x, y, z])
+                    model = entity_data[entities[x, y, z]]
                     if model == None:
                         continue
 
                     new_slice_index = slice_index + len(model["vertices"])
 
-                    vertices[slice_index:new_slice_index] = model["vertices"]+entity_pos
+                    vertices[slice_index:new_slice_index] = model["vertices"]+entity_position
                     uvs[slice_index:new_slice_index] = model["uvs"]
                     normals[slice_index:new_slice_index] = model["normals"]
 
                     slice_index = new_slice_index
 
-                chunk = Entity(parent=self, position=chunk_id, model=ChunkMesh(vertices.ravel(), uvs.ravel(), normals.ravel()), texture="grass")
+                chunk = Entity(parent=self, position=chunk_id, model=ChunkMesh(vertices.ravel(), uvs.ravel(), normals.ravel()), texture="texture_atlas")
                 self.chunk_dict[chunk_id] = chunk
 
         self.updating = False

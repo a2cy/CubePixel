@@ -66,8 +66,8 @@ if __name__ == "__main__":
                  title="CubePixel")
 
     application.hot_reloader.enabled = False
-    window.exit_button.enabled = False
-    window.fps_counter.enabled = False
+    window.exit_button.disable()
+    window.fps_counter.disable()
 
     game = CubePixel(profile_mode=False)
 

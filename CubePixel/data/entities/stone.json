@@ -1,0 +1,8 @@
+ 
+{   
+    "name": "stone",
+    "model": "generic_block",
+    "texture": "stone",
+    "transparent": "False",
+    "solid": "True"
+}

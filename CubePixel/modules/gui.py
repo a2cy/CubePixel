@@ -1,5 +1,4 @@
 import os
-import json
 from ursina import *
 
 
@@ -65,27 +64,28 @@ class MainMenu(Entity):
                                 scale=Vec2(.25, .075),
                                 on_click=Func(create_world_func))
 
-
         for key, value in kwargs.items():
             setattr(self, key, value)
 
 
     def on_enable(self):
-        self.button_dict = {}
+        if os.path.exists("./saves/"):
 
-        for file in os.listdir("./saves/"):
+            self.button_dict = {}
 
-            def load_world_func():
-                self.game.ui_state_handler.state = "None"
-                self.game.chunk_handler.enable()
-                self.game.chunk_handler.load_world(file)
-                self.game.debug_screen.enable()
-                self.game.player.enable()
-                mouse.locked = True
+            for file in os.listdir("./saves/"):
 
-            self.button_dict[file] = Func(load_world_func)
+                def load_world_func():
+                    self.game.ui_state_handler.state = "None"
+                    self.game.chunk_handler.enable()
+                    self.game.chunk_handler.load_world(file)
+                    self.game.debug_screen.enable()
+                    self.game.player.enable()
+                    mouse.locked = True
 
-        self.menu_buttons = ButtonList(self.button_dict, y=0, parent=self)
+                self.button_dict[file] = Func(load_world_func)
+
+            self.menu_buttons = ButtonList(self.button_dict, y=0, parent=self)
 
 
     def on_disable(self):
