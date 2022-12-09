@@ -7,9 +7,9 @@ class Player(FirstPersonController):
 
     def __init__(self, game, **kwargs):
         super().__init__()
-
         self.game = game
-        self.speed = 5
+        
+        self.speed = 4
         self.height = 2
         self.camera_pivot = Entity(parent=self, y=self.height)
 

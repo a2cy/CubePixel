@@ -1,5 +1,7 @@
 import os
+
 from ursina import *
+from ursina.prefabs.health_bar import HealthBar
 
 
 class MainMenu(Entity):
@@ -52,6 +54,7 @@ class MainMenu(Entity):
             self.world_seed_input.text = ""
 
             self.game.ui_state_handler.state = "None"
+            self.game.loading_screen.enable()
             self.game.chunk_handler.enable()
             self.game.chunk_handler.create_world(world_name, int(world_seed))
             self.game.debug_screen.enable()
@@ -77,6 +80,7 @@ class MainMenu(Entity):
 
                 def load_world_func():
                     self.game.ui_state_handler.state = "None"
+                    self.game.loading_screen.enable()
                     self.game.chunk_handler.enable()
                     self.game.chunk_handler.load_world(file)
                     self.game.debug_screen.enable()
@@ -89,7 +93,31 @@ class MainMenu(Entity):
 
 
     def on_disable(self):
-        destroy(self.menu_buttons)
+        try:
+            destroy(self.menu_buttons)
+        except Exception:
+            pass
+
+
+class LoadingScreen(Entity):
+
+    def __init__(self, game, **kwargs):
+        super().__init__(parent=camera.ui)
+        self.game = game
+
+        self.background = Entity(parent=self,
+                                 model="quad",
+                                 texture="shore",
+                                 scale=camera.aspect_ratio)
+
+        self.loading_bar = HealthBar(parent=self, value=0, position=Vec2(window.center[0]-.25, window.center[1]+.025), animation_duration=0, show_lines=False, bar_color=color.gray)
+
+    
+    def update(self):
+        self.loading_bar.value = round(self.game.chunk_handler.update_percentage)
+
+        if round(self.game.chunk_handler.update_percentage) == 100:
+            self.disable()
 
 
 class PauseMenu(Entity):
@@ -145,9 +173,14 @@ class DebugScreen(Entity):
                                      origin=Vec2(-0.5, 1.5),
                                      text="")
 
-        self.update_display = Text(parent=self,
+        self.update_percentage_display = Text(parent=self,
                                    position=window.top_left,
                                    origin=Vec2(-0.5, 2.5),
+                                   text="")
+
+        self.update_display = Text(parent=self,
+                                   position=window.top_left,
+                                   origin=Vec2(-0.5, 3.5),
                                    text="")
 
         for key, value in kwargs.items():
@@ -158,5 +191,7 @@ class DebugScreen(Entity):
         self.position_display.text = f"{self.game.player.position}"
 
         self.rotation_display.text = f"{round(self.game.player.rotation[1], 5)}, {round(self.game.player.camera_pivot.rotation[0], 5)}"
+
+        self.update_percentage_display.text = f"{round(self.game.chunk_handler.update_percentage)}%"
 
         self.update_display.text = f"{self.game.chunk_handler.updating}"

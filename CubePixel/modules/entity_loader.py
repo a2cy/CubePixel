@@ -2,65 +2,49 @@ import os
 import json
 import numpy as np
 
-from PIL import Image
+from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState
 from ursina import load_model
 
 
 def load_entities():
-    entity_data = {}
+    entity_data = []
     entity_index = {}
 
+    files = os.listdir("./data/entities/")
+    files.sort()
+
     entities = []
-    for file_name in os.listdir("./data/entities/"):
+    for file_name in files:
         with open(f"./data/entities/{file_name}", "r") as file:
             data = json.load(file)
             entities.append(data)
 
-    loaded_textures = {}
-    atlas_size = [0, 0]
-    for entity in entities:
-        if not entity["texture"] == "None":
-            texture_name = entity["texture"]
-            texture = Image.open(f"./assets/textures/{texture_name}.png")
-            texture = texture.convert("RGBA")
-            texture = np.asarray(texture)
-            loaded_textures[entity["texture"]] = texture
+    texture_array = PandaTexture()
+    texture_array.setup2dTextureArray(len([0 for entity in entities if not entity["texture"] == "None"]))
+    texture_array.setMagfilter(SamplerState.FT_nearest)
 
-            atlas_size[0] = texture.shape[1] if texture.shape[1] > atlas_size[0] else atlas_size[0]
-            atlas_size[1] += texture.shape[0]
-
-    texture_atlas = np.zeros((atlas_size[0], atlas_size[1], 4), dtype=np.uint8)
-
-    texture_data = {}
-    slice_index = 0
-    for i, texture in loaded_textures.items():
-        new_slice_index = slice_index + texture.shape[0]
-
-        texture_atlas[:,slice_index:new_slice_index] = texture
-
-        texture_data[i] = {"size" : np.array([atlas_size[1]/texture.shape[1], atlas_size[0]/texture.shape[0]]), "position" : np.array([slice_index/atlas_size[1]+atlas_size[1]/texture.shape[1], 0])}
-    
-        slice_index = new_slice_index
-
-    texture = Image.fromarray(texture_atlas)
-    texture.save("texture_atlas.png")
-
+    texture_index = 0
     for i, entity in enumerate(entities):
         entity_index[entity["name"]] = i
-        if not entity["model"] == "None":
-            model = load_model(entity["model"], use_deepcopy=True)
 
-            uvs = np.array(model.uvs)
-            uvs /= texture_data[entity["texture"]]["size"]
-            uvs += texture_data[entity["texture"]]["position"]
+        texture_name = entity["texture"]
+        model_name = entity["model"]
+        if not texture_name == "None":
+            texture = PNMImage()   
+            texture.read(f"./assets/textures/{texture_name}.png")
+            texture_array.load(texture, z=texture_index, n=0)
+            texture_index += 1
 
-            entity_data[i] = {"vertices": np.array(model.vertices, dtype=np.float32),
-                              "uvs": np.array(uvs, dtype=np.float32),
-                              "normals": np.array(model.normals, dtype=np.float32)}
+        if not model_name == "None":
+            model = load_model(name=model_name, use_deepcopy=True)
+
+            uvs = [[uv[0], uv[1], texture_index-1] for uv in model.uvs]
+
+            entity_data.insert(i, [np.array(model.vertices, dtype=np.float32), np.array(uvs, dtype=np.float32), np.array(model.normals, dtype=np.float32)])
         else:
-            entity_data[i] = None
+            entity_data.insert(i, None)
 
-    return (entity_data, entity_index)
+    return (entity_data, entity_index, texture_array)
 
 
-entity_data, entity_index = load_entities()
+entity_data, entity_index, texture_array = load_entities()

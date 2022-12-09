@@ -1,4 +1,5 @@
 https://github.com/pokepetter/ursina/archive/master.zip
 opensimplex
+cython
 numpy
 numba

@@ -2,7 +2,7 @@ from ursina import *
 
 from modules.gui import *
 from modules.player import *
-from modules.world import *
+from modules.chunk_handler import *
 from modules.settings import *
 from modules.entity_loader import *
 
@@ -12,8 +12,10 @@ class CubePixel(Entity):
     def __init__(self, profile_mode, **kwargs):
         super().__init__()
         self.settings = settings
+        self.parameters = parameters
         self.entity_data = entity_data
         self.entity_index = entity_index
+        self.texture_array = texture_array
         self.profile_mode = profile_mode
 
         self.main_menu = MainMenu(self)
@@ -22,10 +24,13 @@ class CubePixel(Entity):
         self.pause_menu = PauseMenu(self)
         self.pause_menu.disable()
 
+        self.loading_screen = LoadingScreen(self)
+        self.loading_screen.disable()
+
         self.debug_screen = DebugScreen(self)
         self.debug_screen.disable()
 
-        self.player = Player(self)
+        self.player = Player(self, position=Vec3(0, 10, 0))
         self.player.disable()
 
         self.chunk_handler = ChunkHandler(self)
@@ -60,9 +65,9 @@ class CubePixel(Entity):
 
 
 if __name__ == "__main__":
-    app = Ursina(vsync=settings["settings"]["vsync"],
-                 borderless=settings["settings"]["borderless"],
-                 fullscreen=settings["settings"]["fullscreen"],
+    app = Ursina(vsync=settings["vsync"],
+                 borderless=settings["borderless"],
+                 fullscreen=settings["fullscreen"],
                  title="CubePixel")
 
     application.hot_reloader.enabled = False

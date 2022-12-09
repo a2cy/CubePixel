@@ -8,7 +8,7 @@ class ChunkMesh(NodePath):
     v_array.addColumn("vertex", 3, Geom.NTFloat32, Geom.CPoint)
 
     t_array = GeomVertexArrayFormat()
-    t_array.addColumn("texcoord", 2, Geom.NTFloat32, Geom.CTexcoord)
+    t_array.addColumn("texcoord", 3, Geom.NTFloat32, Geom.CTexcoord)
 
     n_array = GeomVertexArrayFormat()
     n_array.addColumn("normal", 3, Geom.NTFloat32, Geom.CPoint)
@@ -59,8 +59,9 @@ class ChunkMesh(NodePath):
         p_array.set_num_rows(len(self.vertices)//3)
 
         memview = memoryview(p_array).cast("B").cast("I")
-        memview[:] = np.arange(len(self.vertices)//3, dtype=np.uint32)
-
+        indices = np.asarray(memview) #convert to array because memview[:] = indices doesnt work on windows idk why
+        indices[:] = np.arange(len(self.vertices)//3, dtype=np.uint32)
+        
         geom = Geom(v_data)
         geom.addPrimitive(prim)
         self.geomNode.addGeom(geom)
