@@ -1,17 +1,17 @@
 import json
 import os
-import numpy as np
+import ursina
+import opensimplex
+import direct.stdpy
 
-from direct.stdpy import threading
-from opensimplex import OpenSimplex
-from ursina import *
+import numpy as np
 
 from modules.chunk_mesh import ChunkMesh
 from modules.texture_shader import texture_shader
 from cython_functions import generate_chunkentities, combine_mesh
 
 
-class ChunkHandler(Entity):
+class ChunkHandler(ursina.Entity):
 
     def __init__(self, game, **kwargs):
         super().__init__()
@@ -56,7 +56,7 @@ class ChunkHandler(Entity):
 
         self.game.player.position = [float(i) for i in player_position]
 
-        self.noise = OpenSimplex(self.world_data["seed"]).noise2
+        self.noise = opensimplex.OpenSimplex(self.world_data["seed"]).noise2
 
         self.world_loaded = True
 
@@ -76,7 +76,7 @@ class ChunkHandler(Entity):
             json.dump(self.world_data, file, indent=4)
 
         for chunk_id in self.chunk_dict.copy():
-            destroy(self.chunk_dict.pop(chunk_id))
+            ursina.destroy(self.chunk_dict.pop(chunk_id))
 
 
     def update_chunks(self):
@@ -95,9 +95,9 @@ class ChunkHandler(Entity):
 
         for chunk_id in list(self.chunk_dict.keys()):
             if not chunk_id in new_chunk_ids:
-                destroy(self.chunk_dict.pop(chunk_id))
+                ursina.destroy(self.chunk_dict.pop(chunk_id))
 
-                time.sleep(.001)
+                ursina.time.sleep(.002)
 
         for i, chunk_id in enumerate(new_chunk_ids):
             if not self.updating:
@@ -114,11 +114,11 @@ class ChunkHandler(Entity):
 
                     np.save(filename, entities)
 
-                vertices, uvs, normals = combine_mesh(self.game.entity_data, self.chunk_with, entities)
+                vertices, uvs, normals = combine_mesh(self.game.entity_data, entities)
 
-                chunk = Entity(parent=self, position=chunk_id, model=ChunkMesh(vertices.ravel(), uvs.ravel(), normals.ravel()), shader=texture_shader)
+                chunk = ursina.Entity(parent=self, position=chunk_id, model=ChunkMesh(vertices.ravel(), uvs.ravel(), normals.ravel()), shader=texture_shader)
                 chunk.set_shader_input("texture_array", self.game.texture_array)
-                
+
                 self.chunk_dict[chunk_id] = chunk
 
             self.update_percentage += 100/len(new_chunk_ids)
@@ -126,18 +126,18 @@ class ChunkHandler(Entity):
         self.updating = False
 
         if self.game.profile_mode:
-            application.quit()
+            ursina.application.quit()
 
 
     def update(self):
         player = self.game.player
 
-        new_player_chunk = [int(round_to_closest(player.position[0], self.chunk_with)),
-                            int(round_to_closest(player.position[1], self.chunk_with)),
-                            int(round_to_closest(player.position[2], self.chunk_with))]
+        new_player_chunk = [int(ursina.round_to_closest(player.position[0], self.chunk_with)),
+                            int(ursina.round_to_closest(player.position[1], self.chunk_with)),
+                            int(ursina.round_to_closest(player.position[2], self.chunk_with))]
 
         if self.player_chunk != new_player_chunk and not self.updating and self.world_loaded:
             self.updating = True
             self.player_chunk = new_player_chunk
-            self.update_thread = threading.Thread(target=self.update_chunks, args=[])
+            self.update_thread = direct.stdpy.threading.Thread(target=self.update_chunks, args=[])
             self.update_thread.start()

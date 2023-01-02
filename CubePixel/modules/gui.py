@@ -1,44 +1,44 @@
 import os
+import ursina
 
-from ursina import *
 from ursina.prefabs.health_bar import HealthBar
 
 
-class MainMenu(Entity):
+class MainMenu(ursina.Entity):
 
     def __init__(self, game, **kwargs):
         self.game = game
-        super().__init__(parent=camera.ui)
+        super().__init__(parent=ursina.camera.ui)
 
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 texture="shore",
-                                 scale=camera.aspect_ratio)
+        self.background = ursina.Entity(parent=self,
+                                        model="quad",
+                                        texture="shore",
+                                        scale=ursina.camera.aspect_ratio)
 
-        self.exit_button = Button(parent=self,
-                                  text="X",
-                                  position=window.top_right,
-                                  origin=Vec2(.8, .8),
-                                  scale=Vec2(.03, .03),
-                                  on_click=Func(application.quit))
+        self.exit_button = ursina.Button(parent=self,
+                                         text="X",
+                                         position=ursina.window.top_right,
+                                         origin=ursina.Vec2(.8, .8),
+                                         scale=ursina.Vec2(.03, .03),
+                                         on_click=ursina.Func(ursina.application.quit))
 
-        self.world_name_input = InputField(parent=self,
-                                           position=Vec2(0, .3))
+        self.world_name_input = ursina.InputField(parent=self,
+                                                  position=ursina.Vec2(0, .3))
 
-        self.world_seed_input = InputField(parent=self,
-                                           position=Vec2(0, .2),
-                                           limit_content_to='0123456789')
+        self.world_seed_input = ursina.InputField(parent=self,
+                                                  position=ursina.Vec2(0, .2),
+                                                  limit_content_to='0123456789')
         self.world_name_input.next_field = self.world_seed_input
 
-        self.world_name_text = Text(parent=self,
-                                     text="World Name",
-                                     position=Vec2(0, .34),
-                                     origin=Vec2(0, 0))
+        self.world_name_text = ursina.Text(parent=self,
+                                           text="World Name",
+                                           position=ursina.Vec2(0, .34),
+                                           origin=ursina.Vec2(0, 0))
 
-        self.world_seed_text = Text(parent=self,
-                                     text="World Seed",
-                                     position=Vec2(0, .24),
-                                     origin=Vec2(0, 0))
+        self.world_seed_text = ursina.Text(parent=self,
+                                           text="World Seed",
+                                           position=ursina.Vec2(0, .24),
+                                           origin=ursina.Vec2(0, 0))
 
 
         def create_world_func():
@@ -48,24 +48,23 @@ class MainMenu(Entity):
                 return
 
             if not world_seed:
-                world_seed = round(time.time())
+                world_seed = round(ursina.time.time())
             
             self.world_name_input.text = ""
             self.world_seed_input.text = ""
 
-            self.game.ui_state_handler.state = "None"
-            self.game.loading_screen.enable()
+            self.game.ui_state_handler.state = "loading_screen"
             self.game.chunk_handler.enable()
             self.game.chunk_handler.create_world(world_name, int(world_seed))
             self.game.debug_screen.enable()
             self.game.player.enable()
-            mouse.locked = True
+            ursina.mouse.locked = True
 
-        self.new_world = Button(parent=self,
-                                text="New World",
-                                position=Vec2(.4, .25),
-                                scale=Vec2(.25, .075),
-                                on_click=Func(create_world_func))
+        self.new_world = ursina.Button(parent=self,
+                                       text="New World",
+                                       position=ursina.Vec2(.4, .25),
+                                       scale=ursina.Vec2(.25, .075),
+                                       on_click=ursina.Func(create_world_func))
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -79,64 +78,71 @@ class MainMenu(Entity):
             for file in os.listdir("./saves/"):
 
                 def load_world_func():
-                    self.game.ui_state_handler.state = "None"
-                    self.game.loading_screen.enable()
+                    self.game.ui_state_handler.state = "loading_screen"
                     self.game.chunk_handler.enable()
                     self.game.chunk_handler.load_world(file)
                     self.game.debug_screen.enable()
                     self.game.player.enable()
-                    mouse.locked = True
+                    ursina.mouse.locked = True
 
-                self.button_dict[file] = Func(load_world_func)
+                self.button_dict[file] = ursina.Func(load_world_func)
 
-            self.menu_buttons = ButtonList(self.button_dict, y=0, parent=self)
+            self.menu_buttons = ursina.ButtonList(self.button_dict, y=0, parent=self)
 
 
     def on_disable(self):
         try:
-            destroy(self.menu_buttons)
-        except Exception:
-            pass
+            ursina.destroy(self.menu_buttons)
+        except Exception as exception:
+            print(exception)
 
 
-class LoadingScreen(Entity):
+class LoadingScreen(ursina.Entity):
 
     def __init__(self, game, **kwargs):
-        super().__init__(parent=camera.ui)
+        super().__init__(parent=ursina.camera.ui)
         self.game = game
 
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 texture="shore",
-                                 scale=camera.aspect_ratio)
+        self.background = ursina.Entity(parent=self,
+                                        model="quad",
+                                        texture="shore",
+                                        scale=ursina.camera.aspect_ratio)
 
-        self.loading_bar = HealthBar(parent=self, value=0, position=Vec2(window.center[0]-.25, window.center[1]+.025), animation_duration=0, show_lines=False, bar_color=color.gray)
+        self.loading_bar = HealthBar(parent=self,
+                                     value=0,
+                                     position=ursina.Vec2(ursina.window.center[0]-.25, ursina.window.center[1]+.025),
+                                     animation_duration=0,
+                                     show_lines=False,
+                                     bar_color=ursina.color.gray)
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     
     def update(self):
         self.loading_bar.value = round(self.game.chunk_handler.update_percentage)
 
         if round(self.game.chunk_handler.update_percentage) == 100:
-            self.disable()
+            self.game.ui_state_handler.state = "None"
 
 
-class PauseMenu(Entity):
+class PauseMenu(ursina.Entity):
 
     def __init__(self, game, **kwargs):
-        super().__init__(parent=camera.ui)
+        super().__init__(parent=ursina.camera.ui)
         self.game = game
 
 
         def continue_func():
             self.game.ui_state_handler.state = "None"
             self.game.player.enable()
-            mouse.locked = True
+            ursina.mouse.locked = True
 
-        self.continue_button = Button(parent=self,
-                                      text="Continue Playing",
-                                      position=Vec2(0, .05),
-                                      scale=Vec2(.25, .075),
-                                      on_click=Func(continue_func))
+        self.continue_button = ursina.Button(parent=self,
+                                             text="Continue Playing",
+                                             position=ursina.Vec2(0, .05),
+                                             scale=ursina.Vec2(.25, .075),
+                                             on_click=ursina.Func(continue_func))
 
 
         def unload_world_func():
@@ -145,43 +151,43 @@ class PauseMenu(Entity):
             self.game.chunk_handler.disable()
             self.game.debug_screen.disable()
             self.game.player.disable()
-            mouse.locked = False
+            ursina.mouse.locked = False
 
-        self.leave_button = Button(parent=self,
-                                   text="Leave World",
-                                   position=Vec2(0, -.05),
-                                   scale=Vec2(.25, .075),
-                                   on_click=Func(unload_world_func))
+        self.leave_button = ursina.Button(parent=self,
+                                          text="Leave World",
+                                          position=ursina.Vec2(0, -.05),
+                                          scale=ursina.Vec2(.25, .075),
+                                          on_click=ursina.Func(unload_world_func))
 
         for key, value in kwargs.items():
             setattr(self, key, value)
 
 
-class DebugScreen(Entity):
+class DebugScreen(ursina.Entity):
 
     def __init__(self, game, **kwargs):
-        super().__init__(parent=camera.ui)
+        super().__init__(parent=ursina.camera.ui)
         self.game = game
 
-        self.position_display = Text(parent=self,
-                                     position=window.top_left,
-                                     origin=Vec2(-0.5, 0.5),
-                                     text="")
+        self.position_display = ursina.Text(parent=self,
+                                            position=ursina.window.top_left,
+                                            origin=ursina.Vec2(-0.5, 0.5),
+                                            text="")
 
-        self.rotation_display = Text(parent=self,
-                                     position=window.top_left,
-                                     origin=Vec2(-0.5, 1.5),
-                                     text="")
+        self.rotation_display = ursina.Text(parent=self,
+                                            position=ursina.window.top_left,
+                                            origin=ursina.Vec2(-0.5, 1.5),
+                                            text="")
 
-        self.update_percentage_display = Text(parent=self,
-                                   position=window.top_left,
-                                   origin=Vec2(-0.5, 2.5),
-                                   text="")
+        self.update_percentage_display = ursina.Text(parent=self,
+                                                     position=ursina.window.top_left,
+                                                     origin=ursina.Vec2(-0.5, 2.5),
+                                                     text="")
 
-        self.update_display = Text(parent=self,
-                                   position=window.top_left,
-                                   origin=Vec2(-0.5, 3.5),
-                                   text="")
+        self.update_display = ursina.Text(parent=self,
+                                          position=ursina.window.top_left,
+                                          origin=ursina.Vec2(-0.5, 3.5),
+                                          text="")
 
         for key, value in kwargs.items():
             setattr(self, key, value)

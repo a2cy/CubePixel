@@ -40,7 +40,7 @@ def load_entities():
 
             uvs = [[uv[0], uv[1], texture_index-1] for uv in model.uvs]
 
-            entity_data.insert(i, [np.array(model.vertices, dtype=np.float32), np.array(uvs, dtype=np.float32), np.array(model.normals, dtype=np.float32)])
+            entity_data.insert(i, np.array([model.vertices, uvs, model.normals], dtype=np.float32))
         else:
             entity_data.insert(i, None)
 

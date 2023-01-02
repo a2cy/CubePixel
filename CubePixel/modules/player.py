@@ -1,50 +1,42 @@
-from ursina import *
-
-from ursina.prefabs.first_person_controller import FirstPersonController
+import ursina
 
 
-class Player(FirstPersonController):
+class Player(ursina.Entity):
 
     def __init__(self, game, **kwargs):
         super().__init__()
         self.game = game
         
-        self.speed = 4
-        self.height = 2
-        self.camera_pivot = Entity(parent=self, y=self.height)
+        self.speed = 8
+        self.acceleration = 6
 
-        camera.parent = self.camera_pivot
-        camera.position = (0,0,0)
-        camera.rotation = (0,0,0)
-        camera.fov = 90
-        mouse.locked = True
-        self.mouse_sensitivity = Vec2(40, 40)
+        self.camera_pivot = ursina.Entity(parent=self)
+        ursina.camera.parent = self.camera_pivot
+        ursina.camera.position = ursina.Vec3(0,0,0)
+        ursina.camera.rotation = ursina.Vec3(0,0,0)
+        ursina.camera.fov = 90
+        self.mouse_sensitivity = 80
+
+        self.direction = ursina.Vec3(0,0,0)
+        self.velocity = ursina.Vec3(0,0,0)
 
         for key, value in kwargs.items():
             setattr(self, key ,value)
 
 
     def update(self):
-        self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity[1]
+        self.rotation_y += ursina.mouse.velocity[0] * self.mouse_sensitivity
 
-        self.camera_pivot.rotation_x -= mouse.velocity[1] * self.mouse_sensitivity[0]
-        self.camera_pivot.rotation_x= clamp(self.camera_pivot.rotation_x, -90, 90)
+        self.camera_pivot.rotation_x -= ursina.mouse.velocity[1] * self.mouse_sensitivity
+        self.camera_pivot.rotation_x = ursina.clamp(self.camera_pivot.rotation_x, -90, 90)
 
-        self.direction = Vec3(
-            self.camera_pivot.forward * (held_keys["w"] - held_keys["s"])
-            + self.right * (held_keys["d"] - held_keys["a"])
+        self.direction = ursina.Vec3(
+            self.camera_pivot.forward * (ursina.held_keys["w"] - ursina.held_keys["s"])
+            + self.right * (ursina.held_keys["d"] - ursina.held_keys["a"])
             ).normalized()
 
-        self.direction += self.up * (held_keys["space"] - held_keys["shift"])
+        self.direction += self.up * (ursina.held_keys["space"] - ursina.held_keys["shift"])
 
-        self.position +=  self.direction * time.dt * self.speed
+        self.velocity = ursina.lerp(self.velocity, self.direction * self.speed, self.acceleration * ursina.time.dt)
 
-
-    def on_enable(self):
-        mouse.locked = True
-        self.cursor.enabled = True
-
-
-    def on_disable(self):
-        mouse.locked = False
-        self.cursor.enabled = False
+        self.position += self.velocity / 100
