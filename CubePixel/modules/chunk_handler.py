@@ -7,7 +7,7 @@ import direct.stdpy
 import numpy as np
 
 from modules.chunk_mesh import ChunkMesh
-from modules.texture_shader import texture_shader
+from data.shaders.texture_shader import texture_shader
 from cython_functions import generate_chunkentities, combine_mesh
 
 
@@ -17,12 +17,15 @@ class ChunkHandler(ursina.Entity):
         super().__init__()
         self.game = game
 
+        self.static_mesh = ursina.Entity(model=ChunkMesh(), shader=texture_shader)
+        self.static_mesh.set_shader_input("texture_array", self.game.texture_array)
+
         self.amp = self.game.parameters["amp"]
         self.freq = self.game.parameters["freq"]
         self.chunk_with = self.game.parameters["chunk_with"]
         self.render_distance = self.game.settings["render_distance"]
 
-        self.chunk_dict = {}
+        self.chunk_list = []
         self.player_chunk = []
         self.update_percentage = 0
         self.updating = False
@@ -75,8 +78,10 @@ class ChunkHandler(ursina.Entity):
 
             json.dump(self.world_data, file, indent=4)
 
-        for chunk_id in self.chunk_dict.copy():
-            ursina.destroy(self.chunk_dict.pop(chunk_id))
+        for chunk_id in self.chunk_list.copy():
+            index = self.chunk_list.index(chunk_id)
+            self.static_mesh.model.remove_chunk(index)
+            self.chunk_list.remove(chunk_id)
 
 
     def update_chunks(self):
@@ -93,33 +98,32 @@ class ChunkHandler(ursina.Entity):
                                   int(y * self.chunk_with + self.player_chunk[1]),
                                   int(z * self.chunk_with + self.player_chunk[2])))
 
-        for chunk_id in list(self.chunk_dict.keys()):
+        for chunk_id in self.chunk_list.copy():
             if not chunk_id in new_chunk_ids:
-                ursina.destroy(self.chunk_dict.pop(chunk_id))
-
-                ursina.time.sleep(.002)
+                index = self.chunk_list.index(chunk_id)
+                self.static_mesh.model.remove_chunk(index)
+                self.chunk_list.remove(chunk_id)
 
         for i, chunk_id in enumerate(new_chunk_ids):
             if not self.updating:
                 return
 
-            if not chunk_id in self.chunk_dict:
+            if not chunk_id in self.chunk_list:
                 filename = f"{self.world_path}chunks/{chunk_id}.npy"
 
                 if os.path.exists(filename):
                     entities = np.load(filename)
 
                 else:
-                    entities = generate_chunkentities(self.chunk_with, self.noise, self.amp, self.freq, chunk_id, self.game.entity_index)
+                    entities = generate_chunkentities(self.chunk_with, self.noise, self.amp, self.freq, np.asarray(chunk_id, dtype=np.float32))
 
                     np.save(filename, entities)
 
-                vertices, uvs, normals = combine_mesh(self.game.entity_data, entities)
+                vertices, uvs, normals = combine_mesh(self.game.entity_data, entities, np.asarray(chunk_id, dtype=np.int32))
 
-                chunk = ursina.Entity(parent=self, position=chunk_id, model=ChunkMesh(vertices.ravel(), uvs.ravel(), normals.ravel()), shader=texture_shader)
-                chunk.set_shader_input("texture_array", self.game.texture_array)
+                self.static_mesh.model.add_chunk(vertices.ravel(), uvs.ravel(), normals.ravel())
 
-                self.chunk_dict[chunk_id] = chunk
+                self.chunk_list.append(chunk_id)
 
             self.update_percentage += 100/len(new_chunk_ids)
 

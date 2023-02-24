@@ -65,15 +65,24 @@ class CubePixel(ursina.Entity):
             ursina.mouse.locked = False
 
 
-app = ursina.Ursina(vsync=settings["vsync"],
-                    borderless=settings["borderless"],
-                    fullscreen=settings["fullscreen"],
-                    title="CubePixel")
+def main():
+    # from panda3d.core import loadPrcFileData
+    # loadPrcFileData("", "want-pstats 1")
+    # loadPrcFileData("", "pstats-python-profiler 1")
+    
+    app = ursina.Ursina(vsync=settings["vsync"],
+                        borderless=settings["borderless"],
+                        fullscreen=settings["fullscreen"],
+                        title="CubePixel")
 
-ursina.application.hot_reloader.enabled = False
-ursina.window.exit_button.disable()
-ursina.window.fps_counter.disable()
+    ursina.application.hot_reloader.enabled = False
+    ursina.window.exit_button.disable()
+    ursina.window.fps_counter.disable()
+    
+    game = CubePixel(profile_mode=False)
 
-game = CubePixel(profile_mode=False)
+    app.run()
 
-app.run()
+
+if __name__ == "__main__":
+    main()

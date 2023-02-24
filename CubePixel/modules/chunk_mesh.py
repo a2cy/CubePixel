@@ -2,6 +2,7 @@ import numpy as np
 
 from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, GeomEnums
 
+
 class ChunkMesh(NodePath):
 
     v_array = GeomVertexArrayFormat()
@@ -19,49 +20,49 @@ class ChunkMesh(NodePath):
     vertex_format.addArray(n_array)
     vertex_format = GeomVertexFormat.registerFormat(vertex_format)
 
-    def __init__(self, vertices=None, uvs=None, normals=None):
-        super().__init__('chunk_mesh')
-        self.name = 'chunk_mesh'
-        self.vertices = vertices
-        self.uvs = uvs
-        self.normals = normals
+    def __init__(self, **kwargs):
+        super().__init__("chunk_mesh")
+        self.name = "chunk_mesh"
 
-        if self.vertices is not None:
-            self.generate()
+        self.geom_node = GeomNode("chunk_mesh")
+        self.attachNewNode(self.geom_node)
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
-    def generate(self):
-        if hasattr(self, 'geomNode'):
-            self.geomNode.removeAllGeoms()
+    def add_chunk(self, vertices=None, uvs=None, normals=None):
+        if vertices is None:
+            return
 
-        if not hasattr(self, 'geomNode'):
-            self.geomNode = GeomNode('mesh')
-            self.attachNewNode(self.geomNode)
-
-        v_data = GeomVertexData('name', self.vertex_format, Geom.UH_static)
-        v_data.set_num_rows(len(self.vertices)//3)
+        v_data = GeomVertexData("chunk", self.vertex_format, Geom.UH_static)
+        v_data.unclean_set_num_rows(len(vertices)//3)
 
         memview = memoryview(v_data.modify_array(0)).cast("B").cast("f")
-        memview[:] = self.vertices
+        memview[:] = vertices
 
-        if self.uvs is not None:
+        if uvs is not None:
             memview = memoryview(v_data.modify_array(1)).cast("B").cast("f")
-            memview[:] = self.uvs
+            memview[:] = uvs
 
-        if self.normals is not None:
+        if normals is not None:
             memview = memoryview(v_data.modify_array(2)).cast("B").cast("f")
-            memview[:] = self.normals
+            memview[:] = normals
 
         prim = GeomTriangles(Geom.UH_static)
         prim.set_index_type(GeomEnums.NT_uint32)
 
         p_array = prim.modify_vertices()
-        p_array.set_num_rows(len(self.vertices)//3)
+        p_array.unclean_set_num_rows(len(vertices)//3)
 
         memview = memoryview(p_array).cast("B").cast("I")
         indices = np.asarray(memview) #convert to array because memview[:] = indices doesnt work on windows idk why
-        indices[:] = np.arange(len(self.vertices)//3, dtype=np.uint32)
+        indices[:] = np.arange(len(vertices)//3, dtype=np.uint32)
         
         geom = Geom(v_data)
         geom.addPrimitive(prim)
-        self.geomNode.addGeom(geom)
+        self.geom_node.addGeom(geom)
+
+
+    def remove_chunk(self, index):
+        self.geom_node.removeGeom(index)

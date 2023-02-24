@@ -13,7 +13,8 @@ class MainMenu(ursina.Entity):
         self.background = ursina.Entity(parent=self,
                                         model="quad",
                                         texture="shore",
-                                        scale=ursina.camera.aspect_ratio)
+                                        scale=ursina.camera.aspect_ratio,
+                                        z=2)
 
         self.exit_button = ursina.Button(parent=self,
                                          text="X",
@@ -93,8 +94,8 @@ class MainMenu(ursina.Entity):
     def on_disable(self):
         try:
             ursina.destroy(self.menu_buttons)
-        except Exception as exception:
-            print(exception)
+        except Exception:
+            pass
 
 
 class LoadingScreen(ursina.Entity):

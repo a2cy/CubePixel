@@ -5,57 +5,74 @@ import numpy as np
 cimport numpy as cnp
 
 
-def generate_chunkentities(int chunk_with, noise, int amp, int freq, tuple position, dict entity_index):
+cdef class GameEntity:
+    cdef public float [:, :] vertices
+    cdef public float [:, :] uvs
+    cdef public float [:, :] normals
+    cdef public char transparent
+    cdef public char solid
+
+
+cpdef generate_chunkentities(int chunk_with, noise, int amp, int freq, float [:] position):
     cdef int i, x, y, z, max_y
-    cdef cnp.ndarray[float, ndim=2] entities
 
-    entities = np.zeros((chunk_with**3, 4), dtype=np.float32)
+    cdef cnp.ndarray[int, ndim=3] entities = np.zeros((chunk_with, chunk_with, chunk_with), dtype=np.int32)
 
-    for i in range(entities.shape[0]):
-        x = i // chunk_with // chunk_with - (chunk_with - 1) / 2
-        y = i // chunk_with % chunk_with - (chunk_with - 1) / 2
-        z = i % chunk_with % chunk_with - (chunk_with - 1) / 2
+    cdef int [:, :, :] entities_view = entities
 
-        max_y = noise((x + position[0]) / freq,
-                    (z + position[2]) / freq) * amp + amp / 2
+    for i in range(chunk_with**3):
+        x = i // chunk_with // chunk_with
+        y = i // chunk_with % chunk_with
+        z = i % chunk_with % chunk_with
 
-        if y + position[1] == max_y:
-            entities[i] = np.array([x, y, z, entity_index["grass"]], dtype=np.int32)
-        elif y + position[1] < max_y:
-            entities[i] = np.array([x, y, z, entity_index["stone"]], dtype=np.int32)
+        max_y = noise(((x - (chunk_with - 1) / 2) + position[0]) / freq,
+                    ((z - (chunk_with - 1) / 2) + position[2]) / freq) * amp + amp / 2
+
+        if (y - (chunk_with - 1) / 2) + position[1] == max_y:
+            entities_view[x, y, z] = 1
+
+        elif (y - (chunk_with - 1) / 2) + position[1] < max_y:
+            entities_view[x, y, z] = 2
+
         else:
-            entities[i] = np.array([x, y, z, entity_index["air"]], dtype=np.int32)
+            entities_view[x, y, z] = 0
 
     return entities
 
 
-cdef float [:, :] transpose_vertices(float [:, :] vertices, float [:] position) nogil:
+cdef void transpose_vertices(float [:, :] vertices, int [:] position, float [:, :] result) nogil:
+    cdef int i
+
     for i in range(vertices.shape[0]):
-        vertices[i][0] += position[0]
-        vertices[i][1] += position[1]
-        vertices[i][2] += position[2]
-
-    return vertices
+        result[i, 0] = vertices[i, 0] + position[0]
+        result[i, 1] = vertices[i, 1] + position[1]
+        result[i, 2] = vertices[i, 2] + position[2]
 
 
-def combine_mesh(list entity_data, float[:, :] entities):
-    cdef int i, count, new_slice_index
-    cdef int vertex_count = 0
-    cdef int slice_index = 0
+cpdef combine_mesh(GameEntity [:] entity_data, int [:, :, :] entities, int [:] position):
+    cdef int i, j, x, y, z, count, new_slice_index, vertex_count = 0, slice_index = 0
 
-    cdef float [:] entity, entity_position
-    cdef float [:, :, :] model
+    cdef int chunk_with = entities.shape[0]
 
-    for i in range(len(entity_data)):
-        if entity_data[i] is None:
+    cdef int _entity_position[3]
+    cdef int [:] entity_position = _entity_position
+    cdef GameEntity entity
+
+    for i in range(entity_data.shape[0]):
+        if entity_data[i].vertices.shape[0] == 0:
             continue
 
         count = 0
-        for j in range(entities.shape[0]):
-            if entities[j][3] == i:
-                count += entity_data[i][0].shape[0]
+        for j in range(chunk_with**3):
+            x = j // chunk_with // chunk_with
+            y = j // chunk_with % chunk_with
+            z = j % chunk_with % chunk_with
+
+            if entities[x, y, z] == i:
+                count += entity_data[i].vertices.shape[0]
 
         vertex_count += count
+
 
     cdef cnp.ndarray[float, ndim=2] vertices = np.zeros((vertex_count, 3), dtype=np.float32)
     cdef cnp.ndarray[float, ndim=2] uvs = np.zeros((vertex_count, 3), dtype=np.float32)
@@ -65,18 +82,25 @@ def combine_mesh(list entity_data, float[:, :] entities):
     cdef float [:, :] uvs_view = uvs
     cdef float [:, :] normals_view = normals
 
-    for i in range(entities.shape[0]):
-        entity = entities[i]
-        entity_position = entity[0 : 3]
-        model = entity_data[<int>entity[3]]
-        if model is None:
+    for i in range(chunk_with**3):
+        x = i // chunk_with // chunk_with
+        y = i // chunk_with % chunk_with
+        z = i % chunk_with % chunk_with
+
+        entity_position[0] = x - (chunk_with - 1) / 2 + position[0]
+        entity_position[1] = y - (chunk_with - 1) / 2 + position[1]
+        entity_position[2] = z - (chunk_with - 1) / 2 + position[2]
+
+        entity = entity_data[entities[x, y, z]]
+
+        if entity.vertices.shape[0] == 0:
             continue
 
-        new_slice_index = slice_index + model[0].shape[0]
+        new_slice_index = slice_index + entity.vertices.shape[0]
 
-        vertices_view[slice_index:new_slice_index] = transpose_vertices(model[0].copy(), entity_position)
-        uvs_view[slice_index:new_slice_index] = model[1]
-        normals_view[slice_index:new_slice_index] = model[2]
+        transpose_vertices(entity.vertices, entity_position, vertices_view[slice_index:new_slice_index])
+        uvs_view[slice_index:new_slice_index] = entity.uvs
+        normals_view[slice_index:new_slice_index] = entity.normals
 
         slice_index = new_slice_index
 

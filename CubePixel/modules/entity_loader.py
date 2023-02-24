@@ -5,10 +5,12 @@ import numpy as np
 from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState
 from ursina import load_model
 
+from cython_functions import GameEntity
+
 
 def load_entities():
     entity_data = []
-    entity_index = {}
+    entity_index = []
 
     files = os.listdir("./data/entities/")
     files.sort()
@@ -25,10 +27,15 @@ def load_entities():
 
     texture_index = 0
     for i, entity in enumerate(entities):
-        entity_index[entity["name"]] = i
+        entity_index.append(entity["name"])
 
         texture_name = entity["texture"]
         model_name = entity["model"]
+
+        game_entity = GameEntity()
+        game_entity.transparent = bool(entity["transparent"])
+        game_entity.solid = bool(entity["solid"])
+
         if not texture_name == "None":
             texture = PNMImage()   
             texture.read(f"./assets/textures/{texture_name}.png")
@@ -40,11 +47,13 @@ def load_entities():
 
             uvs = [[uv[0], uv[1], texture_index-1] for uv in model.uvs]
 
-            entity_data.insert(i, np.array([model.vertices, uvs, model.normals], dtype=np.float32))
-        else:
-            entity_data.insert(i, None)
+            game_entity.vertices = np.asarray(model.vertices, dtype=np.float32)
+            game_entity.uvs = np.asarray(uvs, dtype=np.float32)
+            game_entity.normals = np.asarray(model.normals, dtype=np.float32)
 
-    return (entity_data, entity_index, texture_array)
+        entity_data.append(game_entity)
+
+    return (np.asarray(entity_data), np.asarray(entity_index), texture_array)
 
 
 entity_data, entity_index, texture_array = load_entities()
