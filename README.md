@@ -3,7 +3,7 @@
 ## Getting Started 
 1) Install Python 3.7 or newer.
 2) Install the dependencies with `pip install -r requirements.txt`.
-3) Build the cython file with `python setup.py build_ext --inplace`.
+3) Prebuild binaries for windows are included, but if they don't work build them with with `python setup.py build_ext --inplace`(you need to MSVC).
 4) Run [/CubePixel/main.py](/CubePixel/main.py).
 
 ## Bug/Issues
