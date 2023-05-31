@@ -3,6 +3,6 @@
     "name": "air",
     "model": "None",
     "texture": "None",
-    "transparent": "True",
-    "solid": "False"
+    "transparent": true,
+    "solid": false
 }

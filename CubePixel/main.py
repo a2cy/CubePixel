@@ -4,7 +4,7 @@ from modules.gui import MainMenu, PauseMenu, LoadingScreen, DebugScreen
 from modules.player import Player
 from modules.chunk_handler import ChunkHandler
 from modules.settings import settings, parameters
-from modules.entity_loader import entity_data, entity_index, texture_array
+from modules.entity_loader import world_generator, texture_array
 
 
 class CubePixel(ursina.Entity):
@@ -13,9 +13,10 @@ class CubePixel(ursina.Entity):
         super().__init__()
         self.settings = settings
         self.parameters = parameters
-        self.entity_data = entity_data
-        self.entity_index = entity_index
+
+        self.world_generator = world_generator
         self.texture_array = texture_array
+
         self.profile_mode = profile_mode
 
         self.main_menu = MainMenu(self)
@@ -69,7 +70,11 @@ def main():
     # from panda3d.core import loadPrcFileData
     # loadPrcFileData("", "want-pstats 1")
     # loadPrcFileData("", "pstats-python-profiler 1")
-    
+
+    # import faulthandler; faulthandler.enable(all_threads=True)
+
+    # ursina.window.monitor_index = 1
+
     app = ursina.Ursina(vsync=settings["vsync"],
                         borderless=settings["borderless"],
                         fullscreen=settings["fullscreen"],
@@ -78,7 +83,7 @@ def main():
     ursina.application.hot_reloader.enabled = False
     ursina.window.exit_button.disable()
     ursina.window.fps_counter.disable()
-    
+
     game = CubePixel(profile_mode=False)
 
     app.run()

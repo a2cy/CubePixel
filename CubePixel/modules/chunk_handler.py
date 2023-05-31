@@ -7,8 +7,7 @@ import direct.stdpy
 import numpy as np
 
 from modules.chunk_mesh import ChunkMesh
-from data.shaders.texture_shader import texture_shader
-from cython_functions import generate_chunkentities, combine_mesh
+from modules.shaders import chunk_shader
 
 
 class ChunkHandler(ursina.Entity):
@@ -17,7 +16,7 @@ class ChunkHandler(ursina.Entity):
         super().__init__()
         self.game = game
 
-        self.static_mesh = ursina.Entity(model=ChunkMesh(), shader=texture_shader)
+        self.static_mesh = ursina.Entity(model=ChunkMesh(), shader=chunk_shader)
         self.static_mesh.set_shader_input("texture_array", self.game.texture_array)
 
         self.amp = self.game.parameters["amp"]
@@ -39,18 +38,27 @@ class ChunkHandler(ursina.Entity):
 
     def create_world(self, world_name, seed):
         world_path = f"./saves/{world_name}/"
-        
+
+        if os.path.exists(world_path):
+            return
+
         os.makedirs(f"{world_path}chunks/", exist_ok=True)
-        self.world_data = {"name": world_name, "seed": seed, "player_position": "0 0 0"}
+        world_data = {"name": world_name, "seed": seed, "player_position": "0 0 0"}
 
         with open(f"{world_path}data.json", "w+") as file:
-            json.dump(self.world_data, file, indent=4)
+            json.dump(world_data, file, indent=4)
 
         self.load_world(world_name)
 
 
     def load_world(self, world_name):
+        if self.world_loaded:
+            return
+
         self.world_path = f"./saves/{world_name}/"
+
+        if not os.path.exists(self.world_path):
+            return
 
         with open(f"{self.world_path}data.json") as file:
             self.world_data = json.load(file)
@@ -65,6 +73,9 @@ class ChunkHandler(ursina.Entity):
 
 
     def unload_world(self):
+        if not self.world_loaded:
+            return
+
         self.world_loaded = False
         self.update_percentage = 0
         self.updating = False
@@ -104,7 +115,7 @@ class ChunkHandler(ursina.Entity):
                 self.static_mesh.model.remove_chunk(index)
                 self.chunk_list.remove(chunk_id)
 
-        for i, chunk_id in enumerate(new_chunk_ids):
+        for chunk_id in new_chunk_ids:
             if not self.updating:
                 return
 
@@ -115,13 +126,13 @@ class ChunkHandler(ursina.Entity):
                     entities = np.load(filename)
 
                 else:
-                    entities = generate_chunkentities(self.chunk_with, self.noise, self.amp, self.freq, np.asarray(chunk_id, dtype=np.float32))
+                    entities = self.game.world_generator.generate_chunkentities(self.chunk_with, self.noise, self.amp, self.freq, np.asarray(chunk_id, dtype=np.single))
 
                     np.save(filename, entities)
 
-                vertices, uvs, normals = combine_mesh(self.game.entity_data, entities, np.asarray(chunk_id, dtype=np.int32))
+                vertices, uvs = self.game.world_generator.combine_mesh(entities, np.asarray(chunk_id, dtype=np.intc))
 
-                self.static_mesh.model.add_chunk(vertices.ravel(), uvs.ravel(), normals.ravel())
+                self.static_mesh.model.add_chunk(vertices.ravel(), uvs.ravel())
 
                 self.chunk_list.append(chunk_id)
 

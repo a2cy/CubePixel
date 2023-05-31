@@ -11,13 +11,9 @@ class ChunkMesh(NodePath):
     t_array = GeomVertexArrayFormat()
     t_array.addColumn("texcoord", 3, Geom.NTFloat32, Geom.CTexcoord)
 
-    n_array = GeomVertexArrayFormat()
-    n_array.addColumn("normal", 3, Geom.NTFloat32, Geom.CPoint)
-
     vertex_format = GeomVertexFormat()
     vertex_format.addArray(v_array)
     vertex_format.addArray(t_array)
-    vertex_format.addArray(n_array)
     vertex_format = GeomVertexFormat.registerFormat(vertex_format)
 
     def __init__(self, **kwargs):
@@ -31,7 +27,7 @@ class ChunkMesh(NodePath):
             setattr(self, key, value)
 
 
-    def add_chunk(self, vertices=None, uvs=None, normals=None):
+    def add_chunk(self, vertices=None, uvs=None):
         if vertices is None:
             return
 
@@ -45,10 +41,6 @@ class ChunkMesh(NodePath):
             memview = memoryview(v_data.modify_array(1)).cast("B").cast("f")
             memview[:] = uvs
 
-        if normals is not None:
-            memview = memoryview(v_data.modify_array(2)).cast("B").cast("f")
-            memview[:] = normals
-
         prim = GeomTriangles(Geom.UH_static)
         prim.set_index_type(GeomEnums.NT_uint32)
 
@@ -56,8 +48,7 @@ class ChunkMesh(NodePath):
         p_array.unclean_set_num_rows(len(vertices)//3)
 
         memview = memoryview(p_array).cast("B").cast("I")
-        indices = np.asarray(memview) #convert to array because memview[:] = indices doesnt work on windows idk why
-        indices[:] = np.arange(len(vertices)//3, dtype=np.uint32)
+        memview[:] = np.arange(len(vertices)//3, dtype=np.uintc)
         
         geom = Geom(v_data)
         geom.addPrimitive(prim)

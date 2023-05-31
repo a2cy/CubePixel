@@ -4,7 +4,7 @@ import json
 
 def default_settings():
     setting_dict = {
-        "vsync": False,
+        "vsync": True,
         "borderless": False,
         "fullscreen": False,
         "render_distance": 2 
