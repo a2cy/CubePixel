@@ -13,7 +13,6 @@ class MainMenu(ursina.Entity):
         self.background = ursina.Entity(parent=self,
                                         model="quad",
                                         texture="shore",
-                                        scale=ursina.camera.aspect_ratio,
                                         z=2)
 
         self.exit_button = ursina.Button(parent=self,
@@ -29,6 +28,7 @@ class MainMenu(ursina.Entity):
         self.world_seed_input = ursina.InputField(parent=self,
                                                   position=ursina.Vec2(0, .2),
                                                   limit_content_to='0123456789')
+        
         self.world_name_input.next_field = self.world_seed_input
 
         self.world_name_text = ursina.Text(parent=self,
@@ -70,15 +70,19 @@ class MainMenu(ursina.Entity):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    
+    def update(self):
+        self.background.scale = ursina.window.aspect_ratio
+
 
     def on_enable(self):
         if os.path.exists("./saves/"):
 
-            self.button_dict = {}
+            button_dict = {}
 
             for file in os.listdir("./saves/"):
 
-                def load_world_func():
+                def load_world_func(file):
                     self.game.ui_state_handler.state = "loading_screen"
                     self.game.chunk_handler.enable()
                     self.game.chunk_handler.load_world(file)
@@ -86,16 +90,14 @@ class MainMenu(ursina.Entity):
                     self.game.player.enable()
                     ursina.mouse.locked = True
 
-                self.button_dict[file] = ursina.Func(load_world_func)
+                button_dict[file] = ursina.Func(load_world_func, file)
 
-            self.menu_buttons = ursina.ButtonList(self.button_dict, y=0, parent=self)
+            self.menu_buttons = ursina.ButtonList(button_dict, y=0, parent=self)
 
 
     def on_disable(self):
-        try:
+        if self.menu_buttons:
             ursina.destroy(self.menu_buttons)
-        except Exception:
-            pass
 
 
 class LoadingScreen(ursina.Entity):
@@ -119,10 +121,11 @@ class LoadingScreen(ursina.Entity):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    
-    def update(self):
-        self.loading_bar.value = round(self.game.chunk_handler.update_percentage)
 
+    def update(self):
+        self.background.scale = ursina.window.aspect_ratio
+
+        self.loading_bar.value = round(self.game.chunk_handler.update_percentage)
         if round(self.game.chunk_handler.update_percentage) == 100:
             self.game.ui_state_handler.state = "None"
 

@@ -3,6 +3,6 @@
     "name": "grass",
     "model": "generic_block",
     "texture": "grass",
-    "transparent": "False",
-    "solid": "True"
+    "transparent": false,
+    "solid": true
 }

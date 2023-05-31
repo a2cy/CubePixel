@@ -2,10 +2,18 @@ import os
 import json
 import numpy as np
 
-from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState
 from ursina import load_model
+from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState
 
-from cython_functions import GameEntity
+from cython_functions import WordGenerator
+
+
+class GameEntity:
+    shape = 0
+    vertices = None
+    uvs = None
+    transparent = False
+    solid = True
 
 
 def load_entities():
@@ -26,7 +34,7 @@ def load_entities():
     texture_array.setMagfilter(SamplerState.FT_nearest)
 
     texture_index = 0
-    for i, entity in enumerate(entities):
+    for entity in entities:
         entity_index.append(entity["name"])
 
         texture_name = entity["texture"]
@@ -47,13 +55,16 @@ def load_entities():
 
             uvs = [[uv[0], uv[1], texture_index-1] for uv in model.uvs]
 
-            game_entity.vertices = np.asarray(model.vertices, dtype=np.float32)
-            game_entity.uvs = np.asarray(uvs, dtype=np.float32)
-            game_entity.normals = np.asarray(model.normals, dtype=np.float32)
+            game_entity.vertices = np.asarray(model.vertices, dtype=np.single)
+            game_entity.uvs = np.asarray(uvs, dtype=np.single)
+
+            game_entity.shape = game_entity.vertices.shape[0]
 
         entity_data.append(game_entity)
 
-    return (np.asarray(entity_data), np.asarray(entity_index), texture_array)
+        world_generator = WordGenerator(np.asarray(entity_data))
+
+    return (world_generator, texture_array)
 
 
-entity_data, entity_index, texture_array = load_entities()
+world_generator, texture_array = load_entities()

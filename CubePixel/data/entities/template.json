@@ -3,6 +3,6 @@
     "name": "None",
     "model": "None",
     "texture": "None",
-    "transparent": "False",
-    "solid": "True"
+    "transparent": false,
+    "solid": true
 }

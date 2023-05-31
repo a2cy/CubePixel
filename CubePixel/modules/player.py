@@ -7,7 +7,7 @@ class Player(ursina.Entity):
         super().__init__()
         self.game = game
         
-        self.speed = 8
+        self.speed = 12
         self.acceleration = 6
 
         self.camera_pivot = ursina.Entity(parent=self)

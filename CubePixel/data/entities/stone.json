@@ -3,6 +3,6 @@
     "name": "stone",
     "model": "generic_block",
     "texture": "stone",
-    "transparent": "False",
-    "solid": "True"
+    "transparent": false,
+    "solid": true
 }
