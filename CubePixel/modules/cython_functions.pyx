@@ -1,12 +1,12 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
+# distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 # distutils: language=c++
 
 
-import numpy as np
 cimport numpy as np
+import numpy as np
 
 from libcpp.vector cimport vector
-from cpython.ref cimport PyObject
 from libcpp cimport bool
 
 
@@ -16,95 +16,101 @@ np.import_array()
 cdef extern from "cpp_functions.cpp":
 
     cdef struct GameEntity:
-        int shape
+        unsigned int shape
         float* vertices
         float* uvs
         bool transparent
         bool solid
-    
 
-    cdef cppclass WordGeneratorCpp:
 
-        WordGeneratorCpp() except +
+    cdef cppclass WorldGeneratorCpp:
+
+        WorldGeneratorCpp() except +
 
         vector[GameEntity] entity_data
 
-        void combine_mesh(int* entities, int chunk_with, int* position, float* vertices, float* uvs, int* indices)
+        bool check_occlusion(unsigned short chunk_size, int* position, unsigned short* entities)
+
+        void combine_mesh(unsigned short chunk_size, unsigned short* entities, int* position, float* vertices, float* uvs, int* indices)
 
 
-cdef class WordGenerator:
-    
-    cdef WordGeneratorCpp world_generator
+cdef class PyGameEntity:
+    cdef public unsigned int shape
+    cdef public float [:] vertices
+    cdef public float [:] uvs
+    cdef public bool transparent
+    cdef public bool solid
 
 
-    def __cinit__(self, np.ndarray[object, ndim=1] _entity_data):
-        self.world_generator = WordGeneratorCpp()
+cdef class WorldGenerator:
 
+    cdef WorldGeneratorCpp world_generator
+
+
+    def __init__(self, PyGameEntity [:] py_entity_data):
         cdef int i
-        cdef vector[GameEntity] entity_data
-        cdef GameEntity game_entity
 
-        cdef np.ndarray[float, ndim=2] vertices
-        cdef np.ndarray[float, ndim=2] uvs
-
-        for i in range(_entity_data.shape[0]):
-            vertices = _entity_data[i].vertices
-            uvs = _entity_data[i].uvs
-
-            if _entity_data[i].vertices is None:
-                entity_data.push_back(GameEntity(0, &vertices[0, 0], &uvs[0, 0], <bool>_entity_data[i].transparent, <bool>_entity_data[i].solid))
-                continue
-
-            entity_data.push_back(GameEntity(<int>vertices.shape[0], &vertices[0, 0], &uvs[0, 0], <bool>_entity_data[i].transparent, <bool>_entity_data[i].solid))
-
-        self.world_generator.entity_data = entity_data
+        for i in range(py_entity_data.shape[0]):
+            self.world_generator.entity_data.push_back(GameEntity(py_entity_data[i].shape, &py_entity_data[i].vertices[0], &py_entity_data[i].uvs[0], <bool>py_entity_data[i].transparent, <bool>py_entity_data[i].solid))
 
 
-    cpdef generate_chunkentities(self, int chunk_with, noise, int amp, int freq, float [:] position):
-        cdef int i, x, y, z, max_y
-        cdef np.ndarray[int, ndim=3] entities = np.zeros((chunk_with, chunk_with, chunk_with), dtype=np.intc)
-        cdef int [:, :, :] entities_view = entities
+    def generate_chunkentities(self, chunk_size, noise2, noise3, amp, freq2, freq3, position):
+        entities = np.zeros(chunk_size**3, dtype=np.ushort)
 
-        for i in range(chunk_with**3):
-            x = i // chunk_with // chunk_with
-            y = i // chunk_with % chunk_with
-            z = i % chunk_with % chunk_with
+        for i in range(chunk_size**3):
+            x = i // chunk_size // chunk_size - (chunk_size - 1) / 2 + position[0]
+            y = i // chunk_size % chunk_size - (chunk_size - 1) / 2 + position[1]
+            z = i % chunk_size - (chunk_size - 1) / 2 + position[2]
 
-            max_y = noise(((x - (chunk_with - 1) / 2) + position[0]) / freq,
-                    ((z - (chunk_with - 1) / 2) + position[2]) / freq) * amp + amp / 2
+            if not freq3 == 0:
+                threshold = noise3(x / freq3, y / freq3, z / freq3)
 
-            if (y - (chunk_with - 1) / 2) + position[1] == max_y:
-                entities_view[x, y, z] = 1
+                if threshold < 0:
+                    entities[i] = 0
+                    continue
 
-            elif (y - (chunk_with - 1) / 2) + position[1] < max_y:
-               entities_view[x, y, z] = 2
+            max_y = int(noise2(x / freq2, z / freq2) * amp + amp / 2)
+
+            if y == max_y:
+                entities[i] = 1
+
+            elif y < max_y:
+               entities[i] = 2
 
             else:
-               entities_view[x, y, z] = 0
+               entities[i] = 0
 
         return entities
 
 
-    cpdef combine_mesh(self, np.ndarray[int, ndim=3] entities, np.ndarray[int, ndim=1] position):
-        cdef int i, x, y, z, vertex_count = 0
-        cdef int chunk_with = entities.shape[0]
-        cdef np.ndarray[int, ndim=1] indices = np.zeros((chunk_with**3), dtype=np.intc)
+    cpdef combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] entities):
+        cdef int i, shape, vertex_count = 0
+        cdef int entity_position[3]
+        cdef np.ndarray[int, ndim=1] indices = np.zeros((chunk_size**3), dtype=np.intc)
 
-        for i in range(chunk_with**3):
-            x = i / chunk_with / chunk_with
-            y = i / chunk_with % chunk_with
-            z = i % chunk_with % chunk_with
+        for i in range(chunk_size**3):
+            shape = self.world_generator.entity_data[entities[i]].shape
 
-            if self.world_generator.entity_data[entities[x, y, z]].shape == 0:
+            if shape == 0:
+                indices[i] = -1
+                continue
+
+            entity_position[0] = i / chunk_size / chunk_size
+            entity_position[1] = i / chunk_size % chunk_size
+            entity_position[2] = i % chunk_size
+
+            if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0]):
+                indices[i] = -1
                 continue
 
             indices[i] = vertex_count
 
-            vertex_count += self.world_generator.entity_data[entities[x, y, z]].shape
+            vertex_count += shape
 
-        cdef np.ndarray[float, ndim=2] vertices = np.zeros((vertex_count, 3), dtype=np.single)
-        cdef np.ndarray[float, ndim=2] uvs = np.zeros((vertex_count, 3), dtype=np.single)
+        cdef np.ndarray[float, ndim=1] vertices = np.zeros((vertex_count*3), dtype=np.single)
+        cdef np.ndarray[float, ndim=1] uvs = np.zeros((vertex_count*3), dtype=np.single)
 
-        self.world_generator.combine_mesh(&entities[0, 0, 0], <int>entities.shape[0], &position[0], &vertices[0, 0], &uvs[0, 0], &indices[0])
+        if not vertex_count == 0:
+            self.world_generator.combine_mesh(chunk_size, &entities[0], &position[0], &vertices[0], &uvs[0], &indices[0])
 
         return [vertices, uvs]

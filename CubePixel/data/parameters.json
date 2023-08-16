@@ -1,5 +1,6 @@
 {
-    "chunk_with": 15,
+    "chunk_size": 15,
     "amp": 16,
-    "freq": 32
+    "freq2": 32,
+    "freq3": 12
 }

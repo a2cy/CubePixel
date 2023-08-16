@@ -1,59 +1,62 @@
-import numpy as np
+from ursina import Entity
+from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, BoundingSphere
 
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, GeomEnums
 
-
-class ChunkMesh(NodePath):
+class Chunk(Entity):
 
     v_array = GeomVertexArrayFormat()
-    v_array.addColumn("vertex", 3, Geom.NTFloat32, Geom.CPoint)
+    v_array.add_column("vertex", 3, Geom.NT_float32, Geom.C_point)
 
     t_array = GeomVertexArrayFormat()
-    t_array.addColumn("texcoord", 3, Geom.NTFloat32, Geom.CTexcoord)
+    t_array.add_column("texcoord", 3, Geom.NT_float32, Geom.C_texcoord)
 
     vertex_format = GeomVertexFormat()
-    vertex_format.addArray(v_array)
-    vertex_format.addArray(t_array)
-    vertex_format = GeomVertexFormat.registerFormat(vertex_format)
+    vertex_format.add_array(v_array)
+    vertex_format.add_array(t_array)
+    vertex_format = GeomVertexFormat.register_format(vertex_format)
 
-    def __init__(self, **kwargs):
-        super().__init__("chunk_mesh")
-        self.name = "chunk_mesh"
+    def __init__(self, chunk_size, position, vertices=None, uvs=None, **kwargs):
+        super().__init__("chunk")
+        self.name = "chunk"
 
-        self.geom_node = GeomNode("chunk_mesh")
-        self.attachNewNode(self.geom_node)
+        self.vertices = vertices
+        self.uvs = uvs
+
+        self.geom_node = GeomNode("chunk")
+        self.attach_new_node(self.geom_node)
+
+        v_data = GeomVertexData("chunk", self.vertex_format, Geom.UH_static)
+        prim = GeomTriangles(Geom.UH_static)
+        prim.set_index_type(Geom.NT_uint32)
+
+        geom = Geom(v_data)
+        geom.add_primitive(prim)
+        geom.set_bounds(BoundingSphere(position, chunk_size * 3 / 2 * 1.5))
+        self.final = True
+
+        self.geom_node.add_geom(geom)
 
         for key, value in kwargs.items():
             setattr(self, key, value)
 
 
-    def add_chunk(self, vertices=None, uvs=None):
-        if vertices is None:
+    def update_mesh(self):
+        if self.vertices is None or len(self.vertices) == 0:
             return
 
-        v_data = GeomVertexData("chunk", self.vertex_format, Geom.UH_static)
-        v_data.unclean_set_num_rows(len(vertices)//3)
+        geom = self.geom_node.modify_geom(0)
+
+        v_data = geom.modify_vertex_data()
+        prim = geom.modify_primitive(0)
+
+        v_data.unclean_set_num_rows(len(self.vertices)//3)
 
         memview = memoryview(v_data.modify_array(0)).cast("B").cast("f")
-        memview[:] = vertices
+        memview[:] = self.vertices
 
-        if uvs is not None:
+        if not self.uvs is None or not len(self.uvs) == 0:
             memview = memoryview(v_data.modify_array(1)).cast("B").cast("f")
-            memview[:] = uvs
+            memview[:] = self.uvs
 
-        prim = GeomTriangles(Geom.UH_static)
-        prim.set_index_type(GeomEnums.NT_uint32)
-
-        p_array = prim.modify_vertices()
-        p_array.unclean_set_num_rows(len(vertices)//3)
-
-        memview = memoryview(p_array).cast("B").cast("I")
-        memview[:] = np.arange(len(vertices)//3, dtype=np.uintc)
-        
-        geom = Geom(v_data)
-        geom.addPrimitive(prim)
-        self.geom_node.addGeom(geom)
-
-
-    def remove_chunk(self, index):
-        self.geom_node.removeGeom(index)
+        prim.clear_vertices()
+        prim.add_next_vertices(len(self.vertices)//3)
