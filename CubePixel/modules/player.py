@@ -37,8 +37,7 @@ class Player(Entity):
 
         self.direction += self.up * (held_keys["space"] - held_keys["shift"])
 
-        # self.velocity = lerp(self.velocity, self.direction * self.speed, self.acceleration * time.dt)
-        self.velocity = self.direction * self.speed
+        self.velocity = lerp(self.velocity, self.direction * self.speed, self.acceleration * time.dt)
 
         self.position += self.velocity * time.dt
 
