@@ -2,7 +2,7 @@
 {   
     "name": "stone",
     "model": "generic_block",
-    "texture": "stone",
+    "textures": ["stone"],
     "transparent": false,
     "solid": true
 }

@@ -7,11 +7,12 @@ def default_settings():
         "vsync": True,
         "borderless": False,
         "fullscreen": False,
-        "render_distance": 2 
+        "render_distance": 1,
+        "generate_caves": False
     }
 
-    with open("./settings.json", "w+") as s:
-        json.dump(setting_dict, s, indent=4)
+    with open("./settings.json", "w+") as file:
+        json.dump(setting_dict, file, indent=4)
 
 
 def load_settings():

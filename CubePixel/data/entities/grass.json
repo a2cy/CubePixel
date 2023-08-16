@@ -1,8 +1,0 @@
- 
-{   
-    "name": "grass",
-    "model": "generic_block",
-    "texture": "grass",
-    "transparent": false,
-    "solid": true
-}
