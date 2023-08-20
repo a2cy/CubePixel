@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cmath>
 
@@ -29,31 +30,122 @@ class WorldGeneratorCpp
     }
 
 
-    bool check_occlusion(ushort chunk_size, int* position, ushort* entities)
+    bool check_occlusion(ushort chunk_size, int* position, ushort* entities, long* neighbor_chunks)
     {
-        int neighbor_position[3], offset, index;
+        int x_position, y_position, z_position;
+        ushort* neighbor_chunk;
 
         GameEntity neighbor;
 
-        for (uint i = 0; i < 2 * 3; i++)
+        for (uint i = 0; i < (3 * 2); i++)
         {
-            offset = i % 2 * 2 - 1;
-            index = i / 2;
+            x_position = (i + 0) % 3 / 2 * (i / 3 * 2 - 1) + position[0];
+            y_position = (i + 1) % 3 / 2 * (i / 3 * 2 - 1) + position[1];
+            z_position = (i + 2) % 3 / 2 * (i / 3 * 2 - 1) + position[2];
 
-            neighbor_position[0] = position[0];
-            neighbor_position[1] = position[1];
-            neighbor_position[2] = position[2];
-
-            neighbor_position[index] += offset;
-
-            if (neighbor_position[0] < 0 or neighbor_position[0] >= chunk_size or
-                neighbor_position[1] < 0 or neighbor_position[1] >= chunk_size or
-                neighbor_position[2] < 0 or neighbor_position[2] >= chunk_size)
+            if (x_position < 0)
             {
-                return false;
+                neighbor_chunk = (ushort*)neighbor_chunks[2];
+
+                if (neighbor_chunk)
+                {
+                    neighbor = entity_data[neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]];
+
+                    if (neighbor.transparent == true)
+                    {
+                        return false;
+                    }
+                }
+
+                continue;
             }
 
-            neighbor = entity_data[entities[neighbor_position[0] * chunk_size * chunk_size + neighbor_position[1] * chunk_size + neighbor_position[2]]];
+            if (x_position >= chunk_size)
+            {
+                neighbor_chunk = (ushort*)neighbor_chunks[5];
+
+                if (neighbor_chunk)
+                {
+                    neighbor = entity_data[neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]];
+
+                    if (neighbor.transparent == true)
+                    {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            if (y_position < 0)
+            {
+                neighbor_chunk = (ushort*)neighbor_chunks[1];
+
+                if (neighbor_chunk)
+                {
+                    neighbor = entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]];
+
+                    if (neighbor.transparent == true)
+                    {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            if (y_position >= chunk_size)
+            {
+                neighbor_chunk = (ushort*)neighbor_chunks[4];
+
+                if (neighbor_chunk)
+                {
+                    neighbor = entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]];
+
+                    if (neighbor.transparent == true)
+                    {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            if (z_position < 0)
+            {
+                neighbor_chunk = (ushort*)neighbor_chunks[0];
+
+                if (neighbor_chunk)
+                {
+                    neighbor = entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]];
+
+                    if (neighbor.transparent == true)
+                    {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            if (z_position >= chunk_size)
+            {
+                neighbor_chunk = (ushort*)neighbor_chunks[3];
+
+                if (neighbor_chunk)
+                {
+                    neighbor = entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]];
+
+                    if (neighbor.transparent == true)
+                    {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            neighbor = entity_data[entities[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]];
 
             if (neighbor.transparent == true)
             {
@@ -91,7 +183,7 @@ class WorldGeneratorCpp
 
         entity_position[0] = i / chunk_size / chunk_size - (chunk_size - 1) / 2 + position[0];
         entity_position[1] = i / chunk_size % chunk_size - (chunk_size - 1) / 2 + position[1];
-        entity_position[2] = i % chunk_size - (chunk_size - 1) / 2 + position[2];
+        entity_position[2] = i % chunk_size % chunk_size - (chunk_size - 1) / 2 + position[2];
 
         entity = entity_data[entities[i]];
 

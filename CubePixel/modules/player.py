@@ -7,7 +7,7 @@ class Player(Entity):
         super().__init__()
         self.game = game
 
-        self.speed = 12
+        self.speed = 8
         self.acceleration = 6
 
         self.camera_pivot = Entity(parent=self)

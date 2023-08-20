@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 
-from ursina import Entity, destroy, round_to_closest, print_info
+from ursina import Entity, round_to_closest, print_info
 from direct.stdpy.threading import Thread
 from opensimplex import OpenSimplex
 
@@ -16,6 +16,9 @@ class ChunkHandler(Entity):
         super().__init__()
         self.game = game
 
+        self.mesh = Entity(shader=chunk_shader)
+        self.mesh.set_shader_input("texture_array", self.game.texture_array)
+
         self.amp = self.game.parameters["amp"]
         self.freq2 = self.game.parameters["freq2"]
         self.freq3 = self.game.parameters["freq3"]
@@ -26,7 +29,7 @@ class ChunkHandler(Entity):
             self.freq3 = 0
 
         self.world_loaded = False
-        self.player_chunk = []
+        self.player_chunk = ()
         self.chunks_to_update = []
         self.sub_chunks_to_update = []
         self.loaded_chunks = {}
@@ -49,7 +52,7 @@ class ChunkHandler(Entity):
         self.world_size = value * 2 + 1
 
         if self.world_loaded:
-            self.player_chunk = []
+            self.player_chunk = ()
 
 
     def create_world(self, world_name, seed):
@@ -99,15 +102,18 @@ class ChunkHandler(Entity):
             self.update_thread.join()
 
         self.world_loaded = False
-        self.player_chunk = []
+        self.player_chunk = ()
         self.chunks_to_update = []
         self.sub_chunks_to_update = []
+        self.cached_sub_chunks = {}
 
         for sub_chunk_id in self.loaded_sub_chunks.copy():
             self.unload_sub_chunk(sub_chunk_id)
 
         for chunk_id in self.loaded_chunks.copy():
-            destroy(self.loaded_chunks.pop(chunk_id))
+            pass
+            chunk = self.loaded_chunks.pop(chunk_id)
+            chunk.remove_node()
 
         with open(f"{self.world_path}data.json", "w+") as file:
             self.world_data["player_position"] = list(self.game.player.position)
@@ -116,10 +122,41 @@ class ChunkHandler(Entity):
 
 
     def get_chunk_id(self, position):
-        return [int(round_to_closest(position[0], self.chunk_size * 3)),
+        return (int(round_to_closest(position[0], self.chunk_size * 3)),
                 int(round_to_closest(position[1], self.chunk_size * 3)),
-                int(round_to_closest(position[2], self.chunk_size * 3))]
+                int(round_to_closest(position[2], self.chunk_size * 3)))
 
+
+    def get_sub_chunk_id(self, position):
+        return (int(round_to_closest(position[0], self.chunk_size)),
+                int(round_to_closest(position[1], self.chunk_size)),
+                int(round_to_closest(position[2], self.chunk_size)))
+    
+
+    def get_entity_id(self, position):
+        sub_chunk_id = self.get_sub_chunk_id(position)
+
+        x_position = round(position[0] + (self.chunk_size - 1) / 2 - sub_chunk_id[0])
+        y_position = round(position[1] + (self.chunk_size - 1) / 2 - sub_chunk_id[1])
+        z_position = round(position[2] + (self.chunk_size - 1) / 2 - sub_chunk_id[2])
+
+        index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
+
+        return self.loaded_sub_chunks[sub_chunk_id][index]
+    
+
+    def modify_entity(self, position, entity_id):
+        sub_chunk_id = self.get_sub_chunk_id(position)
+
+        x_position = round(position[0] + (self.chunk_size - 1) / 2 - sub_chunk_id[0])
+        y_position = round(position[1] + (self.chunk_size - 1) / 2 - sub_chunk_id[1])
+        z_position = round(position[2] + (self.chunk_size - 1) / 2 - sub_chunk_id[2])
+
+        index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
+
+        self.loaded_sub_chunks[sub_chunk_id][index] = entity_id
+
+        self.sub_chunks_to_update.append(sub_chunk_id)
 
     def load_sub_chunk(self, sub_chunk_id):
         if sub_chunk_id in self.loaded_sub_chunks:
@@ -131,7 +168,7 @@ class ChunkHandler(Entity):
             entities = np.load(filename)
 
         else:
-            entities = self.game.world_generator.generate_chunkentities(self.chunk_size, self.noise2, self.noise3, self.amp, self.freq2, self.freq3, sub_chunk_id)
+            entities = self.game.world_generator.generate_chunkentities(self.chunk_size, self.noise2, self.noise3, self.amp, self.freq2, self.freq3, np.array(sub_chunk_id, dtype=np.intc))
 
         self.loaded_sub_chunks[sub_chunk_id] = entities
 
@@ -150,13 +187,12 @@ class ChunkHandler(Entity):
 
 
     def update_mesh(self):
-        chunk_changed = False
-
         for sub_chunk_id in self.cached_sub_chunks.copy():
             if not sub_chunk_id in self.loaded_sub_chunks:
                 self.cached_sub_chunks.pop(sub_chunk_id)
 
         for chunk_id in self.loaded_chunks:
+            chunk_changed = False
             sub_chunk_ids = []
 
             for i in range(3**3):
@@ -174,7 +210,17 @@ class ChunkHandler(Entity):
                 if sub_chunk_id in self.cached_sub_chunks and not sub_chunk_id in self.sub_chunks_to_update:
                     continue
 
-                vertices, uvs = self.game.world_generator.combine_mesh(self.chunk_size, np.array(sub_chunk_id, dtype=np.intc), self.loaded_sub_chunks[sub_chunk_id])
+                neighbors = np.zeros(6, dtype=np.int_)
+
+                for i in range(3 * 2):
+                    neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[0],
+                                   (i + 1) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[1],
+                                   (i + 2) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[2])
+
+                    if neighbor_id in self.loaded_sub_chunks:
+                        neighbors[i] = self.loaded_sub_chunks[neighbor_id].ctypes.data
+
+                vertices, uvs = self.game.world_generator.combine_mesh(self.chunk_size, np.array(sub_chunk_id, dtype=np.intc), self.loaded_sub_chunks[sub_chunk_id], neighbors)
 
                 sub_chunk = np.stack([vertices, uvs])
 
@@ -205,22 +251,22 @@ class ChunkHandler(Entity):
             y = i // self.world_size % self.world_size - (self.world_size - 1) / 2
             z = i % self.world_size % self.world_size - (self.world_size - 1) / 2
 
-            chunk_id = (x * 3 * self.chunk_size + self.player_chunk[0],
-                        y * 3 * self.chunk_size + self.player_chunk[1],
-                        z * 3 * self.chunk_size + self.player_chunk[2])
-            
+            chunk_id = (int(x * 3 * self.chunk_size + self.player_chunk[0]),
+                        int(y * 3 * self.chunk_size + self.player_chunk[1]),
+                        int(z * 3 * self.chunk_size + self.player_chunk[2]))
+
             chunk_ids.append(chunk_id)
 
         for chunk_id in chunk_ids:
             if not chunk_id in self.loaded_chunks:
-                chunk = Chunk(self.chunk_size, chunk_id, shader=chunk_shader)
-                chunk.set_shader_input("texture_array", self.game.texture_array)
-
+                chunk = Chunk(self.chunk_size, chunk_id)
+                chunk.reparent_to(self.mesh)
                 self.loaded_chunks[chunk_id] = chunk
 
         for chunk_id in self.loaded_chunks.copy():
             if not chunk_id in chunk_ids:
-                destroy(self.loaded_chunks.pop(chunk_id))
+                chunk = self.loaded_chunks.pop(chunk_id)
+                chunk.remove_node()
 
         for chunk_id in chunk_ids:
             for i in range(3**3):
@@ -253,19 +299,19 @@ class ChunkHandler(Entity):
 
             if chunk_id in self.loaded_chunks:
                 chunk = self.loaded_chunks[chunk_id]
-                chunk.update_mesh()
+                chunk.update()
 
             else:
                 print_info(f"chunk {chunk_id} is not loaded")
-
-        player = self.game.player
-
-        new_player_chunk = self.get_chunk_id(player.position)
 
         thread_alive = self.update_thread.is_alive() if hasattr(self, "update_thread") else False
 
         if thread_alive or not self.world_loaded or self.chunks_to_update:
             return
+        
+        player = self.game.player
+
+        new_player_chunk = self.get_chunk_id(player.position)
 
         if not self.player_chunk == new_player_chunk:
             self.player_chunk = new_player_chunk

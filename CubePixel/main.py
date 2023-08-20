@@ -58,6 +58,22 @@ class CubePixel(Entity):
             self.ui_state_handler.state = "pause_menu"
             self.player.disable()
 
+        if key == "1":
+            position = self.player.position
+            self.chunk_handler.modify_entity(position, 0)
+
+        if key == "2":
+            position = self.player.position
+            self.chunk_handler.modify_entity(position, 1)
+
+        if key == "3":
+            position = self.player.position
+            self.chunk_handler.modify_entity(position, 2)
+
+        if key == "g":
+            position = self.player.position
+            print(self.chunk_handler.get_entity_id(position))
+
         if key == "k":
             self.chunk_handler.render_distance -= 1
 

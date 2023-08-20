@@ -1,8 +1,7 @@
-from ursina import Entity
-from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, BoundingSphere
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, BoundingSphere
 
 
-class Chunk(Entity):
+class Chunk(NodePath):
 
     v_array = GeomVertexArrayFormat()
     v_array.add_column("vertex", 3, Geom.NT_float32, Geom.C_point)
@@ -17,7 +16,6 @@ class Chunk(Entity):
 
     def __init__(self, chunk_size, position, vertices=None, uvs=None, **kwargs):
         super().__init__("chunk")
-        self.name = "chunk"
 
         self.vertices = vertices
         self.uvs = uvs
@@ -31,7 +29,7 @@ class Chunk(Entity):
 
         geom = Geom(v_data)
         geom.add_primitive(prim)
-        geom.set_bounds(BoundingSphere(position, chunk_size * 3 / 2 * 1.5))
+        geom.set_bounds(BoundingSphere(position, chunk_size * 3 / 2 * 1.8))
         self.final = True
 
         self.geom_node.add_geom(geom)
@@ -40,7 +38,7 @@ class Chunk(Entity):
             setattr(self, key, value)
 
 
-    def update_mesh(self):
+    def update(self):
         if self.vertices is None or len(self.vertices) == 0:
             return
 

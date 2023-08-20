@@ -29,7 +29,7 @@ cdef extern from "cpp_functions.cpp":
 
         vector[GameEntity] entity_data
 
-        bool check_occlusion(unsigned short chunk_size, int* position, unsigned short* entities)
+        bool check_occlusion(unsigned short chunk_size, int* position, unsigned short* entities, long* neighbors)
 
         void combine_mesh(unsigned short chunk_size, unsigned short* entities, int* position, float* vertices, float* uvs, int* indices)
 
@@ -54,13 +54,16 @@ cdef class WorldGenerator:
             self.world_generator.entity_data.push_back(GameEntity(py_entity_data[i].shape, &py_entity_data[i].vertices[0], &py_entity_data[i].uvs[0], <bool>py_entity_data[i].transparent, <bool>py_entity_data[i].solid))
 
 
-    def generate_chunkentities(self, chunk_size, noise2, noise3, amp, freq2, freq3, position):
-        entities = np.zeros(chunk_size**3, dtype=np.ushort)
+    def generate_chunkentities(self, unsigned short chunk_size, noise2, noise3, unsigned short amp, unsigned short freq2, unsigned short freq3, int [:] position):
+        cdef int i, threshold, max_y
+        cdef float x, y, z
+
+        cdef np.ndarray[unsigned short, ndim=1] entities = np.zeros(chunk_size**3, dtype=np.ushort)
 
         for i in range(chunk_size**3):
             x = i // chunk_size // chunk_size - (chunk_size - 1) / 2 + position[0]
             y = i // chunk_size % chunk_size - (chunk_size - 1) / 2 + position[1]
-            z = i % chunk_size - (chunk_size - 1) / 2 + position[2]
+            z = i % chunk_size % chunk_size - (chunk_size - 1) / 2 + position[2]
 
             if not freq3 == 0:
                 threshold = noise3(x / freq3, y / freq3, z / freq3)
@@ -69,7 +72,7 @@ cdef class WorldGenerator:
                     entities[i] = 0
                     continue
 
-            max_y = int(noise2(x / freq2, z / freq2) * amp + amp / 2)
+            max_y = noise2(x / freq2, z / freq2) * amp + amp / 2
 
             if y == max_y:
                 entities[i] = 1
@@ -83,7 +86,7 @@ cdef class WorldGenerator:
         return entities
 
 
-    cpdef combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] entities):
+    cpdef combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] entities, long [:] neighbors):
         cdef int i, shape, vertex_count = 0
         cdef int entity_position[3]
         cdef np.ndarray[int, ndim=1] indices = np.zeros((chunk_size**3), dtype=np.intc)
@@ -95,11 +98,11 @@ cdef class WorldGenerator:
                 indices[i] = -1
                 continue
 
-            entity_position[0] = i / chunk_size / chunk_size
-            entity_position[1] = i / chunk_size % chunk_size
-            entity_position[2] = i % chunk_size
+            entity_position[0] = (int)(i / chunk_size / chunk_size)
+            entity_position[1] = (int)(i / chunk_size % chunk_size)
+            entity_position[2] = (int)(i % chunk_size % chunk_size)
 
-            if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0]):
+            if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0], &neighbors[0]):
                 indices[i] = -1
                 continue
 
