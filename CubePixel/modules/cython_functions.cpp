@@ -20872,7 +20872,7 @@ static PyObject *__pyx_f_16cython_functions_14WorldGenerator_combine_mesh(struct
  *                 indices[i] = -1
  *                 continue             # <<<<<<<<<<<<<<
  * 
- *             entity_position[0] = (int)(i / chunk_size / chunk_size)
+ *             entity_position[0] = i / chunk_size / chunk_size
  */
       goto __pyx_L3_continue;
 
@@ -20888,32 +20888,32 @@ static PyObject *__pyx_f_16cython_functions_14WorldGenerator_combine_mesh(struct
     /* "cython_functions.pyx":101
  *                 continue
  * 
- *             entity_position[0] = (int)(i / chunk_size / chunk_size)             # <<<<<<<<<<<<<<
- *             entity_position[1] = (int)(i / chunk_size % chunk_size)
- *             entity_position[2] = (int)(i % chunk_size % chunk_size)
+ *             entity_position[0] = i / chunk_size / chunk_size             # <<<<<<<<<<<<<<
+ *             entity_position[1] = i / chunk_size % chunk_size
+ *             entity_position[2] = i % chunk_size % chunk_size
  */
     (__pyx_v_entity_position[0]) = ((__pyx_v_i / ((int)__pyx_v_chunk_size)) / ((int)__pyx_v_chunk_size));
 
     /* "cython_functions.pyx":102
  * 
- *             entity_position[0] = (int)(i / chunk_size / chunk_size)
- *             entity_position[1] = (int)(i / chunk_size % chunk_size)             # <<<<<<<<<<<<<<
- *             entity_position[2] = (int)(i % chunk_size % chunk_size)
+ *             entity_position[0] = i / chunk_size / chunk_size
+ *             entity_position[1] = i / chunk_size % chunk_size             # <<<<<<<<<<<<<<
+ *             entity_position[2] = i % chunk_size % chunk_size
  * 
  */
     (__pyx_v_entity_position[1]) = ((__pyx_v_i / ((int)__pyx_v_chunk_size)) % __pyx_v_chunk_size);
 
     /* "cython_functions.pyx":103
- *             entity_position[0] = (int)(i / chunk_size / chunk_size)
- *             entity_position[1] = (int)(i / chunk_size % chunk_size)
- *             entity_position[2] = (int)(i % chunk_size % chunk_size)             # <<<<<<<<<<<<<<
+ *             entity_position[0] = i / chunk_size / chunk_size
+ *             entity_position[1] = i / chunk_size % chunk_size
+ *             entity_position[2] = i % chunk_size % chunk_size             # <<<<<<<<<<<<<<
  * 
  *             if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0], &neighbors[0]):
  */
     (__pyx_v_entity_position[2]) = ((__pyx_v_i % __pyx_v_chunk_size) % __pyx_v_chunk_size);
 
     /* "cython_functions.pyx":105
- *             entity_position[2] = (int)(i % chunk_size % chunk_size)
+ *             entity_position[2] = i % chunk_size % chunk_size
  * 
  *             if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0], &neighbors[0]):             # <<<<<<<<<<<<<<
  *                 indices[i] = -1
@@ -20944,7 +20944,7 @@ static PyObject *__pyx_f_16cython_functions_14WorldGenerator_combine_mesh(struct
       goto __pyx_L3_continue;
 
       /* "cython_functions.pyx":105
- *             entity_position[2] = (int)(i % chunk_size % chunk_size)
+ *             entity_position[2] = i % chunk_size % chunk_size
  * 
  *             if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0], &neighbors[0]):             # <<<<<<<<<<<<<<
  *                 indices[i] = -1

@@ -98,9 +98,9 @@ cdef class WorldGenerator:
                 indices[i] = -1
                 continue
 
-            entity_position[0] = (int)(i / chunk_size / chunk_size)
-            entity_position[1] = (int)(i / chunk_size % chunk_size)
-            entity_position[2] = (int)(i % chunk_size % chunk_size)
+            entity_position[0] = i / chunk_size / chunk_size
+            entity_position[1] = i / chunk_size % chunk_size
+            entity_position[2] = i % chunk_size % chunk_size
 
             if self.world_generator.check_occlusion(chunk_size, entity_position, &entities[0], &neighbors[0]):
                 indices[i] = -1

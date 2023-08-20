@@ -111,7 +111,6 @@ class ChunkHandler(Entity):
             self.unload_sub_chunk(sub_chunk_id)
 
         for chunk_id in self.loaded_chunks.copy():
-            pass
             chunk = self.loaded_chunks.pop(chunk_id)
             chunk.remove_node()
 
