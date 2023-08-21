@@ -54,9 +54,9 @@ cdef class WorldGenerator:
             self.world_generator.entity_data.push_back(GameEntity(py_entity_data[i].shape, &py_entity_data[i].vertices[0], &py_entity_data[i].uvs[0], <bool>py_entity_data[i].transparent, <bool>py_entity_data[i].solid))
 
 
-    def generate_chunkentities(self, unsigned short chunk_size, noise2, noise3, unsigned short amp, unsigned short freq2, unsigned short freq3, int [:] position):
-        cdef int i, threshold, max_y
-        cdef float x, y, z
+    def generate_chunkentities(self, unsigned short chunk_size, noise2, noise3, unsigned short amp2, unsigned short amp3, unsigned short freq2, unsigned short freq3, int [:] position):
+        cdef int i, max_y
+        cdef float x, y, z, threshold
 
         cdef np.ndarray[unsigned short, ndim=1] entities = np.zeros(chunk_size**3, dtype=np.ushort)
 
@@ -66,13 +66,13 @@ cdef class WorldGenerator:
             z = i % chunk_size % chunk_size - (chunk_size - 1) / 2 + position[2]
 
             if not freq3 == 0:
-                threshold = noise3(x / freq3, y / freq3, z / freq3)
+                threshold = (noise3(x / freq3, y / freq3, z / freq3) + 1) * 5
 
-                if threshold < 0:
+                if threshold < amp3:
                     entities[i] = 0
                     continue
 
-            max_y = noise2(x / freq2, z / freq2) * amp + amp / 2
+            max_y = noise2(x / freq2, z / freq2) * amp2 + amp2 / 2
 
             if y == max_y:
                 entities[i] = 1

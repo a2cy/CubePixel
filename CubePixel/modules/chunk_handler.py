@@ -2,8 +2,7 @@ import os
 import json
 import numpy as np
 
-from ursina import Entity, round_to_closest, print_info
-from direct.stdpy.threading import Thread
+from ursina import Entity, round_to_closest
 from opensimplex import OpenSimplex
 
 from modules.chunk import Chunk
@@ -16,10 +15,14 @@ class ChunkHandler(Entity):
         super().__init__()
         self.game = game
 
+        self.game.app.taskMgr.setupTaskChain("chunk_update", numThreads = 1, frameSync = True)
+        self.game.app.taskMgr.add(self._update, "chunk_update", taskChain = "chunk_update")
+
         self.mesh = Entity(shader=chunk_shader)
         self.mesh.set_shader_input("texture_array", self.game.texture_array)
 
-        self.amp = self.game.parameters["amp"]
+        self.amp2 = self.game.parameters["amp2"]
+        self.amp3 = self.game.parameters["amp3"]
         self.freq2 = self.game.parameters["freq2"]
         self.freq3 = self.game.parameters["freq3"]
         self.chunk_size = self.game.parameters["chunk_size"]
@@ -28,6 +31,7 @@ class ChunkHandler(Entity):
         if not self.game.settings["generate_caves"]:
             self.freq3 = 0
 
+        self.updating = False
         self.world_loaded = False
         self.player_chunk = ()
         self.chunks_to_update = []
@@ -98,9 +102,6 @@ class ChunkHandler(Entity):
         if not self.world_loaded:
             return
 
-        if hasattr(self, "update_thread"):
-            self.update_thread.join()
-
         self.world_loaded = False
         self.player_chunk = ()
         self.chunks_to_update = []
@@ -130,9 +131,12 @@ class ChunkHandler(Entity):
         return (int(round_to_closest(position[0], self.chunk_size)),
                 int(round_to_closest(position[1], self.chunk_size)),
                 int(round_to_closest(position[2], self.chunk_size)))
-    
+
 
     def get_entity_id(self, position):
+        if not self.world_loaded:
+            return
+
         sub_chunk_id = self.get_sub_chunk_id(position)
 
         x_position = round(position[0] + (self.chunk_size - 1) / 2 - sub_chunk_id[0])
@@ -142,9 +146,12 @@ class ChunkHandler(Entity):
         index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
 
         return self.loaded_sub_chunks[sub_chunk_id][index]
-    
+
 
     def modify_entity(self, position, entity_id):
+        if not self.world_loaded:
+            return
+
         sub_chunk_id = self.get_sub_chunk_id(position)
 
         x_position = round(position[0] + (self.chunk_size - 1) / 2 - sub_chunk_id[0])
@@ -155,7 +162,26 @@ class ChunkHandler(Entity):
 
         self.loaded_sub_chunks[sub_chunk_id][index] = entity_id
 
+        if x_position <= 0:
+            self.sub_chunks_to_update.append((sub_chunk_id[0] - self.chunk_size, sub_chunk_id[1], sub_chunk_id[2]))
+
+        if x_position >= self.chunk_size - 1:
+            self.sub_chunks_to_update.append((sub_chunk_id[0] + self.chunk_size, sub_chunk_id[1], sub_chunk_id[2]))
+
+        if y_position <= 0:
+            self.sub_chunks_to_update.append((sub_chunk_id[0], sub_chunk_id[1] - self.chunk_size, sub_chunk_id[2]))
+
+        if y_position >= self.chunk_size - 1:
+            self.sub_chunks_to_update.append((sub_chunk_id[0], sub_chunk_id[1] + self.chunk_size, sub_chunk_id[2]))
+
+        if z_position <= 0:
+            self.sub_chunks_to_update.append((sub_chunk_id[0], sub_chunk_id[1], sub_chunk_id[2] - self.chunk_size))
+
+        if z_position >= self.chunk_size - 1:
+            self.sub_chunks_to_update.append((sub_chunk_id[0], sub_chunk_id[1], sub_chunk_id[2] + self.chunk_size))
+
         self.sub_chunks_to_update.append(sub_chunk_id)
+
 
     def load_sub_chunk(self, sub_chunk_id):
         if sub_chunk_id in self.loaded_sub_chunks:
@@ -167,7 +193,7 @@ class ChunkHandler(Entity):
             entities = np.load(filename)
 
         else:
-            entities = self.game.world_generator.generate_chunkentities(self.chunk_size, self.noise2, self.noise3, self.amp, self.freq2, self.freq3, np.array(sub_chunk_id, dtype=np.intc))
+            entities = self.game.world_generator.generate_chunkentities(self.chunk_size, self.noise2, self.noise3, self.amp2, self.amp3, self.freq2, self.freq3, np.array(sub_chunk_id, dtype=np.intc))
 
         self.loaded_sub_chunks[sub_chunk_id] = entities
 
@@ -206,6 +232,9 @@ class ChunkHandler(Entity):
                 sub_chunk_ids.append(sub_chunk_id)
 
             for sub_chunk_id in sub_chunk_ids:
+                if not self.world_loaded:
+                    return
+
                 if sub_chunk_id in self.cached_sub_chunks and not sub_chunk_id in self.sub_chunks_to_update:
                     continue
 
@@ -242,6 +271,7 @@ class ChunkHandler(Entity):
 
 
     def update_chunks(self):
+        self.updating = True
         chunk_ids = []
         sub_chunk_ids = []
 
@@ -289,10 +319,20 @@ class ChunkHandler(Entity):
 
         self.update_mesh()
 
-        self.game.ui_state_handler.state = "None"
+        self.updating = False
+
+        if self.game.ui_state_handler.state == "loading_screen":
+            self.game.ui_state_handler.state = "None"
 
 
-    def update(self):
+    def _update(self, task):
+        if not self.world_loaded:
+            return task.cont
+
+        player = self.game.player
+
+        new_player_chunk = self.get_chunk_id(player.position)
+
         if self.chunks_to_update:
             chunk_id = self.chunks_to_update.pop(0)
 
@@ -300,24 +340,12 @@ class ChunkHandler(Entity):
                 chunk = self.loaded_chunks[chunk_id]
                 chunk.update()
 
-            else:
-                print_info(f"chunk {chunk_id} is not loaded")
+        elif self.sub_chunks_to_update:
+            self.update_mesh()
 
-        thread_alive = self.update_thread.is_alive() if hasattr(self, "update_thread") else False
-
-        if thread_alive or not self.world_loaded or self.chunks_to_update:
-            return
-        
-        player = self.game.player
-
-        new_player_chunk = self.get_chunk_id(player.position)
-
-        if not self.player_chunk == new_player_chunk:
+        elif not self.player_chunk == new_player_chunk:
             self.player_chunk = new_player_chunk
 
-            self.update_thread = Thread(target=self.update_chunks)
-            self.update_thread.start()
+            self.update_chunks()
 
-        elif self.sub_chunks_to_update:
-            self.update_thread = Thread(target=self.update_mesh)
-            self.update_thread.start()
+        return task.cont

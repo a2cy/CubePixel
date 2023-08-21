@@ -271,4 +271,4 @@ class DebugScreen(Entity):
     def update(self):
         self.position_display.text = f"{self.game.player.position}"
         self.rotation_display.text = f"{round(self.game.player.rotation[1], 5)}, {round(self.game.player.camera_pivot.rotation[0], 5)}"
-        self.update_display.text = f"{self.game.chunk_handler.update_thread.is_alive() if hasattr(self.game.chunk_handler, 'update_thread') else False}"
+        self.update_display.text = f"{self.game.chunk_handler.updating}"
