@@ -1,7 +1,7 @@
 # CubePixel
 
 ## Getting Started 
-1) Install Python 3.7 or newer.
+1) Install Python 3.10 or newer.
 2) Install the dependencies with `pip install -r requirements.txt`.
 3) Build the c++ extension with `python setup.py build_ext --inplace`(you need a c++ compiler).
 4) Run [/CubePixel/main.py](/CubePixel/main.py).
