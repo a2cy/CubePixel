@@ -1,5 +1,5 @@
 {
-    "chunk_size": 15,
+    "chunk_size": 45,
     "amp2d": 16,
     "freq2d": 32
 }
