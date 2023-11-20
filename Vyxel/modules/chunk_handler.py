@@ -24,10 +24,8 @@ class ChunkHandler(Entity):
         self.chunks_to_unload = []
         self.chunks_to_update_low = []
         self.chunks_to_update_high = []
-        self.sub_chunks_to_update = []
         self.loaded_chunks = {}
-        self.loaded_sub_chunks = {}
-        self.cached_sub_chunks = {}
+        self.cached_chunks = {}
 
         os.makedirs(f"./saves/", exist_ok=True)
 
@@ -104,10 +102,9 @@ class ChunkHandler(Entity):
         self.chunks_to_unload = []
         self.chunks_to_update_low = []
         self.chunks_to_update_high = []
-        self.sub_chunks_to_update = []
 
-        for sub_chunk_id in self.loaded_sub_chunks.copy():
-            self.unload_sub_chunk(sub_chunk_id)
+        for chunk_id in self.cached_chunks.copy():
+            self.unload_chunk(chunk_id)
 
         for chunk_id in self.loaded_chunks.copy():
             chunk = self.loaded_chunks.pop(chunk_id)
@@ -120,12 +117,6 @@ class ChunkHandler(Entity):
 
 
     def get_chunk_id(self, position):
-        return (int(round_to_closest(position[0], self.chunk_size * 3)),
-                int(round_to_closest(position[1], self.chunk_size * 3)),
-                int(round_to_closest(position[2], self.chunk_size * 3)))
-
-
-    def get_sub_chunk_id(self, position):
         return (int(round_to_closest(position[0], self.chunk_size)),
                 int(round_to_closest(position[1], self.chunk_size)),
                 int(round_to_closest(position[2], self.chunk_size)))
@@ -135,18 +126,18 @@ class ChunkHandler(Entity):
         if not self.world_loaded:
             return
 
-        sub_chunk_id = self.get_sub_chunk_id(position)
+        chunk_id = self.get_chunk_id(position)
 
-        x_position = round(position[0] + (self.chunk_size - 1) / 2 - sub_chunk_id[0])
-        y_position = round(position[1] + (self.chunk_size - 1) / 2 - sub_chunk_id[1])
-        z_position = round(position[2] + (self.chunk_size - 1) / 2 - sub_chunk_id[2])
+        x_position = round(position[0] + (self.chunk_size - 1) / 2 - chunk_id[0])
+        y_position = round(position[1] + (self.chunk_size - 1) / 2 - chunk_id[1])
+        z_position = round(position[2] + (self.chunk_size - 1) / 2 - chunk_id[2])
 
         index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
 
-        if not sub_chunk_id in self.loaded_sub_chunks:
+        if not chunk_id in self.cached_chunks:
             return
 
-        return self.loaded_sub_chunks[sub_chunk_id][index]
+        return self.cached_chunks[chunk_id][index]
 
 
     def modify_entity(self, position, entity_id):
@@ -154,157 +145,83 @@ class ChunkHandler(Entity):
             return
 
         neighbor_ids = []
-        sub_neighbor_ids = []
 
-        sub_chunk_id = self.get_sub_chunk_id(position)
+        chunk_id = self.get_chunk_id(position)
 
-        x_position = round(position[0] + (self.chunk_size - 1) / 2 - sub_chunk_id[0])
-        y_position = round(position[1] + (self.chunk_size - 1) / 2 - sub_chunk_id[1])
-        z_position = round(position[2] + (self.chunk_size - 1) / 2 - sub_chunk_id[2])
+        x_position = round(position[0] + (self.chunk_size - 1) / 2 - chunk_id[0])
+        y_position = round(position[1] + (self.chunk_size - 1) / 2 - chunk_id[1])
+        z_position = round(position[2] + (self.chunk_size - 1) / 2 - chunk_id[2])
 
         index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
 
-        if not sub_chunk_id in self.loaded_sub_chunks:
+        if not chunk_id in self.cached_chunks:
             return
 
-        self.loaded_sub_chunks[sub_chunk_id][index] = entity_id
+        self.cached_chunks[chunk_id][index] = entity_id
 
         for i in range(3 * 2):
-            sub_neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[0],
-                               (i + 1) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[1],
-                               (i + 2) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[2])
+            neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[0],
+                           (i + 1) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[1],
+                           (i + 2) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[2])
 
-            if not sub_neighbor_id in self.cached_sub_chunks:
-                continue
-
-            sub_neighbor_ids.append(sub_neighbor_id)
-
-            neighbor_id = self.get_chunk_id(sub_neighbor_id)
-
-            if neighbor_id in neighbor_ids:
+            if not neighbor_id in self.loaded_chunks:
                 continue
 
             neighbor_ids.append(neighbor_id)
 
-        sub_neighbor_ids.append(sub_chunk_id)
 
-        self.sub_chunks_to_update.extend(sub_neighbor_ids)
+        neighbor_ids.append(chunk_id)
+
         self.chunks_to_update_high.extend(neighbor_ids)
 
 
-    def load_sub_chunk(self, sub_chunk_id):
-        if sub_chunk_id in self.loaded_sub_chunks:
+    def load_chunk(self, chunk_id):
+        if chunk_id in self.cached_chunks:
             return
 
-        filename = f"{self.world_path}chunks/{sub_chunk_id}.npy"
+        filename = f"{self.world_path}chunks/{chunk_id}.npy"
 
         if os.path.exists(filename):
             entities = np.load(filename)
 
         else:
-            entities = self.game.entity_loader.world_generator.generate_chunkentities(self.chunk_size, self.game.entity_loader.entity_index, self.seed, self.amp2d, self.freq2d, np.array(sub_chunk_id, dtype=np.intc))
+            entities = self.game.entity_loader.world_generator.generate_chunkentities(self.chunk_size, self.game.entity_loader.entity_index, self.seed, self.amp2d, self.freq2d, np.array(chunk_id, dtype=np.intc))
 
-        self.loaded_sub_chunks[sub_chunk_id] = entities
-
-
-    def unload_sub_chunk(self, sub_chunk_id):
-        if not sub_chunk_id in self.loaded_sub_chunks:
-            return
-
-        filename = f"{self.world_path}chunks/{sub_chunk_id}.npy"
-
-        entities = self.loaded_sub_chunks[sub_chunk_id]
-
-        np.save(filename, entities)
-
-        self.loaded_sub_chunks.pop(sub_chunk_id)
-
-        if sub_chunk_id in self.cached_sub_chunks:
-            self.cached_sub_chunks.pop(sub_chunk_id)
-
-
-    def load_chunk(self, chunk_id):
-        sub_chunk_ids = []
-
-        for i in range(3**3):
-            x = i // 3 // 3 - 1
-            y = i // 3 % 3 - 1
-            z = i % 3 - 1
-
-            sub_chunk_id = (chunk_id[0] + x * self.chunk_size,
-                            chunk_id[1] + y * self.chunk_size,
-                            chunk_id[2] + z * self.chunk_size)
-
-            sub_chunk_ids.append(sub_chunk_id)
-
-        for sub_chunk_id in sub_chunk_ids:
-            self.load_sub_chunk(sub_chunk_id)
+        self.cached_chunks[chunk_id] = entities
 
         self.chunks_to_update_low.append(chunk_id)
 
 
     def unload_chunk(self, chunk_id):
-        sub_chunk_ids = []
+        if not chunk_id in self.cached_chunks:
+            return
 
-        for i in range(3**3):
-            x = i // 3 // 3 - 1
-            y = i // 3 % 3 - 1
-            z = i % 3 - 1
+        filename = f"{self.world_path}chunks/{chunk_id}.npy"
 
-            sub_chunk_id = (chunk_id[0] + x * self.chunk_size,
-                            chunk_id[1] + y * self.chunk_size,
-                            chunk_id[2] + z * self.chunk_size)
+        entities = self.cached_chunks[chunk_id]
 
-            sub_chunk_ids.append(sub_chunk_id)
+        np.save(filename, entities)
 
-        for sub_chunk_id in sub_chunk_ids:
-            self.unload_sub_chunk(sub_chunk_id)
+        self.cached_chunks.pop(chunk_id)
 
 
     def update_chunk(self, chunk_id):
-        sub_chunk_ids = []
+        if not chunk_id in self.loaded_chunks:
+            return
 
-        for i in range(3**3):
-            x = i // 3 // 3 - 1
-            y = i // 3 % 3 - 1
-            z = i % 3 - 1
+        neighbors = np.zeros(6, dtype=np.longlong)
 
-            sub_chunk_id = (chunk_id[0] + x * self.chunk_size,
-                            chunk_id[1] + y * self.chunk_size,
-                            chunk_id[2] + z * self.chunk_size)
+        for i in range(3 * 2):
+            neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[0],
+                           (i + 1) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[1],
+                           (i + 2) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[2])
 
-            sub_chunk_ids.append(sub_chunk_id)
+            if neighbor_id in self.cached_chunks:
+                neighbors[i] = self.cached_chunks[neighbor_id].ctypes.data
 
-        for sub_chunk_id in sub_chunk_ids:
-            if not self.world_loaded:
-                return
-
-            if sub_chunk_id in self.cached_sub_chunks and not sub_chunk_id in self.sub_chunks_to_update:
-                continue
-
-            neighbors = np.zeros(6, dtype=np.longlong)
-
-            for i in range(3 * 2):
-                sub_neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[0],
-                                   (i + 1) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[1],
-                                   (i + 2) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + sub_chunk_id[2])
-
-                if sub_neighbor_id in self.loaded_sub_chunks:
-                    neighbors[i] = self.loaded_sub_chunks[sub_neighbor_id].ctypes.data
-
-            vertices, uvs = self.game.entity_loader.world_generator.combine_mesh(self.chunk_size, np.array(sub_chunk_id, dtype=np.intc), self.loaded_sub_chunks[sub_chunk_id], neighbors)
-
-            sub_chunk = np.stack([vertices, uvs])
-
-            self.cached_sub_chunks[sub_chunk_id] = sub_chunk
-
-            if sub_chunk_id in self.sub_chunks_to_update:
-                self.sub_chunks_to_update.remove(sub_chunk_id)
+        vertices, uvs = self.game.entity_loader.world_generator.combine_mesh(self.chunk_size, np.array(chunk_id, dtype=np.intc), self.cached_chunks[chunk_id], neighbors)
 
         chunk = self.loaded_chunks[chunk_id]
-
-        vertices = np.concatenate([self.cached_sub_chunks[chunk_id][0] for chunk_id in sub_chunk_ids], dtype=np.single)
-        uvs = np.concatenate([self.cached_sub_chunks[chunk_id][1] for chunk_id in sub_chunk_ids], dtype=np.single)
 
         chunk.update(vertices, uvs)
 
@@ -317,9 +234,9 @@ class ChunkHandler(Entity):
             y = i // self.world_size % self.world_size - (self.world_size - 1) / 2
             z = i % self.world_size % self.world_size - (self.world_size - 1) / 2
 
-            chunk_id = (int(x * 3 * self.chunk_size + self.player_chunk[0]),
-                        int(y * 3 * self.chunk_size + self.player_chunk[1]),
-                        int(z * 3 * self.chunk_size + self.player_chunk[2]))
+            chunk_id = (int(x * self.chunk_size + self.player_chunk[0]),
+                        int(y * self.chunk_size + self.player_chunk[1]),
+                        int(z * self.chunk_size + self.player_chunk[2]))
 
             chunk_ids.append(chunk_id)
 
@@ -338,8 +255,6 @@ class ChunkHandler(Entity):
 
                 self.chunks_to_unload.append(chunk_id)
 
-        self.chunks_to_load.extend(chunk_ids)
-
 
     def _update(self, task):
         if not self.world_loaded:
@@ -354,8 +269,7 @@ class ChunkHandler(Entity):
         if self.chunks_to_update_high:
             chunk_id = self.chunks_to_update_high.pop(0)
 
-            if chunk_id in self.loaded_chunks:
-                self.update_chunk(chunk_id)
+            self.update_chunk(chunk_id)
 
         elif self.chunks_to_unload:
             chunk_id = self.chunks_to_unload.pop(0)
@@ -370,8 +284,7 @@ class ChunkHandler(Entity):
         elif self.chunks_to_update_low:
             chunk_id = self.chunks_to_update_low.pop(0)
 
-            if chunk_id in self.loaded_chunks:
-                self.update_chunk(chunk_id)
+            self.update_chunk(chunk_id)
 
         elif not self.player_chunk == new_player_chunk:
             self.player_chunk = new_player_chunk
