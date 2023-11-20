@@ -3,6 +3,8 @@
     "name": "",
     "model": "",
     "textures": [],
+    "collider": [],
     "transparent": false,
-    "solid": true
+    "collision": true
+    
 }

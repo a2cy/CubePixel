@@ -1,9 +1,9 @@
  
 {   
-    "name": "stone",
+    "name": "glass",
     "model": "generic_block",
-    "textures": ["stone"],
+    "textures": ["glass"],
     "collider": [-0.5, -0.5, -0.5, 0.5, 0.5, 0.5],
-    "transparent": false,
+    "transparent": true,
     "collision": true
 }

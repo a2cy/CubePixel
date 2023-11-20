@@ -1,8 +1,8 @@
  
 {   
-    "name": "grass_block",
-    "model": "grass_block",
-    "textures": ["grass", "grass_side", "dirt"],
+    "name": "dirt",
+    "model": "generic_block",
+    "textures": ["dirt"],
     "collider": [-0.5, -0.5, -0.5, 0.5, 0.5, 0.5],
     "transparent": false,
     "collision": true

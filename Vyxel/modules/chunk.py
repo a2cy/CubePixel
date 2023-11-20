@@ -1,4 +1,4 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, BoundingSphere
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, BoundingSphere, TransparencyAttrib
 
 
 class Chunk(NodePath):
@@ -14,11 +14,13 @@ class Chunk(NodePath):
     vertex_format.add_array(t_array)
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
-    def __init__(self, chunk_size, position, vertices=None, uvs=None, **kwargs):
+    def __init__(self, chunk_size, position, **kwargs):
         super().__init__("chunk")
 
-        self.vertices = vertices
-        self.uvs = uvs
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        self.set_transparency(TransparencyAttrib.M_dual)
 
         self.geom_node = GeomNode("chunk")
         self.attach_new_node(self.geom_node)
@@ -34,12 +36,9 @@ class Chunk(NodePath):
 
         self.geom_node.add_geom(geom)
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
 
-
-    def update(self):
-        if self.vertices is None or len(self.vertices) == 0:
+    def update(self, vertices=None, uvs=None):
+        if vertices is None or len(vertices) == 0:
             return
 
         geom = self.geom_node.modify_geom(0)
@@ -47,14 +46,14 @@ class Chunk(NodePath):
         v_data = geom.modify_vertex_data()
         prim = geom.modify_primitive(0)
 
-        v_data.unclean_set_num_rows(len(self.vertices)//3)
+        v_data.unclean_set_num_rows(len(vertices)//3)
 
         memview = memoryview(v_data.modify_array(0)).cast("B").cast("f")
-        memview[:] = self.vertices
+        memview[:] = vertices
 
-        if not self.uvs is None or not len(self.uvs) == 0:
+        if not uvs is None or not len(uvs) == 0:
             memview = memoryview(v_data.modify_array(1)).cast("B").cast("f")
-            memview[:] = self.uvs
+            memview[:] = uvs
 
         prim.clear_vertices()
-        prim.add_next_vertices(len(self.vertices)//3)
+        prim.add_next_vertices(len(vertices)//3)

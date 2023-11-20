@@ -1,78 +1,53 @@
-from ursina import Ursina, Entity, Animator, Vec3, Sky, window
+from ursina import Ursina, Entity, Sky, scene
 
-from modules.gui import MainMenu, PauseMenu, LoadingScreen, ExitMenu, DebugScreen
+from modules.gui import Gui
 from modules.player import Player
 from modules.chunk_handler import ChunkHandler
 from modules.settings import settings, parameters
-from modules.entity_loader import world_generator, texture_array
+from modules.entity_loader import EntityLoader
 
 
-class CubePixel(Entity):
+class Vyxel(Entity):
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.app = app
         self.settings = settings
         self.parameters = parameters
-
-        self.world_generator = world_generator
-        self.texture_array = texture_array
-
-        self.main_menu = MainMenu(self)
-        self.main_menu.disable()
-
-        self.pause_menu = PauseMenu(self)
-        self.pause_menu.disable()
-
-        self.loading_screen = LoadingScreen(self)
-        self.loading_screen.disable()
-
-        self.exit_menu = ExitMenu(self)
-        self.exit_menu.disable()
-
-        self.debug_screen = DebugScreen(self)
-        self.debug_screen.disable()
-
-        self.player = Player(self, position=Vec3(0, 10, 0))
-        self.player.disable()
-
-        self.chunk_handler = ChunkHandler(self)
-
-        self.sky = Sky(texture = "sky_default")
-
-        self.ui_state_handler = Animator({
-            "None": None,
-            "main_menu": self.main_menu,
-            "pause_menu": self.pause_menu,
-            "loading_screen": self.loading_screen,
-            "exit_menu": self.exit_menu
-            }, "main_menu"
-        )
 
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+        self.entity_loader = EntityLoader()
+
+        self.gui = Gui(self)
+
+        self.player = Player(self)
+        self.player.disable()
+
+        self.chunk_handler = ChunkHandler(self)
+
+        self.sky = Sky(parent=scene)
+
+        # temporary stuff
+
+        self.entities = list(self.entity_loader.entity_index.keys())
+        self.entities.remove("air")
+
+        self.selected_entity = 0
+
 
     def input(self, key):
-        if key == "escape" and self.ui_state_handler.state == "None":
-            self.ui_state_handler.state = "pause_menu"
-            self.player.disable()
+        keys = [str(i) for i in range(1,10)]
+        if key in keys and int(key) <= len(self.entity_loader.entity_data):
+            self.selected_entity = int(key)-1
 
-        if key == "1":
-            position = self.player.position
-            self.chunk_handler.modify_entity(position, 0)
+        if key == "left mouse down":
+            position = self.player.aim_dot.world_position
+            self.chunk_handler.modify_entity(position, self.entity_loader.entity_index["air"])
 
-        if key == "2":
-            position = self.player.position
-            self.chunk_handler.modify_entity(position, 1)
-
-        if key == "3":
-            position = self.player.position
-            self.chunk_handler.modify_entity(position, 2)
-
-        if key == "g":
-            position = self.player.position
-            print(self.chunk_handler.get_entity_id(position))
+        if key == "right mouse down":
+            position = self.player.aim_dot.world_position
+            self.chunk_handler.modify_entity(position, self.entity_loader.entity_index[self.entities[self.selected_entity]])
 
         if key == "k":
             self.chunk_handler.render_distance -= 1
@@ -80,26 +55,21 @@ class CubePixel(Entity):
         if key == "i":
             self.chunk_handler.render_distance += 1
 
+        if key == "n":
+            self.player.noclip_mode = not self.player.noclip_mode
 
-def main():
-    # pip install --force-reinstall --break-system-packages -r requirements.txt
 
-    # from panda3d.core import loadPrcFileData
-    # loadPrcFileData("", "want-pstats 1")
-    # loadPrcFileData("", "pstats-python-profiler 1") 
-
-    window.show_ursina_splash = True
-
-    app = Ursina(development_mode=True,
-                vsync=settings["vsync"],
-                borderless=settings["borderless"],
-                fullscreen=settings["fullscreen"],
-                title="CubePixel")
-
-    CubePixel(app=app)
-
-    app.run()
+    def update(self):
+        self.sky.position = self.player.position
 
 
 if __name__ == "__main__":
-    main()
+    app = Ursina(editor_ui_enabled=False,
+                 vsync=settings["vsync"],
+                 borderless=settings["borderless"],
+                 fullscreen=settings["fullscreen"],
+                 title="Vyxel")
+
+    Vyxel()
+
+    app.run()

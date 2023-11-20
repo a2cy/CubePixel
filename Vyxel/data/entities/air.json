@@ -3,6 +3,7 @@
     "name": "air",
     "model": "",
     "textures": [],
+    "collider": [],
     "transparent": true,
-    "solid": false
+    "collision": false
 }

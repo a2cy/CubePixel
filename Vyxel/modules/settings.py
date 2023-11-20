@@ -8,7 +8,7 @@ def default_settings():
         "borderless": False,
         "fullscreen": False,
         "render_distance": 1,
-        "generate_caves": False
+        "mouse_sensitivity": 90
     }
 
     with open("./settings.json", "w+") as file:
