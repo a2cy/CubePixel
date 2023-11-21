@@ -7,7 +7,7 @@ from modules.settings import settings, parameters
 from modules.entity_loader import EntityLoader
 
 
-class Vyxel(Entity):
+class Vxyl(Entity):
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -68,8 +68,8 @@ if __name__ == "__main__":
                  vsync=settings["vsync"],
                  borderless=settings["borderless"],
                  fullscreen=settings["fullscreen"],
-                 title="Vyxel")
+                 title="Vxyl")
 
-    Vyxel()
+    Vxyl()
 
     app.run()

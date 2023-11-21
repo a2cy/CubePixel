@@ -110,7 +110,7 @@ class MainMenu(Entity):
                                      z=1)
 
         self.title = Text(parent=self,
-                          text="Vyxel",
+                          text="Vxyl",
                           scale=1.8,
                           position=window.left+Vec2(.25, .45),
                           origin=Vec2(0, 0))
@@ -163,7 +163,7 @@ class PauseMenu(Entity):
                                      z=1)
 
         self.title = Text(parent=self,
-                          text="Vyxel",
+                          text="Vxyl",
                           scale=1.8,
                           position=window.left+Vec2(.25, .45),
                           origin=Vec2(0, 0))
