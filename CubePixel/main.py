@@ -7,7 +7,7 @@ from modules.settings import settings, parameters
 from modules.entity_loader import EntityLoader
 
 
-class Vxyl(Entity):
+class CubePixel(Entity):
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -70,6 +70,6 @@ if __name__ == "__main__":
                  fullscreen=settings["fullscreen"],
                  title="Vxyl")
 
-    Vxyl()
+    CubePixel()
 
     app.run()
