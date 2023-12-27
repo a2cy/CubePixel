@@ -5,6 +5,6 @@ from Cython.Build import cythonize
 
 
 setup(
-    ext_modules=cythonize("./modules/cython_functions.pyx"),
+    ext_modules=cythonize("./src/cython_functions.pyx"),
     include_dirs=[np.get_include()]
 ) 

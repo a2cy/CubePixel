@@ -2,10 +2,10 @@ import os
 import json
 import numpy as np
 
-from ursina import Entity, application, round_to_closest
+from ursina import Entity, Vec3, application, round_to_closest
 
-from modules.chunk import Chunk
-from modules.shaders import chunk_shader
+from src.chunk import Chunk
+from src.shaders import chunk_shader
 
 
 class ChunkHandler(Entity):
@@ -17,8 +17,9 @@ class ChunkHandler(Entity):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-        self.world_loaded = False
         self.updating = False
+        self.world_loaded = False
+        self.finished_loading = False
         self.player_chunk = ()
         self.chunks_to_load = []
         self.chunks_to_unload = []
@@ -37,6 +38,8 @@ class ChunkHandler(Entity):
 
         self.amp2d = self.game.parameters["amp2d"]
         self.freq2d = self.game.parameters["freq2d"]
+        self.gain2d = self.game.parameters["gain2d"]
+        self.octaves2d = self.game.parameters["octaves2d"]
         self.chunk_size = self.game.parameters["chunk_size"]
         self.render_distance = self.game.settings["render_distance"]
 
@@ -58,7 +61,7 @@ class ChunkHandler(Entity):
         world_path = f"./saves/{world_name}/"
 
         if os.path.exists(world_path):
-            return False
+            return
 
         os.makedirs(f"{world_path}chunks/", exist_ok=True)
         world_data = {"name": world_name, "seed": seed, "player_position": [0, 0, 0]}
@@ -68,17 +71,15 @@ class ChunkHandler(Entity):
 
         self.load_world(world_name)
 
-        return True
-
 
     def load_world(self, world_name):
         if self.world_loaded:
-            return False
+            return
 
         self.world_path = f"./saves/{world_name}/"
 
         if not os.path.exists(self.world_path) or not os.path.exists(f"{self.world_path}data.json"):
-            return False
+            return
 
         with open(f"{self.world_path}data.json") as file:
             self.world_data = json.load(file)
@@ -87,9 +88,8 @@ class ChunkHandler(Entity):
 
         self.seed = self.world_data["seed"]
 
+        self.finished_loading = False
         self.world_loaded = True
-
-        return True
 
 
     def unload_world(self):
@@ -111,7 +111,7 @@ class ChunkHandler(Entity):
             chunk.remove_node()
 
         with open(f"{self.world_path}data.json", "w+") as file:
-            self.world_data["player_position"] = list(self.game.player.position)
+            self.world_data["player_position"] = list(self.game.player.position + Vec3(0, .1, 0))
 
             json.dump(self.world_data, file, indent=4)
 
@@ -185,7 +185,7 @@ class ChunkHandler(Entity):
             entities = np.load(filename)
 
         else:
-            entities = self.game.entity_loader.world_generator.generate_chunkentities(self.chunk_size, self.game.entity_loader.entity_index, self.seed, self.amp2d, self.freq2d, np.array(chunk_id, dtype=np.intc))
+            entities = self.game.entity_loader.world_generator.generate_chunkentities(self.chunk_size, self.game.entity_loader.entity_index, self.seed, self.freq2d, self.gain2d, self.octaves2d, self.amp2d, np.array(chunk_id, dtype=np.intc))
 
         self.cached_chunks[chunk_id] = entities
 
@@ -293,5 +293,6 @@ class ChunkHandler(Entity):
 
         else:
             self.updating = False
+            self.finished_loading = True
 
         return task.cont

@@ -15,11 +15,11 @@ class EntityLoader():
         self.entity_data = []
         self.entity_index = {}
 
-        files = os.listdir("./data/entities/")
+        files = os.listdir("./res/entities/")
         files.sort()
 
         for file_name in files:
-            with open(f"./data/entities/{file_name}") as file:
+            with open(f"./res/entities/{file_name}") as file:
                 data = json.load(file)
                 entities.append(data)
 
@@ -47,14 +47,14 @@ class EntityLoader():
                 texture_names.reverse()
                 for texture_name in texture_names:
                     texture = PNMImage()   
-                    texture.read(f"./assets/textures/{texture_name}.png")
+                    texture.read(f"./res/textures/{texture_name}.png")
                     self.texture_array.load(texture, z=texture_index, n=0)
                     texture_index += 1
 
             vertices = []
             uvs = []
             if model_name:
-                with open(f"./assets/models/{model_name}.json") as file:
+                with open(f"./res/models/{model_name}.json") as file:
                     model = json.load(file)
 
                 vertices = model["vertices"]

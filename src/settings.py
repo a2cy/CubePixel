@@ -19,7 +19,7 @@ def load_settings():
     with open("./settings.json") as file:
         settings = json.load(file)
 
-    with open("./data/parameters.json") as file:
+    with open("./res/parameters.json") as file:
         parameters = json.load(file)
 
     return settings, parameters

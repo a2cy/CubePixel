@@ -2,6 +2,8 @@ from ursina import Entity, Text, Mesh, Func, Animator, Sequence, Vec2, applicati
 
 from ursina import * # temporary
 
+from src.gui_prefabs import MenuButton
+
 
 class Gui(Entity):
 
@@ -20,64 +22,12 @@ class Gui(Entity):
                                        "main_menu": self.main_menu,
                                        "pause_menu": self.pause_menu},
                                        "main_menu")
-        
+
 
     def input(self, key):
         if self.game.chunk_handler.world_loaded and key == "escape":
             self.game.player.disable()
             self.ui_state.state = "pause_menu"
-
-
-class MenuButton(Entity):
-
-    def __init__(self, text="", **kwargs):
-        super().__init__()
-
-        self.disabled = False
-        self.model = "quad"
-        self.collider = "box"
-        self.scale=Vec2(.3, .08)
-        self.color = color.clear
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-        self.highlight_color = color.azure
-        self.pressed_color = color.orange
-        self.default_color = color.black90
-
-        self.background = Entity(parent=self, model=Mesh(vertices=[(-.4,-.4,0), (.4,-.4,0)], mode="line", thickness=2), color=self.default_color)
-
-        self.text_entity = Text(parent=self, text=text, scale=(self.scale*50).yx, origin=Vec2(0, 0), color=self.default_color, add_to_scene_entities=False)
-
-
-    def input(self, key):
-        if self.disabled or not self.model:
-            return
-
-        if key == 'left mouse down':
-            if self.hovered:
-                self.background.color = self.pressed_color
-                self.text_entity.color = self.pressed_color
-
-        if key == 'left mouse up':
-            if self.hovered:
-                self.background.color = self.highlight_color
-                self.text_entity.color = self.highlight_color
-
-            else:
-                self.background.color = self.default_color
-                self.text_entity.color = self.default_color
-
-
-    def on_mouse_enter(self):
-        self.background.color = self.highlight_color
-        self.text_entity.color = self.highlight_color
-
-
-    def on_mouse_exit(self):
-        self.background.color = self.default_color
-        self.text_entity.color = self.default_color
 
 
 class MainMenu(Entity):
@@ -223,7 +173,7 @@ class WorldCreation(Entity):
                                 scale=1.2,
                                 position=self.word_seed.position+Vec2(-.5, 0),
                                 origin=Vec2(-.5, 0))
-        
+
         self.create_button = MenuButton(parent=self, text="Create World", position=window.right+Vec2(-.65, 0),
                                         on_click=Sequence(Func(lambda: getattr(self.game, "chunk_handler").create_world(self.word_name.text, int(self.word_seed.text))),
                                                           Func(lambda: setattr(getattr(self.game, "gui").ui_state, "state", "")),
@@ -231,7 +181,7 @@ class WorldCreation(Entity):
 
         self.word_name.next_field = self.word_seed
 
-    
+
     def on_disable(self):
         self.word_name.text = ""
         self.word_seed.text = ""

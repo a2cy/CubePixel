@@ -1,16 +1,17 @@
 from ursina import Ursina, Entity, Sky, scene
 
-from modules.gui import Gui
-from modules.player import Player
-from modules.chunk_handler import ChunkHandler
-from modules.settings import settings, parameters
-from modules.entity_loader import EntityLoader
+from src.gui import Gui
+from src.player import Player
+from src.chunk_handler import ChunkHandler
+from src.settings import settings, parameters
+from src.entity_loader import EntityLoader
 
 
 class CubePixel(Entity):
 
     def __init__(self, **kwargs):
         super().__init__()
+
         self.settings = settings
         self.parameters = parameters
 
@@ -55,6 +56,12 @@ class CubePixel(Entity):
         if key == "i":
             self.chunk_handler.render_distance += 1
 
+        if key == "p":
+            self.chunk_handler.load_world("test")
+            self.gui.ui_state.state = ""
+            self.player.enable()
+
+
         if key == "n":
             self.player.noclip_mode = not self.player.noclip_mode
 
@@ -68,7 +75,7 @@ if __name__ == "__main__":
                  vsync=settings["vsync"],
                  borderless=settings["borderless"],
                  fullscreen=settings["fullscreen"],
-                 title="Vxyl")
+                 title="CubePixel")
 
     CubePixel()
 

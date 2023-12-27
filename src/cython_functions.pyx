@@ -2,7 +2,7 @@
 # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 
 
-from fast_noise_lite cimport fnl_state, FNL_NOISE_OPENSIMPLEX2, fnlCreateState, fnlGetNoise2D
+from fast_noise_lite cimport fnl_state, FNL_NOISE_OPENSIMPLEX2, FNL_FRACTAL_FBM, fnlCreateState, fnlGetNoise2D
 
 cimport numpy as np
 import numpy as np
@@ -31,36 +31,41 @@ cdef class WorldGenerator:
 
         self.noise2d = fnlCreateState()
         self.noise2d.noise_type = FNL_NOISE_OPENSIMPLEX2
+        self.noise2d.fractal_type = FNL_FRACTAL_FBM
 
 
-    def generate_chunkentities(self, unsigned short chunk_size, dict entity_index, int seed, float amp2d, float freq2d, int [:] position):
-        cdef int i, max_y
-        cdef float x, y, z
+    def generate_chunkentities(self, unsigned short chunk_size, dict entity_index, int seed, float freq2d, float gain2d, int octaves2d, float amp2d, int [:] position):
+        cdef int i, x, y, z, max_y
 
         cdef unsigned short grass = entity_index["grass_block"]
         cdef unsigned short dirt = entity_index["dirt"]
         cdef unsigned short air = entity_index["air"]
 
         self.noise2d.seed = seed
-        self.noise2d.frequency = 10 / freq2d
+        self.noise2d.frequency = freq2d
+        self.noise2d.gain = gain2d
+        self.noise2d.octaves = octaves2d
 
         cdef np.ndarray[unsigned short, ndim=1] entities = np.zeros(chunk_size**3, dtype=np.ushort)
 
-        for i in range(chunk_size**3):
-            x = i // chunk_size // chunk_size - (chunk_size - 1) / 2 + position[0]
-            y = i // chunk_size % chunk_size - (chunk_size - 1) / 2 + position[1]
-            z = i % chunk_size % chunk_size - (chunk_size - 1) / 2 + position[2]
+        for i in range(chunk_size**2):
+            x = i // chunk_size
+            z = i % chunk_size
 
-            max_y = <int>(fnlGetNoise2D(&self.noise2d, x / freq2d, z / freq2d) * amp2d + amp2d / 2)
+            max_y = <int>(fnlGetNoise2D(&self.noise2d, x - (chunk_size - 1) / 2 + position[0], z - (chunk_size - 1) / 2 + position[2]) * amp2d + amp2d / 2)
 
-            if y == max_y:
-                entities[i] = grass
+            for y in range(chunk_size):
+                i = x * chunk_size * chunk_size + y * chunk_size + z
+                y = y - (chunk_size - 1) / 2 + position[1]
 
-            elif y < max_y:
-               entities[i] = dirt
+                if y == max_y:
+                    entities[i] = grass
 
-            else:
-               entities[i] = air
+                elif y < max_y:
+                    entities[i] = dirt
+
+                else:
+                    entities[i] = air
 
         return entities
 

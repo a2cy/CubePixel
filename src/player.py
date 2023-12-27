@@ -126,6 +126,9 @@ class Player(Entity):
 
 
     def update(self):
+        if not self.game.chunk_handler.finished_loading:
+            return
+
         if self.noclip_mode:
             self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity
 
