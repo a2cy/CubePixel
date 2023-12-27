@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 
-from ursina import Entity, Vec3, application, round_to_closest
+from ursina import Entity, application, round_to_closest
 
 from src.chunk import Chunk
 from src.shaders import chunk_shader
@@ -111,7 +111,7 @@ class ChunkHandler(Entity):
             chunk.remove_node()
 
         with open(f"{self.world_path}data.json", "w+") as file:
-            self.world_data["player_position"] = list(self.game.player.position + Vec3(0, .1, 0))
+            self.world_data["player_position"] = list(self.game.player.position)
 
             json.dump(self.world_data, file, indent=4)
 
