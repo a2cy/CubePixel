@@ -52,11 +52,11 @@ cdef class WorldGenerator:
             x = i // chunk_size
             z = i % chunk_size
 
-            max_y = <int>(fnlGetNoise2D(&self.noise2d, x - (chunk_size - 1) / 2 + position[0], z - (chunk_size - 1) / 2 + position[2]) * amp2d + amp2d / 2)
+            max_y = <int>(fnlGetNoise2D(&self.noise2d, x + position[0], z + position[2]) * amp2d + amp2d / 2)
 
             for y in range(chunk_size):
                 i = x * chunk_size * chunk_size + y * chunk_size + z
-                y = y - (chunk_size - 1) / 2 + position[1]
+                y = y + position[1]
 
                 if y == max_y:
                     entities[i] = grass
@@ -72,7 +72,7 @@ cdef class WorldGenerator:
 
     def combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] entities, long long [:] neighbors):
         cdef int i, shape, vertex_count = 0
-        cdef int entity_position[3]
+        cdef int[3] entity_position
         cdef np.ndarray[int, ndim=1] indices = np.zeros((chunk_size**3), dtype=np.intc)
         cdef GameEntity entity
 
@@ -105,9 +105,9 @@ cdef class WorldGenerator:
             if indices[i] == -1:
                 continue
 
-            entity_position[0] = i / chunk_size / chunk_size - (chunk_size - 1) / 2 + position[0]
-            entity_position[1] = i / chunk_size % chunk_size - (chunk_size - 1) / 2 + position[1]
-            entity_position[2] = i % chunk_size % chunk_size - (chunk_size - 1) / 2 + position[2]
+            entity_position[0] = i / chunk_size / chunk_size + position[0]
+            entity_position[1] = i / chunk_size % chunk_size + position[1]
+            entity_position[2] = i % chunk_size % chunk_size + position[2]
 
             entity = self.entity_data[entities[i]]
 

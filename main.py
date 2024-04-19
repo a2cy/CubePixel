@@ -61,7 +61,6 @@ class CubePixel(Entity):
             self.gui.ui_state.state = ""
             self.player.enable()
 
-
         if key == "n":
             self.player.noclip_mode = not self.player.noclip_mode
 

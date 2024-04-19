@@ -1,8 +1,6 @@
-from ursina import Entity, Text, Mesh, Func, Animator, Sequence, Vec2, application, color, camera, window
+from ursina import Entity, Text, Mesh, Func, Animator, Sequence, InputField, Vec2, application, color, camera, window
 
-from ursina import * # temporary
-
-from src.gui_prefabs import MenuButton
+from src.gui_prefabs import MenuButton, MenuPanel
 
 
 class Gui(Entity):
@@ -129,34 +127,14 @@ class PauseMenu(Entity):
                                                           Func(lambda: getattr(self.game, "chunk_handler").unload_world())))
 
 
-class WorldCreation(Entity):
+class WorldCreation(MenuPanel):
 
     def __init__(self, game, **kwargs):
         self.game = game
-        super().__init__()
+        super().__init__("Create World")
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 color=color.black66,
-                                 position=window.right+Vec2(-.65, 0),
-                                 scale=Vec2(1.2, 1),
-                                 z=1)
-
-        self.background_overlay = Entity(parent=self,
-                                         model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
-                                         color=color.black90,
-                                         position=window.right+Vec2(-.65, 0),
-                                         scale=Vec2(1.2, 1),
-                                         z=1)
-
-        self.label = Text(parent=self,
-                          text="Create World",
-                          scale=1.4,
-                          position=window.right+Vec2(-.65, .4),
-                          origin=Vec2(0, 0))
 
         self.word_name = InputField(parent=self, position=window.right+Vec2(-.65, .3))
 
@@ -187,61 +165,21 @@ class WorldCreation(Entity):
         self.word_seed.text = ""
 
 
-class WorldLoading(Entity):
+class WorldLoading(MenuPanel):
 
     def __init__(self, game, **kwargs):
         self.game = game
-        super().__init__()
+        super().__init__("Load World")
 
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 color=color.black66,
-                                 position=window.right+Vec2(-.65, 0),
-                                 scale=Vec2(1.2, 1),
-                                 z=1)
 
-        self.background_overlay = Entity(parent=self,
-                                         model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
-                                         color=color.black90,
-                                         position=window.right+Vec2(-.65, 0),
-                                         scale=Vec2(1.2, 1),
-                                         z=1)
-
-        self.label = Text(parent=self,
-                          text="Load World",
-                          scale=1.4,
-                          position=window.right+Vec2(-.65, .4),
-                          origin=Vec2(0, 0))
-
-
-class Options(Entity):
+class Options(MenuPanel):
 
     def __init__(self, game, **kwargs):
         self.game = game
-        super().__init__()
+        super().__init__("Options")
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 color=color.black66,
-                                 position=window.right+Vec2(-.65, 0),
-                                 scale=Vec2(1.2, 1),
-                                 z=1)
-
-        self.background_overlay = Entity(parent=self,
-                                         model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
-                                         color=color.black90,
-                                         position=window.right+Vec2(-.65, 0),
-                                         scale=Vec2(1.2, 1),
-                                         z=1)
-
-        self.label = Text(parent=self,
-                          text="Options",
-                          scale=1.4,
-                          position=window.right+Vec2(-.65, .4),
-                          origin=Vec2(0, 0))

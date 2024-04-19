@@ -1,4 +1,4 @@
-from ursina import Entity, Text, Mesh, Vec2, color
+from ursina import Entity, Text, Mesh, Vec2, color, window
 
 
 class MenuButton(Entity):
@@ -6,8 +6,6 @@ class MenuButton(Entity):
     def __init__(self, text="", **kwargs):
         super().__init__()
 
-        self.disabled = False
-        self.selected = False
         self.model = "quad"
         self.collider = "box"
         self.scale=Vec2(.3, .08)
@@ -18,9 +16,7 @@ class MenuButton(Entity):
 
         self.default_color = color.black
         self.highlight_color = color.azure
-        self.selected_color = color.smoke
         self.pressed_color = color.orange
-        self.disabled_color = color.gray
 
         self.background = Entity(parent=self, model=Mesh(vertices=[(-.4,-.4,0), (.4,-.4,0)], mode="line", thickness=2), color=self.default_color)
 
@@ -28,9 +24,6 @@ class MenuButton(Entity):
 
 
     def input(self, key):
-        if self.disabled or not self.model:
-            return
-
         if key == 'left mouse down':
             if self.hovered:
                 self.background.color = self.pressed_color
@@ -42,8 +35,8 @@ class MenuButton(Entity):
                 self.text_entity.color = self.highlight_color
 
             else:
-                self.background.color = self.default_color if not self.selected else self.selected_color
-                self.text_entity.color = self.default_color if not self.selected else self.selected_color
+                self.background.color = self.default_color
+                self.text_entity.color = self.default_color
 
 
     def on_mouse_enter(self):
@@ -52,19 +45,41 @@ class MenuButton(Entity):
 
 
     def on_mouse_exit(self):
-        self.background.color = self.default_color if not self.selected else self.selected_color
-        self.text_entity.color = self.default_color if not self.selected else self.selected_color
+        self.background.color = self.default_color
+        self.text_entity.color = self.default_color
 
 
-if __name__ == "__main__":
-    from ursina import *
+class MenuPanel(Entity):
 
-    app = Ursina(borderless=False)
+    def __init__(self, text="", **kwargs):
+        super().__init__()
 
-    text_default = Text("Default", color=color.black, position=Vec2(-.8, .4))
-    text_highlighted = Text("Highlighted", color=color.azure, position=Vec2(-.8, .3))
-    text_selected = Text("Selected", color=color.smoke, position=Vec2(-.8, .2))
-    text_pressed = Text("Pressed", color=color.orange, position=Vec2(-.8, .1))
-    text_disabled = Text("Disabled", color=color.gray, position=Vec2(-.8, .0))
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-    app.run()
+        self.background = Entity(parent=self,
+                                 model="quad",
+                                 color=color.black66,
+                                 position=window.right+Vec2(-.65, 0),
+                                 scale=Vec2(1.2, 1),
+                                 z=1)
+
+        self.background_overlay = Entity(parent=self,
+                                         model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
+                                         color=color.black90,
+                                         position=window.right+Vec2(-.65, 0),
+                                         scale=Vec2(1.2, 1),
+                                         z=1)
+
+        self.seperator = Entity(parent=self,
+                                model=Mesh(vertices=[(.5,.4,0), (-.5,.4,0)], mode="line", thickness=1.4),
+                                color=color.black90,
+                                position=window.right+Vec2(-.65, 0),
+                                scale=Vec2(1.2, 1),
+                                z=1)
+
+        self.label = Text(parent=self,
+                          text=text,
+                          scale=1.4,
+                          position=window.right+Vec2(-.65, .43),
+                          origin=Vec2(0, 0))

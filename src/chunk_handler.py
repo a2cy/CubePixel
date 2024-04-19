@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 
-from ursina import Entity, application, round_to_closest
+from ursina import Entity, application
 
 from src.chunk import Chunk
 from src.shaders import chunk_shader
@@ -117,9 +117,9 @@ class ChunkHandler(Entity):
 
 
     def get_chunk_id(self, position):
-        return (int(round_to_closest(position[0], self.chunk_size)),
-                int(round_to_closest(position[1], self.chunk_size)),
-                int(round_to_closest(position[2], self.chunk_size)))
+        return (int(((position[0] + .5) // self.chunk_size) * self.chunk_size),
+                int(((position[1] + .5) // self.chunk_size) * self.chunk_size),
+                int(((position[2] + .5) // self.chunk_size) * self.chunk_size))
 
 
     def get_entity_id(self, position):
@@ -128,9 +128,9 @@ class ChunkHandler(Entity):
 
         chunk_id = self.get_chunk_id(position)
 
-        x_position = round(position[0] + (self.chunk_size - 1) / 2 - chunk_id[0])
-        y_position = round(position[1] + (self.chunk_size - 1) / 2 - chunk_id[1])
-        z_position = round(position[2] + (self.chunk_size - 1) / 2 - chunk_id[2])
+        x_position = round(position[0] - chunk_id[0])
+        y_position = round(position[1] - chunk_id[1])
+        z_position = round(position[2] - chunk_id[2])
 
         index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
 
@@ -148,9 +148,10 @@ class ChunkHandler(Entity):
 
         chunk_id = self.get_chunk_id(position)
 
-        x_position = round(position[0] + (self.chunk_size - 1) / 2 - chunk_id[0])
-        y_position = round(position[1] + (self.chunk_size - 1) / 2 - chunk_id[1])
-        z_position = round(position[2] + (self.chunk_size - 1) / 2 - chunk_id[2])
+        x_position = round(position[0] - chunk_id[0])
+        y_position = round(position[1] - chunk_id[1])
+        z_position = round(position[2] - chunk_id[2])
+
 
         index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
 
