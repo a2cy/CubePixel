@@ -1,0 +1,9 @@
+ 
+{   
+    "name": "glass",
+    "model": "generic_block",
+    "textures": ["glass"],
+    "collider": [-0.5, -0.5, -0.5, 0.5, 0.5, 0.5],
+    "transparent": true,
+    "collision": true
+}

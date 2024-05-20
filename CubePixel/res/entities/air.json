@@ -1,0 +1,9 @@
+ 
+{   
+    "name": "air",
+    "model": "",
+    "textures": [],
+    "collider": [],
+    "transparent": true,
+    "collision": false
+}

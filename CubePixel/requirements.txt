@@ -1,0 +1,3 @@
+https://github.com/pokepetter/ursina/archive/master.zip
+cython
+numpy
