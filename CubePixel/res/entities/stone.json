@@ -1,9 +1,0 @@
- 
-{   
-    "name": "stone",
-    "model": "generic_block",
-    "textures": ["stone"],
-    "collider": [-0.5, -0.5, -0.5, 0.5, 0.5, 0.5],
-    "transparent": false,
-    "collision": true
-}
