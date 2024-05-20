@@ -1,18 +1,18 @@
-from ursina import Entity, Text, Mesh, Vec2, color, window
+from ursina import Entity, Text, Mesh, Vec2, os, color, destroy, window
+from ursina import InputField as uInputField, Button as uButton
+from ursina.scripts.property_generator import generate_properties_for_class
 
 
 class MenuButton(Entity):
 
     def __init__(self, text="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model = "quad"
         self.collider = "box"
         self.scale=Vec2(.3, .08)
         self.color = color.clear
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
 
         self.default_color = color.black
         self.highlight_color = color.azure
@@ -49,37 +49,143 @@ class MenuButton(Entity):
         self.text_entity.color = self.default_color
 
 
-class MenuPanel(Entity):
+class MenuContent(Entity):
 
     def __init__(self, text="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        self.background_panel = Entity(parent=self,
+                                       model="quad",
+                                       color=color.black66,
+                                       position=window.right+Vec2(-.65, 0),
+                                       scale=Vec2(1.2, 1),
+                                       z=1)
 
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 color=color.black66,
-                                 position=window.right+Vec2(-.65, 0),
-                                 scale=Vec2(1.2, 1),
-                                 z=1)
-
-        self.background_overlay = Entity(parent=self,
-                                         model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
-                                         color=color.black90,
-                                         position=window.right+Vec2(-.65, 0),
-                                         scale=Vec2(1.2, 1),
-                                         z=1)
-
-        self.seperator = Entity(parent=self,
-                                model=Mesh(vertices=[(.5,.4,0), (-.5,.4,0)], mode="line", thickness=1.4),
-                                color=color.black90,
-                                position=window.right+Vec2(-.65, 0),
-                                scale=Vec2(1.2, 1),
-                                z=1)
+        self.panel_overlay = Entity(parent=self,
+                                    model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
+                                    color=color.black90,
+                                    position=window.right+Vec2(-.65, 0),
+                                    scale=Vec2(1.2, 1),
+                                    z=1)
 
         self.label = Text(parent=self,
                           text=text,
                           scale=1.4,
-                          position=window.right+Vec2(-.65, .43),
+                          position=window.right+Vec2(-.65, .42),
                           origin=Vec2(0, 0))
+
+
+class InputField(uInputField):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.color = color.black50
+        self.highlight_color = color.black66
+
+        self.background = Entity(parent=self, model=Mesh(vertices=[(-.46,-.4,0), (.46,-.4,0)], mode="line", thickness=2), color=self.default_color)
+
+
+class Button(uButton):
+
+    def __init__(self, **kwargs):
+        super().__init__(scale = Vec2(.2, .08), **kwargs)
+
+        self.color = color.black50
+        self.highlight_color = color.black66
+        self.pressed_color = color.black90
+
+
+@generate_properties_for_class()
+class FileButton(uButton):
+    def __init__(self, load_menu, path, **kwargs):
+        self.load_menu = load_menu
+        self.path = path
+
+        super().__init__(scale=(.5,.05), pressed_scale=1, **kwargs)
+
+        self.color = color.black50
+        self.highlight_color = color.black66
+        self.pressed_color = color.black90
+
+        self.text_entity.scale *= 1.2
+        self.original_color = self.color
+        self.selected = False
+
+
+    def on_click(self):
+        if len([e for e in self.parent.children if e.selected]) >= self.load_menu.selection_limit and not self.selected:
+            for e in self.parent.children:
+                e.selected = False
+
+        self.selected = not self.selected
+
+
+    def selected_setter(self, value):
+        self._selected = value
+        if value == True:
+            self.color = self.pressed_color
+        else:
+            self.color = self.original_color
+
+
+@generate_properties_for_class()
+class FileBrowser(Entity):
+    def __init__(self, start_path, **kwargs):
+        self.start_path = start_path
+        super().__init__(**kwargs)
+
+        self.return_files = True
+        self.return_folders = False
+        self.selection_limit = 1
+        self.max_buttons = 12
+
+        self.button_parent = Entity(parent=self)
+
+
+    def input(self, key):
+        if key == 'scroll down':
+            if self.scroll + self.max_buttons < len(self.button_parent.children)-1:
+                self.scroll += 1
+
+        if key == 'scroll up':
+            if self.scroll > 0:
+                self.scroll -= 1
+
+
+    def scroll_setter(self, value):
+        self._scroll = value
+
+        for i, c in enumerate(self.button_parent.children):
+            if i < value or i >= value + self.max_buttons:
+                c.enabled = False
+            else:
+                c.enabled = True
+
+        self.button_parent.y = value * .055
+
+
+    def path_setter(self, value):
+        self._path = value
+
+        files = os.listdir(value)
+        files.sort()
+
+        for i in range(len(self.button_parent.children)):
+            destroy(self.button_parent.children.pop())
+
+        for i, file in enumerate(files):
+            prefix = ' <light_gray>'
+
+            FileButton(parent=self.button_parent, path=file, text=prefix+file, y=-i*.055 -.09, load_menu=self, add_to_scene_entities=False)
+
+        self.scroll = 0
+
+
+    def on_enable(self):
+        self.path = self.start_path
+        self.scroll = 0
+
+
+    def selection_getter(self):
+        return [c.path for c in self.button_parent.children if c.selected == True]

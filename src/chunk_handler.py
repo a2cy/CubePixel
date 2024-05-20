@@ -1,25 +1,23 @@
-import os
 import json
 import numpy as np
 
-from ursina import Entity, application
+from ursina import Entity, Vec3, application, os
 
 from src.chunk import Chunk
 from src.shaders import chunk_shader
+from src.settings_manager import instance as settings_manager
+from src.entity_loader import instance as entity_loader
 
 
 class ChunkHandler(Entity):
 
-    def __init__(self, game, **kwargs):
-        super().__init__()
-        self.game = game
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.updating = False
         self.world_loaded = False
         self.finished_loading = False
+        self.loading_state = ""
         self.player_chunk = ()
         self.chunks_to_load = []
         self.chunks_to_unload = []
@@ -34,24 +32,20 @@ class ChunkHandler(Entity):
         application.base.taskMgr.add(self._update, "chunk_update", taskChain = "chunk_update")
 
         self.mesh = Entity(shader=chunk_shader)
-        self.mesh.set_shader_input("texture_array", self.game.entity_loader.texture_array)
+        self.mesh.set_shader_input("texture_array", entity_loader.texture_array)
 
-        self.amp2d = self.game.parameters["amp2d"]
-        self.freq2d = self.game.parameters["freq2d"]
-        self.gain2d = self.game.parameters["gain2d"]
-        self.octaves2d = self.game.parameters["octaves2d"]
-        self.chunk_size = self.game.parameters["chunk_size"]
-        self.render_distance = self.game.settings["render_distance"]
+        self.amp2d = settings_manager.parameters["amp2d"]
+        self.freq2d = settings_manager.parameters["freq2d"]
+        self.gain2d = settings_manager.parameters["gain2d"]
+        self.octaves2d = settings_manager.parameters["octaves2d"]
+        self.chunk_size = settings_manager.parameters["chunk_size"]
+
+        self.apply_settings()
 
 
-    @property
-    def render_distance(self):
-        return self._render_distance
-
-    @render_distance.setter
-    def render_distance(self, value):
-        self._render_distance = value
-        self.world_size = value * 2 + 1
+    def apply_settings(self):
+        self.render_distance = settings_manager.settings["render_distance"]
+        self.world_size = self.render_distance * 2 + 1
 
         if self.world_loaded:
             self.player_chunk = ()
@@ -61,10 +55,10 @@ class ChunkHandler(Entity):
         world_path = f"./saves/{world_name}/"
 
         if os.path.exists(world_path):
-            return
+            return True
 
         os.makedirs(f"{world_path}chunks/", exist_ok=True)
-        world_data = {"name": world_name, "seed": seed, "player_position": [0, 0, 0]}
+        world_data = {"name": world_name, "seed": seed, "player_position": [0, 40, 0], "player_rotation": [0, 0]}
 
         with open(f"{world_path}data.json", "w+") as file:
             json.dump(world_data, file, indent=4)
@@ -73,18 +67,22 @@ class ChunkHandler(Entity):
 
 
     def load_world(self, world_name):
+        from src.player import instance as player
+
         if self.world_loaded:
             return
 
         self.world_path = f"./saves/{world_name}/"
 
         if not os.path.exists(self.world_path) or not os.path.exists(f"{self.world_path}data.json"):
-            return
+            raise
 
         with open(f"{self.world_path}data.json") as file:
             self.world_data = json.load(file)
 
-        self.game.player.position = self.world_data["player_position"]
+        player.position = self.world_data["player_position"]
+        player.rotation_y = self.world_data["player_rotation"][0]
+        player.camera_pivot.rotation_x = self.world_data["player_rotation"][1]
 
         self.seed = self.world_data["seed"]
 
@@ -93,6 +91,8 @@ class ChunkHandler(Entity):
 
 
     def unload_world(self):
+        from src.player import instance as player
+
         if not self.world_loaded:
             return
 
@@ -111,7 +111,8 @@ class ChunkHandler(Entity):
             chunk.remove_node()
 
         with open(f"{self.world_path}data.json", "w+") as file:
-            self.world_data["player_position"] = list(self.game.player.position)
+            self.world_data["player_position"] = list(player.position + Vec3(0, .1, 0))
+            self.world_data["player_rotation"] = [player.rotation_y, player.camera_pivot.rotation_x]
 
             json.dump(self.world_data, file, indent=4)
 
@@ -186,7 +187,7 @@ class ChunkHandler(Entity):
             entities = np.load(filename)
 
         else:
-            entities = self.game.entity_loader.world_generator.generate_chunkentities(self.chunk_size, self.game.entity_loader.entity_index, self.seed, self.freq2d, self.gain2d, self.octaves2d, self.amp2d, np.array(chunk_id, dtype=np.intc))
+            entities = entity_loader.world_generator.generate_chunkentities(self.chunk_size, entity_loader.entity_index, self.seed, self.freq2d, self.gain2d, self.octaves2d, self.amp2d, np.array(chunk_id, dtype=np.intc))
 
         self.cached_chunks[chunk_id] = entities
 
@@ -220,7 +221,7 @@ class ChunkHandler(Entity):
             if neighbor_id in self.cached_chunks:
                 neighbors[i] = self.cached_chunks[neighbor_id].ctypes.data
 
-        vertices, uvs = self.game.entity_loader.world_generator.combine_mesh(self.chunk_size, np.array(chunk_id, dtype=np.intc), self.cached_chunks[chunk_id], neighbors)
+        vertices, uvs = entity_loader.world_generator.combine_mesh(self.chunk_size, np.array(chunk_id, dtype=np.intc), self.cached_chunks[chunk_id], neighbors)
 
         chunk = self.loaded_chunks[chunk_id]
 
@@ -258,12 +259,13 @@ class ChunkHandler(Entity):
 
 
     def _update(self, task):
+        from src.player import instance as player
+        from src.gui import instance as gui
+
         if not self.world_loaded:
             return task.cont
 
         self.updating = True
-
-        player = self.game.player
 
         new_player_chunk = self.get_chunk_id(player.position)
 
@@ -278,11 +280,13 @@ class ChunkHandler(Entity):
             self.unload_chunk(chunk_id)
 
         elif self.chunks_to_load:
+            self.loading_state = "Loading Chunks"
             chunk_id = self.chunks_to_load.pop(0)
 
             self.load_chunk(chunk_id)
 
         elif self.chunks_to_update_low:
+            self.loading_state = "Updating Chunks"
             chunk_id = self.chunks_to_update_low.pop(0)
 
             self.update_chunk(chunk_id)
@@ -295,5 +299,11 @@ class ChunkHandler(Entity):
         else:
             self.updating = False
             self.finished_loading = True
+            self.loading_state = ""
+
+            if gui.ui_state.state == "loading_menu":
+                gui.ui_state.state = ""
 
         return task.cont
+
+instance = ChunkHandler()

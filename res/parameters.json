@@ -1,5 +1,5 @@
 {
-    "chunk_size": 48,
+    "chunk_size": 32,
     "amp2d": 16,
     "freq2d": 0.01,
     "gain2d": 0.5,

@@ -1,4 +1,7 @@
-from ursina import Entity, Vec3, held_keys, time, camera, mouse, clamp, lerp
+from ursina import Entity, Vec3, held_keys, time, color, camera, mouse, clamp, lerp
+
+from src.settings_manager import instance as settings_manager
+from src.entity_loader import instance as entity_loader
 
 
 class AABB():
@@ -47,37 +50,41 @@ class AABB():
 
 class Player(Entity):
 
-    def __init__(self, game, **kwargs):
-        super().__init__()
-        self.game = game
+    def __init__(self, **kwargs):
+        self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=.008, rotation_z=45)
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        super().__init__(**kwargs)
 
         self.walk_speed = 6
         self.fall_speed = 32
         self.gravity = 1.8
         self.acceleration = 16
         self.jump_height = 1.2
+        self.sprint_multiplier = 1.6
 
-        self.noclip_speed = 8
+        self.noclip_speed = 24
         self.noclip_acceleration = 6
         self.noclip_mode = False
 
         self.aabb_collider = AABB(self.position, [-.4, -1.5, -.4,  .4, .4, .4])
 
+        self.fov_multiplier = 1.12
         self.camera_pivot = Entity(parent=self)
         camera.parent = self.camera_pivot
         camera.position = Vec3(0,0,0)
         camera.rotation = Vec3(0,0,0)
-        camera.fov = 90
-        self.mouse_sensitivity = self.game.settings["mouse_sensitivity"]
 
         self.grounded = False
         self.direction = Vec3(0,0,0)
         self.velocity = Vec3(0,0,0)
 
-        self.aim_dot = Entity(parent=self.camera_pivot, z = 3, model="cube", scale=.02)
+        self.apply_settings()
+
+
+    def apply_settings(self):
+        self.mouse_sensitivity = settings_manager.settings["mouse_sensitivity"]
+        self.fov = settings_manager.settings["fov"]
+        camera.fov = self.fov
 
 
     def aabb_broadphase(self, collider_1, collider_2, direction):
@@ -126,35 +133,43 @@ class Player(Entity):
 
 
     def update(self):
-        if not self.game.chunk_handler.finished_loading:
+        from src.chunk_handler import instance as chunk_handler
+
+        if not chunk_handler.finished_loading:
             return
 
+        self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity
+
+        if self.rotation_y > 360:
+            self.rotation_y -= 360
+
+        elif self.rotation_y < -360:
+            self.rotation_y += 360
+
+        self.camera_pivot.rotation_x -= mouse.velocity[1] * self.mouse_sensitivity
+        self.camera_pivot.rotation_x = clamp(self.camera_pivot.rotation_x, -90, 90)
+
         if self.noclip_mode:
-            self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity
-
-            self.camera_pivot.rotation_x -= mouse.velocity[1] * self.mouse_sensitivity
-            self.camera_pivot.rotation_x = clamp(self.camera_pivot.rotation_x, -90, 90)
-
             self.direction = Vec3(self.camera_pivot.forward * (held_keys["w"] - held_keys["s"])
-                                  + self.right * (held_keys["d"] - held_keys["a"])).normalized()
+                              + self.right * (held_keys["d"] - held_keys["a"])).normalized()
 
             self.direction += self.up * (held_keys["e"] - held_keys["q"])
 
             self.velocity = lerp(self.velocity, self.direction * self.noclip_speed, self.noclip_acceleration * time.dt)
 
-            self.position += self.velocity * time.dt
-
         else:
-            self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity
-
-            self.camera_pivot.rotation_x -= mouse.velocity[1] * self.mouse_sensitivity
-            self.camera_pivot.rotation_x = clamp(self.camera_pivot.rotation_x, -90, 90)
-
             if self.grounded and held_keys["space"]:
                 self.velocity.y = 2 * (self.fall_speed * self.gravity * self.jump_height)**.5
 
             self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"])
                                   + self.right * (held_keys["d"] - held_keys["a"])).normalized()
+
+            if held_keys["left shift"]:
+                self.direction *= self.sprint_multiplier
+                camera.fov = lerp(camera.fov, self.fov * self.fov_multiplier, self.acceleration * time.dt)
+
+            else:
+                camera.fov = lerp(camera.fov, self.fov, self.acceleration * time.dt)
 
             self.velocity.xz = lerp(self.velocity, self.direction * self.walk_speed, self.acceleration * time.dt).xz
             self.velocity.y = lerp(self.velocity.y, -self.fall_speed, self.gravity * time.dt)
@@ -172,17 +187,17 @@ class Player(Entity):
 
                     position = round(self.position + velocity + offset, ndigits=0)
 
-                    entity_id = self.game.chunk_handler.get_entity_id(position)
+                    entity_id = chunk_handler.get_entity_id(position)
 
                     if not entity_id:
                         continue
 
-                    collision = self.game.entity_loader.entity_data[entity_id].collision
+                    collision = entity_loader.entity_data[entity_id].collision
 
                     if not collision:
                         continue
 
-                    collider = AABB(position, self.game.entity_loader.entity_data[entity_id].collider)
+                    collider = AABB(position, entity_loader.entity_data[entity_id].collider)
 
                     if self.aabb_broadphase(self.aabb_collider, collider, velocity):
                         collision_time, collision_normal = self.swept_aabb(self.aabb_collider, collider, velocity)
@@ -210,14 +225,23 @@ class Player(Entity):
                 if collision_normal.y == 1:
                     self.grounded = True
 
-            self.position += self.velocity * time.dt
+        self.position += self.velocity * time.dt
 
-            self.aabb_collider.vertex_1 = self.position
+        self.aabb_collider.vertex_1 = self.position
+
+
+    def input(self, key):
+        if key == "n":
+            self.noclip_mode = not self.noclip_mode
 
 
     def on_enable(self):
+        self.cursor.enable()
         mouse.locked = True
 
 
     def on_disable(self):
+        self.cursor.disable()
         mouse.locked = False
+
+instance = Player(enabled=False)

@@ -38,6 +38,7 @@ cdef class WorldGenerator:
         cdef int i, x, y, z, max_y
 
         cdef unsigned short grass = entity_index["grass_block"]
+        cdef unsigned short stone = entity_index["stone"]
         cdef unsigned short dirt = entity_index["dirt"]
         cdef unsigned short air = entity_index["air"]
 
@@ -57,12 +58,16 @@ cdef class WorldGenerator:
             for y in range(chunk_size):
                 i = x * chunk_size * chunk_size + y * chunk_size + z
                 y = y + position[1]
+                diff = max_y - y
 
-                if y == max_y:
+                if diff == 0:
                     entities[i] = grass
 
-                elif y < max_y:
+                elif diff < 5 and diff > 0:
                     entities[i] = dirt
+
+                elif diff >= 5:
+                    entities[i] = stone
 
                 else:
                     entities[i] = air
@@ -115,6 +120,7 @@ cdef class WorldGenerator:
             self.translate(entity.shape, indices[i], &entity.uvs[0], [0, 0, 0], &uvs[0])
 
         return [vertices, uvs]
+
 
     cdef translate(self, unsigned int shape, unsigned int index, float* data, int* position, float* result):
         cdef unsigned int i

@@ -72,3 +72,5 @@ class EntityLoader():
         # print(self.entity_index)
 
         self.world_generator = WorldGenerator(np.array(self.entity_data))
+
+instance = EntityLoader()
