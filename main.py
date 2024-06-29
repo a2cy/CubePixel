@@ -1,13 +1,14 @@
-from ursina import Ursina
+from ursina import Ursina, color, window
 
-from src.settings_manager import instance as settings_manager
-
+from src.settings import instance as settings
 
 app = Ursina(development_mode=True,
-             vsync=settings_manager.settings["vsync"],
-             borderless=settings_manager.settings["borderless"],
-             fullscreen=settings_manager.settings["fullscreen"],
+             vsync=settings.settings["vsync"],
+             borderless=settings.settings["borderless"],
+             fullscreen=settings.settings["fullscreen"],
              title="CubePixel")
+
+window.color = color.black
 
 from src.gui import instance # starts game
 

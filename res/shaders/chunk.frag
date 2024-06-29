@@ -6,7 +6,6 @@ in vec3 texcoord;
 
 out vec4 p3d_FragColor;
 
-
 void main() {
     vec4 color = texture(texture_array, texcoord);
 

@@ -15,8 +15,7 @@ cdef class GameEntity:
     cdef public unsigned int shape
     cdef public float [:] vertices
     cdef public float [:] uvs
-    cdef public float [:] collider
-    cdef public char transparent
+    cdef public char occlusion
     cdef public char collision
 
 
@@ -148,7 +147,7 @@ cdef class WorldGenerator:
                 if neighbor_chunk:
                     neighbor = self.entity_data[neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
 
-                    if neighbor.transparent == True:
+                    if neighbor.occlusion == False:
                         return False
 
                 continue
@@ -159,7 +158,7 @@ cdef class WorldGenerator:
                 if neighbor_chunk:
                     neighbor = self.entity_data[neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
 
-                    if neighbor.transparent == True:
+                    if neighbor.occlusion == False:
                         return False
 
                 continue
@@ -170,7 +169,7 @@ cdef class WorldGenerator:
                 if neighbor_chunk:
                     neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]]
 
-                    if neighbor.transparent == True:
+                    if neighbor.occlusion == False:
                         return False
 
                 continue
@@ -181,7 +180,7 @@ cdef class WorldGenerator:
                 if neighbor_chunk:
                     neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]]
 
-                    if neighbor.transparent == True:
+                    if neighbor.occlusion == False:
                         return False
 
                 continue
@@ -192,7 +191,7 @@ cdef class WorldGenerator:
                 if neighbor_chunk:
                     neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]]
 
-                    if neighbor.transparent == True:
+                    if neighbor.occlusion == False:
                         return False
 
                 continue
@@ -203,14 +202,14 @@ cdef class WorldGenerator:
                 if neighbor_chunk:
                     neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]]
 
-                    if neighbor.transparent == True:
+                    if neighbor.occlusion == False:
                         return False
 
                 continue
 
             neighbor = self.entity_data[entities[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]]
 
-            if neighbor.transparent == True:
+            if neighbor.occlusion == False:
                 return False
 
         return True

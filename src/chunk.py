@@ -1,4 +1,5 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, BoundingSphere, TransparencyAttrib
+# type: ignore
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, TransparencyAttrib
 
 
 class Chunk(NodePath):
@@ -14,7 +15,7 @@ class Chunk(NodePath):
     vertex_format.add_array(t_array)
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
-    def __init__(self, chunk_size, position, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__("chunk", **kwargs)
 
         self.set_transparency(TransparencyAttrib.M_dual)
@@ -28,8 +29,6 @@ class Chunk(NodePath):
 
         geom = Geom(v_data)
         geom.add_primitive(prim)
-        geom.set_bounds(BoundingSphere(position, chunk_size * 3 / 2 * 1.8))
-        self.final = True
 
         self.geom_node.add_geom(geom)
 

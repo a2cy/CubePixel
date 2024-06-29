@@ -1,6 +1,6 @@
-from ursina import Entity, Text, Mesh, Vec2, os, color, destroy, window
+import os
+from ursina import Entity, Text, Mesh, Vec2, color, destroy, window
 from ursina import InputField as uInputField, Button as uButton
-from ursina.scripts.property_generator import generate_properties_for_class
 
 
 class MenuButton(Entity):
@@ -96,7 +96,6 @@ class Button(uButton):
         self.pressed_color = color.black90
 
 
-@generate_properties_for_class()
 class FileButton(uButton):
     def __init__(self, load_menu, path, **kwargs):
         self.load_menu = load_menu
@@ -121,7 +120,12 @@ class FileButton(uButton):
         self.selected = not self.selected
 
 
-    def selected_setter(self, value):
+    @property
+    def selected(self):
+        return self._selected
+
+    @selected.setter
+    def selected(self, value):
         self._selected = value
         if value == True:
             self.color = self.pressed_color
@@ -129,7 +133,6 @@ class FileButton(uButton):
             self.color = self.original_color
 
 
-@generate_properties_for_class()
 class FileBrowser(Entity):
     def __init__(self, start_path, **kwargs):
         self.start_path = start_path
@@ -153,7 +156,12 @@ class FileBrowser(Entity):
                 self.scroll -= 1
 
 
-    def scroll_setter(self, value):
+    @property
+    def scroll(self):
+        return self._scroll
+
+    @scroll.setter
+    def scroll(self, value):
         self._scroll = value
 
         for i, c in enumerate(self.button_parent.children):
@@ -165,14 +173,22 @@ class FileBrowser(Entity):
         self.button_parent.y = value * .055
 
 
-    def path_setter(self, value):
-        self._path = value
+    @property
+    def path(self):
+        return self._path
 
-        files = os.listdir(value)
-        files.sort()
+    @path.setter
+    def path(self, value):
+        self._path = value
 
         for i in range(len(self.button_parent.children)):
             destroy(self.button_parent.children.pop())
+
+        if not os.path.exists(value):
+            return
+
+        files = os.listdir(value)
+        files.sort()
 
         for i, file in enumerate(files):
             prefix = ' <light_gray>'
@@ -182,10 +198,11 @@ class FileBrowser(Entity):
         self.scroll = 0
 
 
+    @property
+    def selection(self):
+        return [c.path for c in self.button_parent.children if c.selected == True]
+
+
     def on_enable(self):
         self.path = self.start_path
         self.scroll = 0
-
-
-    def selection_getter(self):
-        return [c.path for c in self.button_parent.children if c.selected == True]

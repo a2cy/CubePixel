@@ -1,51 +1,51 @@
 from ursina import Entity, Vec3, held_keys, time, color, camera, mouse, clamp, lerp
 
-from src.settings_manager import instance as settings_manager
-from src.entity_loader import instance as entity_loader
+from src.settings import instance as settings
+from src.resource_loader import instance as resource_loader
 
 
-class AABB():
-
-    def __init__(self, vertex_1, vertex_2):
-        self.vertex_1 = vertex_1
-        self.vertex_2 = vertex_2
+class AABB:
+    def __init__(self, position, origin, scale):
+        self.position = position
+        self.origin = origin
+        self.scale = scale
 
 
     @property
     def x(self):
-        return self.vertex_1.x
+        return self.position.x + self.origin.x
 
     @property
     def y(self):
-        return self.vertex_1.y
+        return self.position.y + self.origin.y
 
     @property
     def z(self):
-        return self.vertex_1.z
+        return self.position.z + self.origin.z
 
     @property
     def x_1(self):
-        return self.vertex_2[0] + self.vertex_1.x
+        return self.position.x + self.origin.x - self.scale.x / 2
 
     @property
     def y_1(self):
-        return self.vertex_2[1] + self.vertex_1.y
+        return self.position.y + self.origin.y - self.scale.y / 2
 
     @property
     def z_1(self):
-        return self.vertex_2[2] + self.vertex_1.z
+        return self.position.z + self.origin.z - self.scale.z / 2
 
     @property
     def x_2(self):
-        return self.vertex_2[3] + self.vertex_1.x
+        return self.position.x + self.origin.x + self.scale.x / 2
 
     @property
     def y_2(self):
-        return self.vertex_2[4] + self.vertex_1.y
+        return self.position.y + self.origin.y + self.scale.y / 2
 
     @property
     def z_2(self):
-        return self.vertex_2[5] + self.vertex_1.z
+        return self.position.z + self.origin.z + self.scale.z / 2
 
 
 class Player(Entity):
@@ -66,7 +66,8 @@ class Player(Entity):
         self.noclip_acceleration = 6
         self.noclip_mode = False
 
-        self.aabb_collider = AABB(self.position, [-.4, -1.5, -.4,  .4, .4, .4])
+        self.player_collider = AABB(Vec3(0), Vec3(0, -.8, 0), Vec3(.8, 1.8, .8))
+        self.entity_collider = AABB(Vec3(0), Vec3(0), Vec3(1))
 
         self.fov_multiplier = 1.12
         self.camera_pivot = Entity(parent=self)
@@ -82,8 +83,8 @@ class Player(Entity):
 
 
     def apply_settings(self):
-        self.mouse_sensitivity = settings_manager.settings["mouse_sensitivity"]
-        self.fov = settings_manager.settings["fov"]
+        self.mouse_sensitivity = settings.settings["mouse_sensitivity"]
+        self.fov = settings.settings["fov"]
         camera.fov = self.fov
 
 
@@ -192,15 +193,15 @@ class Player(Entity):
                     if not entity_id:
                         continue
 
-                    collision = entity_loader.entity_data[entity_id].collision
+                    collision = resource_loader.entity_data[entity_id].collision
 
                     if not collision:
                         continue
 
-                    collider = AABB(position, entity_loader.entity_data[entity_id].collider)
+                    self.entity_collider.position = position
 
-                    if self.aabb_broadphase(self.aabb_collider, collider, velocity):
-                        collision_time, collision_normal = self.swept_aabb(self.aabb_collider, collider, velocity)
+                    if self.aabb_broadphase(self.player_collider, self.entity_collider, velocity):
+                        collision_time, collision_normal = self.swept_aabb(self.player_collider, self.entity_collider, velocity)
 
                         collisions.append((collision_time, collision_normal))
 
@@ -227,7 +228,7 @@ class Player(Entity):
 
         self.position += self.velocity * time.dt
 
-        self.aabb_collider.vertex_1 = self.position
+        self.player_collider.position = self.position
 
 
     def input(self, key):

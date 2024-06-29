@@ -3,7 +3,6 @@
     "name": "dirt",
     "model": "generic_block",
     "textures": ["dirt"],
-    "collider": [-0.5, -0.5, -0.5, 0.5, 0.5, 0.5],
-    "transparent": false,
+    "occlusion": true,
     "collision": true
 }

@@ -1,12 +1,12 @@
+import os
 import json
 import numpy as np
 
-from ursina import Entity, Vec3, application, os
+from ursina import Entity, Vec3
 
 from src.chunk import Chunk
-from src.shaders import chunk_shader
-from src.settings_manager import instance as settings_manager
-from src.entity_loader import instance as entity_loader
+from src.settings import instance as settings
+from src.resource_loader import instance as resource_loader
 
 
 class ChunkHandler(Entity):
@@ -26,44 +26,55 @@ class ChunkHandler(Entity):
         self.loaded_chunks = {}
         self.cached_chunks = {}
 
-        os.makedirs(f"./saves/", exist_ok=True)
+        self.mesh = Entity(shader=resource_loader.chunk_shader)
+        self.mesh.set_shader_input("texture_array", resource_loader.texture_array)
 
-        application.base.taskMgr.setupTaskChain("chunk_update", numThreads = 1, frameSync = True)
-        application.base.taskMgr.add(self._update, "chunk_update", taskChain = "chunk_update")
+        self.amp2d = 16
+        self.freq2d = 0.01
+        self.gain2d = 0.5
+        self.octaves2d = 3
+        self.chunk_size = 64
 
-        self.mesh = Entity(shader=chunk_shader)
-        self.mesh.set_shader_input("texture_array", entity_loader.texture_array)
-
-        self.amp2d = settings_manager.parameters["amp2d"]
-        self.freq2d = settings_manager.parameters["freq2d"]
-        self.gain2d = settings_manager.parameters["gain2d"]
-        self.octaves2d = settings_manager.parameters["octaves2d"]
-        self.chunk_size = settings_manager.parameters["chunk_size"]
-
-        self.apply_settings()
+        self.reload()
 
 
-    def apply_settings(self):
-        self.render_distance = settings_manager.settings["render_distance"]
-        self.world_size = self.render_distance * 2 + 1
+    def reload(self):
+        render_distance = settings.settings["render_distance"]
+        self.world_size = render_distance * 2 + 1
 
         if self.world_loaded:
-            self.player_chunk = ()
+            self.unload_world()
+            self.load_world(self.world_name)
 
 
     def create_world(self, world_name, seed):
         world_path = f"./saves/{world_name}/"
 
         if os.path.exists(world_path):
-            return True
+            raise
 
         os.makedirs(f"{world_path}chunks/", exist_ok=True)
-        world_data = {"name": world_name, "seed": seed, "player_position": [0, 40, 0], "player_rotation": [0, 0]}
+        world_data = {"seed": seed, "player_position": [0, 40, 0], "player_rotation": [0, 0]}
 
         with open(f"{world_path}data.json", "w+") as file:
             json.dump(world_data, file, indent=4)
 
         self.load_world(world_name)
+
+
+    def delete_world(self, world_name):
+        world_path = f"./saves/{world_name}/"
+
+        if not os.path.exists(world_path):
+            raise
+
+        files = os.listdir(f"{world_path}chunks/")
+
+        for file in files:
+            os.remove(f"{world_path}chunks/{file}")
+
+        os.remove(f"{world_path}data.json")
+        os.removedirs(f"{world_path}chunks/")
 
 
     def load_world(self, world_name):
@@ -72,12 +83,12 @@ class ChunkHandler(Entity):
         if self.world_loaded:
             return
 
-        self.world_path = f"./saves/{world_name}/"
+        self.world_name = world_name
 
-        if not os.path.exists(self.world_path) or not os.path.exists(f"{self.world_path}data.json"):
+        if not os.path.exists(f"./saves/{self.world_name}/") or not os.path.exists(f"./saves/{self.world_name}/data.json"):
             raise
 
-        with open(f"{self.world_path}data.json") as file:
+        with open(f"./saves/{world_name}/data.json") as file:
             self.world_data = json.load(file)
 
         player.position = self.world_data["player_position"]
@@ -110,7 +121,7 @@ class ChunkHandler(Entity):
             chunk = self.loaded_chunks.pop(chunk_id)
             chunk.remove_node()
 
-        with open(f"{self.world_path}data.json", "w+") as file:
+        with open(f"./saves/{self.world_name}/data.json", "w+") as file:
             self.world_data["player_position"] = list(player.position + Vec3(0, .1, 0))
             self.world_data["player_rotation"] = [player.rotation_y, player.camera_pivot.rotation_x]
 
@@ -181,13 +192,13 @@ class ChunkHandler(Entity):
         if chunk_id in self.cached_chunks:
             return
 
-        filename = f"{self.world_path}chunks/{chunk_id}.npy"
+        filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
         if os.path.exists(filename):
             entities = np.load(filename)
 
         else:
-            entities = entity_loader.world_generator.generate_chunkentities(self.chunk_size, entity_loader.entity_index, self.seed, self.freq2d, self.gain2d, self.octaves2d, self.amp2d, np.array(chunk_id, dtype=np.intc))
+            entities = resource_loader.world_generator.generate_chunkentities(self.chunk_size, resource_loader.entity_index, self.seed, self.freq2d, self.gain2d, self.octaves2d, self.amp2d, np.array(chunk_id, dtype=np.intc))
 
         self.cached_chunks[chunk_id] = entities
 
@@ -198,7 +209,7 @@ class ChunkHandler(Entity):
         if not chunk_id in self.cached_chunks:
             return
 
-        filename = f"{self.world_path}chunks/{chunk_id}.npy"
+        filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
         entities = self.cached_chunks[chunk_id]
 
@@ -221,7 +232,7 @@ class ChunkHandler(Entity):
             if neighbor_id in self.cached_chunks:
                 neighbors[i] = self.cached_chunks[neighbor_id].ctypes.data
 
-        vertices, uvs = entity_loader.world_generator.combine_mesh(self.chunk_size, np.array(chunk_id, dtype=np.intc), self.cached_chunks[chunk_id], neighbors)
+        vertices, uvs = resource_loader.world_generator.combine_mesh(self.chunk_size, np.array(chunk_id, dtype=np.intc), self.cached_chunks[chunk_id], neighbors)
 
         chunk = self.loaded_chunks[chunk_id]
 
@@ -244,7 +255,7 @@ class ChunkHandler(Entity):
 
         for chunk_id in chunk_ids:
             if not chunk_id in self.loaded_chunks:
-                chunk = Chunk(self.chunk_size, chunk_id)
+                chunk = Chunk()
                 chunk.reparent_to(self.mesh)
                 self.loaded_chunks[chunk_id] = chunk
 
@@ -258,12 +269,11 @@ class ChunkHandler(Entity):
                 self.chunks_to_unload.append(chunk_id)
 
 
-    def _update(self, task):
+    def update(self):
         from src.player import instance as player
-        from src.gui import instance as gui
 
         if not self.world_loaded:
-            return task.cont
+            return
 
         self.updating = True
 
@@ -300,10 +310,5 @@ class ChunkHandler(Entity):
             self.updating = False
             self.finished_loading = True
             self.loading_state = ""
-
-            if gui.ui_state.state == "loading_menu":
-                gui.ui_state.state = ""
-
-        return task.cont
 
 instance = ChunkHandler()

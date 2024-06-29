@@ -2,18 +2,18 @@ import os
 import json
 import numpy as np
 
+from ursina import Shader
+
 from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState
 
 from cython_functions import WorldGenerator, GameEntity
 
 
-class EntityLoader():
+class ResourceLoader():
 
     def __init__(self):
         texture_index = 0
         entities = []
-        self.entity_data = []
-        self.entity_index = {}
 
         files = os.listdir("./res/entities/")
         files.sort()
@@ -29,6 +29,11 @@ class EntityLoader():
         self.texture_array.set_magfilter(SamplerState.FT_nearest)
         self.texture_array.set_anisotropic_degree(16)
 
+        self.chunk_shader = Shader.load(language=Shader.GLSL, vertex="./res/shaders/chunk.vert", fragment="./res/shaders/chunk.frag")
+
+        self.entity_data = []
+        self.entity_index = {}
+
         for i, entity in enumerate(entities):
             if not entity["name"]:
                 continue
@@ -37,10 +42,9 @@ class EntityLoader():
 
             texture_names = entity["textures"]
             model_name = entity["model"]
-            collider = entity["collider"]
 
             game_entity = GameEntity()
-            game_entity.transparent = bool(entity["transparent"])
+            game_entity.occlusion = bool(entity["occlusion"])
             game_entity.collision = bool(entity["collision"])
 
             if texture_names:
@@ -65,12 +69,10 @@ class EntityLoader():
             game_entity.vertices = np.array(vertices, dtype=np.single).ravel()
             game_entity.uvs = np.array(uvs, dtype=np.single).ravel()
 
-            game_entity.collider = np.array(collider, dtype=np.single)
-
             self.entity_data.append(game_entity)
 
-        # print(self.entity_index)
+        print(self.entity_index)
 
         self.world_generator = WorldGenerator(np.array(self.entity_data))
 
-instance = EntityLoader()
+instance = ResourceLoader()

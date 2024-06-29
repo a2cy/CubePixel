@@ -1,4 +1,4 @@
-from ursina import Entity, Text, Mesh, Func, Animator, Vec2, Sky, application, color, time, Quad, camera, scene, window
+from ursina import Entity, Text, Mesh, Func, Animator, Vec2, Sky, application, color, time, Quad, invoke, camera, scene, window
 
 from src.gui_prefabs import MenuButton, MenuContent, InputField, Button, FileBrowser
 
@@ -9,6 +9,7 @@ class Gui(Entity):
         super().__init__(**kwargs)
 
         self.sky = Sky(parent=scene)
+        self.sky.disable()
 
         self.main_menu = MainMenu()
 
@@ -34,9 +35,35 @@ class Gui(Entity):
             self.ui_state.state = ""
             player.enable()
 
+        if key == "u":
+            from src.chunk_handler import instance as chunk_handler
+
+            chunk_handler.modify_entity(player.position, 3)
+
 
     def update(self):
-        self.sky.position = camera.position
+        self.sky.position = camera.world_position
+
+
+class Notification(Text):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.color = color.red
+
+    @property
+    def value(self):
+        return
+
+    @value.setter
+    def value(self, value):
+        self.text = value
+
+        if hasattr(self, "reset"):
+            self.reset.kill()
+
+        self.reset = invoke(Func(setattr, self, "text", ""), delay=2)
 
 
 class MainMenu(Entity):
@@ -69,6 +96,10 @@ class MainMenu(Entity):
                           scale=1.8,
                           position=window.left+Vec2(.25, .45),
                           origin=Vec2(0, 0))
+
+        self.notification = Notification(parent=self,
+                                         position=window.left+Vec2(.25, -.45),
+                                         origin=Vec2(0, 0))
 
         self.world_creation = WorldCreation(parent=self)
 
@@ -146,6 +177,7 @@ class PauseMenu(Entity):
 
             instance.ui_state.state = "main_menu"
             chunk_handler.unload_world()
+            instance.sky.disable()
 
         self.return_button = MenuButton(parent=self, text="Return To Menu", position=window.left+Vec2(.25, .25),
                                         on_click=_return)
@@ -190,7 +222,19 @@ class LoadingMenu(Entity):
     def update(self):
         from src.chunk_handler import instance as chunk_handler
 
+        if chunk_handler.finished_loading:
+            instance.ui_state.state = ""
+
         self.status.text = chunk_handler.loading_state
+
+
+    def on_disable(self):
+        from src.player import instance as player
+        from src.chunk_handler import instance as chunk_handler
+
+        if chunk_handler.world_loaded:
+            player.enable()
+            instance.sky.enable()
 
 
 class WorldCreation(MenuContent):
@@ -216,21 +260,21 @@ class WorldCreation(MenuContent):
 
 
         def create_world():
-            from src.player import instance as player
             from src.chunk_handler import instance as chunk_handler
 
             if not self.world_name.text:
-                print("error")
+                instance.main_menu.notification.value = "Missing world name"
                 return
 
             seed = int(self.world_seed.text) if self.world_seed.text else int(time.time())
 
-            if chunk_handler.create_world(self.world_name.text, seed):
-                print("error")
+            try:
+                chunk_handler.create_world(self.world_name.text, seed)
+            except:
+                instance.main_menu.notification.value = "World name already used"
                 return
 
-            instance.ui_state.state = ""
-            player.enable()
+            instance.ui_state.state = "loading_menu"
 
         self.create_button = Button(parent=self, text="Create World", position=window.right+Vec2(-.65, 0),
                                     on_click=create_world)
@@ -252,39 +296,35 @@ class WorldLoading(MenuContent):
 
 
         def load_world():
-            from src.player import instance as player
             from src.chunk_handler import instance as chunk_handler
 
             if not self.file_browser.selection:
-                print("error")
                 return
 
             try:
                 chunk_handler.load_world(self.file_browser.selection[0])
             except:
-                print("error")
+                instance.main_menu.notification.value = "Failed to load world"
                 return
 
             instance.ui_state.state = "loading_menu"
-            player.enable()
 
         self.load_button = Button(parent=self, text="Load World", position=window.right+Vec2(-.9, -0.4),
                                   on_click=load_world)
 
 
-        def rename_world():
-            if not self.file_browser.selection:
-                print("error")
-                return
-
-        self.rename_button = Button(parent=self, text="Rename World", position=window.right+Vec2(-.65, -0.4),
-                                    on_click=rename_world)
-
-
         def delete_world():
+            from src.chunk_handler import instance as chunk_handler
+
             if not self.file_browser.selection:
-                print("error")
                 return
+
+            try:
+                chunk_handler.delete_world(self.file_browser.selection[0])
+            except:
+                return
+            
+            self.file_browser.on_enable()
 
         self.delete_button = Button(parent=self, text="Delete World", position=window.right+Vec2(-.4, -0.4),
                                     on_click=delete_world)
