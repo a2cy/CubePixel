@@ -11,7 +11,7 @@ import numpy as np
 np.import_array()
 
 
-cdef class GameEntity:
+cdef class VoxelType:
     cdef public unsigned int shape
     cdef public float [:] vertices
     cdef public float [:] uvs
@@ -21,32 +21,34 @@ cdef class GameEntity:
 
 cdef class WorldGenerator:
 
-    cdef GameEntity [:] entity_data
+    cdef VoxelType [:] voxel_types
 
     cdef fnl_state noise2d
 
-    def __init__(self, GameEntity [:] entity_data):
-        self.entity_data = entity_data
+    def __init__(self, VoxelType [:] voxel_types):
+        self.voxel_types = voxel_types
 
         self.noise2d = fnlCreateState()
         self.noise2d.noise_type = FNL_NOISE_OPENSIMPLEX2
         self.noise2d.fractal_type = FNL_FRACTAL_FBM
 
 
-    def generate_chunkentities(self, unsigned short chunk_size, dict entity_index, int seed, float freq2d, float gain2d, int octaves2d, float amp2d, int [:] position):
+    def generate_voxels(self, unsigned short chunk_size, dict voxel_index, int seed, int [:] position):
         cdef int i, x, y, z, max_y
 
-        cdef unsigned short grass = entity_index["grass_block"]
-        cdef unsigned short stone = entity_index["stone"]
-        cdef unsigned short dirt = entity_index["dirt"]
-        cdef unsigned short air = entity_index["air"]
+        cdef float amp2d = 16
+
+        cdef unsigned short air = voxel_index["air"]
+        cdef unsigned short dirt = voxel_index["dirt"]
+        cdef unsigned short grass = voxel_index["grass"]
+        cdef unsigned short stone = voxel_index["stone"]
 
         self.noise2d.seed = seed
-        self.noise2d.frequency = freq2d
-        self.noise2d.gain = gain2d
-        self.noise2d.octaves = octaves2d
+        self.noise2d.frequency = 0.01
+        self.noise2d.gain = 0.5
+        self.noise2d.octaves = 3
 
-        cdef np.ndarray[unsigned short, ndim=1] entities = np.zeros(chunk_size**3, dtype=np.ushort)
+        cdef np.ndarray[unsigned short, ndim=1] voxel_data = np.zeros(chunk_size**3, dtype=np.ushort)
 
         for i in range(chunk_size**2):
             x = i // chunk_size
@@ -60,38 +62,38 @@ cdef class WorldGenerator:
                 diff = max_y - y
 
                 if diff == 0:
-                    entities[i] = grass
+                    voxel_data[i] = grass
 
                 elif diff < 5 and diff > 0:
-                    entities[i] = dirt
+                    voxel_data[i] = dirt
 
                 elif diff >= 5:
-                    entities[i] = stone
+                    voxel_data[i] = stone
 
                 else:
-                    entities[i] = air
+                    voxel_data[i] = air
 
-        return entities
+        return voxel_data
 
 
-    def combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] entities, long long [:] neighbors):
+    def combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] voxel_data, long long [:] neighbors):
         cdef int i, shape, vertex_count = 0
-        cdef int[3] entity_position
+        cdef int[3] voxel_position
         cdef np.ndarray[int, ndim=1] indices = np.zeros((chunk_size**3), dtype=np.intc)
-        cdef GameEntity entity
+        cdef VoxelType voxel
 
         for i in range(chunk_size**3):
-            shape = self.entity_data[entities[i]].shape
+            shape = self.voxel_types[voxel_data[i]].shape
 
             if shape == 0:
                 indices[i] = -1
                 continue
 
-            entity_position[0] = i / chunk_size / chunk_size
-            entity_position[1] = i / chunk_size % chunk_size
-            entity_position[2] = i % chunk_size % chunk_size
+            voxel_position[0] = i / chunk_size / chunk_size
+            voxel_position[1] = i / chunk_size % chunk_size
+            voxel_position[2] = i % chunk_size % chunk_size
 
-            if self.check_occlusion(chunk_size, entity_position, &entities[0], &neighbors[0]):
+            if self.check_occlusion(chunk_size, voxel_position, &voxel_data[0], &neighbors[0]):
                 indices[i] = -1
                 continue
 
@@ -109,14 +111,14 @@ cdef class WorldGenerator:
             if indices[i] == -1:
                 continue
 
-            entity_position[0] = i / chunk_size / chunk_size + position[0]
-            entity_position[1] = i / chunk_size % chunk_size + position[1]
-            entity_position[2] = i % chunk_size % chunk_size + position[2]
+            voxel_position[0] = i / chunk_size / chunk_size + position[0]
+            voxel_position[1] = i / chunk_size % chunk_size + position[1]
+            voxel_position[2] = i % chunk_size % chunk_size + position[2]
 
-            entity = self.entity_data[entities[i]]
+            voxel = self.voxel_types[voxel_data[i]]
 
-            self.translate(entity.shape, indices[i], &entity.vertices[0], entity_position, &vertices[0])
-            self.translate(entity.shape, indices[i], &entity.uvs[0], [0, 0, 0], &uvs[0])
+            self.translate(voxel.shape, indices[i], &voxel.vertices[0], voxel_position, &vertices[0])
+            self.translate(voxel.shape, indices[i], &voxel.uvs[0], [0, 0, 0], &uvs[0])
 
         return [vertices, uvs]
 
@@ -130,12 +132,12 @@ cdef class WorldGenerator:
             result[i*3 + index*3 + 2] = data[i*3 + 2] + position[2]
 
 
-    cdef check_occlusion(self, unsigned short chunk_size, int* position, unsigned short* entities, long long* neighbor_chunks):
+    cdef check_occlusion(self, unsigned short chunk_size, int* position, unsigned short* voxel_data, long long* neighbor_chunks):
         cdef int x_position, y_position, z_position
         cdef unsigned int i
         cdef unsigned short* neighbor_chunk
 
-        cdef GameEntity neighbor
+        cdef VoxelType neighbor
 
         for i in range(3 * 2):
             x_position = (i + 0) % 3 / 2 * (i / 3 * 2 - 1) + position[0]
@@ -145,7 +147,7 @@ cdef class WorldGenerator:
             if x_position < 0:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[2]
                 if neighbor_chunk:
-                    neighbor = self.entity_data[neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
+                    neighbor = self.voxel_types[neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
 
                     if neighbor.occlusion == False:
                         return False
@@ -156,7 +158,7 @@ cdef class WorldGenerator:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[5]
 
                 if neighbor_chunk:
-                    neighbor = self.entity_data[neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
+                    neighbor = self.voxel_types[neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
 
                     if neighbor.occlusion == False:
                         return False
@@ -167,7 +169,7 @@ cdef class WorldGenerator:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[1]
 
                 if neighbor_chunk:
-                    neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]]
+                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]]
 
                     if neighbor.occlusion == False:
                         return False
@@ -178,7 +180,7 @@ cdef class WorldGenerator:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[4]
 
                 if neighbor_chunk:
-                    neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]]
+                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]]
 
                     if neighbor.occlusion == False:
                         return False
@@ -189,7 +191,7 @@ cdef class WorldGenerator:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[0]
 
                 if neighbor_chunk:
-                    neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]]
+                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]]
 
                     if neighbor.occlusion == False:
                         return False
@@ -200,14 +202,14 @@ cdef class WorldGenerator:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[3]
 
                 if neighbor_chunk:
-                    neighbor = self.entity_data[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]]
+                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]]
 
                     if neighbor.occlusion == False:
                         return False
 
                 continue
 
-            neighbor = self.entity_data[entities[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]]
+            neighbor = self.voxel_types[voxel_data[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]]
 
             if neighbor.occlusion == False:
                 return False

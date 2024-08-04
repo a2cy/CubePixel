@@ -1,8 +1,7 @@
-# type: ignore
 from panda3d.core import NodePath, Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles, TransparencyAttrib
 
 
-class Chunk(NodePath):
+class VoxelChunk(NodePath):
 
     v_array = GeomVertexArrayFormat()
     v_array.add_column("vertex", 3, Geom.NT_float32, Geom.C_point)
@@ -16,14 +15,14 @@ class Chunk(NodePath):
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
     def __init__(self, **kwargs):
-        super().__init__("chunk", **kwargs)
+        super().__init__("voxel_chunk", **kwargs)
 
         self.set_transparency(TransparencyAttrib.M_dual)
 
-        self.geom_node = GeomNode("chunk")
+        self.geom_node = GeomNode("voxel_chunk")
         self.attach_new_node(self.geom_node)
 
-        v_data = GeomVertexData("chunk", self.vertex_format, Geom.UH_static)
+        v_data = GeomVertexData("voxel_chunk", self.vertex_format, Geom.UH_static)
         prim = GeomTriangles(Geom.UH_static)
         prim.set_index_type(Geom.NT_uint32)
 

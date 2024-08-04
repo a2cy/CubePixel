@@ -141,9 +141,30 @@ class FileBrowser(Entity):
         self.return_files = True
         self.return_folders = False
         self.selection_limit = 1
-        self.max_buttons = 12
+        self.max_buttons = 11
 
         self.button_parent = Entity(parent=self)
+
+        self.scroll_up = Entity(parent=self,
+                                model='quad',
+                                texture='arrow_down',
+                                rotation_z=180,
+                                scale=(.05,.05),
+                                y=-.04,
+                                z=-.1,
+                                color=color.light_gray,
+                                enabled=False,
+                                add_to_scene_entities=False)
+
+        self.scroll_down = Entity(parent=self,
+                                  model='quad',
+                                  texture='arrow_down',
+                                  scale=(.05,.05),
+                                  y=(-self.max_buttons*.055)-.09,
+                                  z=-.1,
+                                  color=color.light_gray,
+                                  enabled=False,
+                                  add_to_scene_entities=False)
 
 
     def input(self, key):
@@ -171,6 +192,9 @@ class FileBrowser(Entity):
                 c.enabled = True
 
         self.button_parent.y = value * .055
+
+        self.scroll_up.enabled = value > 0
+        self.scroll_down.enabled = value + self.max_buttons + 1 != len(self.button_parent.children)
 
 
     @property
