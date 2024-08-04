@@ -1,8 +1,8 @@
- 
 {   
     "name": "",
     "model": "",
     "textures": [],
     "occlusion": false,
-    "collision": false
+    "collision": false,
+    "add_to_inventory": false
 }

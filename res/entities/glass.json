@@ -1,8 +1,8 @@
- 
 {   
     "name": "glass",
     "model": "generic_block",
     "textures": ["glass"],
     "occlusion": false,
-    "collision": true
+    "collision": true,
+    "add_to_inventory": true
 }

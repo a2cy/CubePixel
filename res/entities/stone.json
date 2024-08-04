@@ -1,8 +1,8 @@
- 
 {   
     "name": "stone",
     "model": "generic_block",
     "textures": ["stone"],
     "occlusion": true,
-    "collision": true
+    "collision": true,
+    "add_to_inventory": true
 }
