@@ -1,8 +1,0 @@
- 
-{   
-    "name": "grass_block",
-    "model": "grass_block",
-    "textures": ["grass", "grass_side", "dirt"],
-    "occlusion": true,
-    "collision": true
-}
