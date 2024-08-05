@@ -2,9 +2,7 @@ import os
 import json
 import numpy as np
 
-from ursina import Shader
-
-from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState
+from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState, Shader as Shader
 
 from cython_functions import VoxelType
 
@@ -18,9 +16,8 @@ class ResourceLoader():
 
 
     def load_shaders(self):
-        self.voxel_shader = Shader.load(language=Shader.GLSL,
-                                        vertex="./res/shaders/voxel.vert",
-                                        fragment="./res/shaders/voxel.frag",)
+        self.voxel_shader = Shader.load(Shader.SL_GLSL, "./res/shaders/voxel.vert", "./res/shaders/voxel.frag",)
+        self.selector_shader = Shader.load(Shader.SL_GLSL, "./res/shaders/selector.vert", "./res/shaders/selector.frag",)
 
 
     def load_voxel_data(self):

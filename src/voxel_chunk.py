@@ -14,10 +14,12 @@ class VoxelChunk(NodePath):
     vertex_format.add_array(t_array)
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
-    def __init__(self, **kwargs):
+    def __init__(self, shader=None, **kwargs):
         super().__init__("voxel_chunk", **kwargs)
 
-        self.set_transparency(TransparencyAttrib.M_dual)
+        if shader:
+            self.set_shader(shader)
+            self.set_transparency(TransparencyAttrib.M_dual)
 
         self.geom_node = GeomNode("voxel_chunk")
         self.attach_new_node(self.geom_node)

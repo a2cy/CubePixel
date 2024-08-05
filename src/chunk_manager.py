@@ -29,9 +29,6 @@ class ChunkManager(Entity):
 
         self.world_generator = WorldGenerator(np.asarray(resource_loader.voxel_types))
 
-        self.mesh = Entity(shader=resource_loader.voxel_shader)
-        self.mesh.set_shader_input("texture_array", resource_loader.texture_array)
-
         self.chunk_size = 64
 
         self.reload()
@@ -256,8 +253,9 @@ class ChunkManager(Entity):
 
         for chunk_id in chunk_ids:
             if not chunk_id in self.loaded_chunks:
-                chunk = VoxelChunk()
-                chunk.reparent_to(self.mesh)
+                chunk = VoxelChunk(shader=resource_loader.voxel_shader)
+                chunk.set_shader_input("texture_array", resource_loader.texture_array)
+                chunk.reparent_to(self)
                 self.loaded_chunks[chunk_id] = chunk
 
                 self.chunks_to_load.append(chunk_id)
@@ -289,18 +287,15 @@ class ChunkManager(Entity):
             self.unload_chunk(chunk_id)
 
         elif self.chunks_to_load:
-
             chunk_id = self.chunks_to_load.pop(0)
             self.load_chunk(chunk_id)
 
         elif self.chunks_to_update_low:
-
             chunk_id = self.chunks_to_update_low.pop(0)
             self.update_chunk(chunk_id)
 
         elif not self.player_chunk == new_player_chunk:
             self.player_chunk = new_player_chunk
-
             self.update_chunks()
 
         else:

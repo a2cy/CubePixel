@@ -53,7 +53,7 @@ class Player(Entity):
 
     def __init__(self, **kwargs):
         self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=.008, rotation_z=45)
-        self.selector = Entity(model="cube", texture="selector", color=color.gray, scale=1.02)
+        self.selector = Entity(model="cube", shader=resource_loader.selector_shader, scale=1.005)
 
         super().__init__(**kwargs)
 
