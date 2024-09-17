@@ -4,5 +4,5 @@
     "textures": ["dirt"],
     "occlusion": true,
     "collision": true,
-    "add_to_inventory": true
+    "inventory": true
 }

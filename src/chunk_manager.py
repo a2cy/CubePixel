@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 from queue import Queue
-from ursina import Entity, Vec3
+from ursina import Entity, Vec3, print_info, print_warning
 
 from src.voxel_chunk import VoxelChunk
 from src.settings import instance as settings
@@ -95,6 +95,8 @@ class ChunkManager(Entity):
         self.finished_loading = False
         self.world_loaded = True
 
+        print_info(f"loaded world {self.world_name} with seed {self.seed}")
+
 
     def unload_world(self):
         from src.player import instance as player
@@ -122,6 +124,8 @@ class ChunkManager(Entity):
 
             json.dump(self.world_data, file, indent=4)
 
+        print_info(f"unloaded world {self.world_name}")
+
 
     def get_chunk_id(self, position):
         return (int(((position[0] + .5) // self.chunk_size) * self.chunk_size),
@@ -129,7 +133,7 @@ class ChunkManager(Entity):
                 int(((position[2] + .5) // self.chunk_size) * self.chunk_size))
 
 
-    def get_entity_id(self, position):
+    def get_voxel_id(self, position):
         if not self.world_loaded:
             return
 
@@ -147,7 +151,7 @@ class ChunkManager(Entity):
         return self.cached_chunks[chunk_id][index]
 
 
-    def modify_entity(self, position, entity_id):
+    def modify_entity(self, position, voxel_id):
         if not self.world_loaded:
             return
 
@@ -165,7 +169,7 @@ class ChunkManager(Entity):
         if not chunk_id in self.cached_chunks:
             return
 
-        self.cached_chunks[chunk_id][index] = entity_id
+        self.cached_chunks[chunk_id][index] = voxel_id
 
         for i in range(3 * 2):
             neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[0],
@@ -218,6 +222,7 @@ class ChunkManager(Entity):
             return
 
         if not chunk_id in self.cached_chunks:
+            print_warning(f"failed to update {chunk_id}")
             return
 
         neighbors = np.zeros(6, dtype=np.longlong)

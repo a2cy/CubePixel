@@ -4,5 +4,5 @@
     "textures": [],
     "occlusion": false,
     "collision": false,
-    "add_to_inventory": false
+    "inventory": false
 }

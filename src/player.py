@@ -129,7 +129,7 @@ class Player(Entity):
                 current_position.z += step_z
                 hit_normal = Vec3(0, 0, -step_z)
 
-            entity_id = chunk_manager.get_entity_id(current_position)
+            entity_id = chunk_manager.get_voxel_id(current_position)
 
             if entity_id == None:
                 continue
@@ -243,7 +243,7 @@ class Player(Entity):
 
                     position = round(self.position + velocity + offset, ndigits=0)
 
-                    entity_id = chunk_manager.get_entity_id(position)
+                    entity_id = chunk_manager.get_voxel_id(position)
 
                     if not entity_id:
                         continue

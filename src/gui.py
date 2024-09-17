@@ -1,6 +1,7 @@
 from ursina import Entity, Text, Slider, Mesh, Func, Animator, Vec2, Sky, application, color, time, Quad, camera, scene, window
 
-from src.gui_prefabs import MenuButton, MenuContent, InputField, Button, FileBrowser
+from src.gui_prefabs import MenuButton, MenuContent, InputField, Button, FileButton, ItemButton
+from src.resource_loader import instance as resource_loader
 from src.settings import instance as settings
 
 
@@ -16,11 +17,14 @@ class Gui(Entity):
 
         self.pause_menu = PauseMenu()
 
+        self.inventory = Inventory()
+
         self.loading_menu = LoadingMenu()
 
         self.ui_state = Animator({"": None,
                                   "main_menu": self.main_menu,
                                   "pause_menu": self.pause_menu,
+                                  "inventory": self.inventory,
                                   "loading_menu": self.loading_menu},
                                   "main_menu")
 
@@ -36,43 +40,17 @@ class Gui(Entity):
             self.ui_state.state = ""
             player.enable()
 
+        if self.ui_state.state == "" and key == "tab":
+            self.ui_state.state = "inventory"
+            player.disable()
+
+        elif self.ui_state.state == "inventory" and (key == "tab" or key == "escape"):
+            self.ui_state.state = ""
+            player.enable()
+
 
     def update(self):
         self.sky.position = camera.world_position
-
-
-class Notification(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__(parent=camera.ui, **kwargs)
-
-        self.idle_position = window.left+Vec2(-.25, -.4)
-        self.active_position = window.left+Vec2(.25, -.4)
-
-        self.model = Quad(aspect=.35 / .1)
-        self.color = color.black50
-        self.scale = Vec2(.35, .1)
-        self.position = self.idle_position
-
-        self.text = Text(parent=self, text="", z=-.1, scale=Vec2(1/self.scale.x, 1/self.scale.y), origin=Vec2(0, 0), color=color.yellow)
-
-        self.cooldown = 0
-
-
-    def update(self):
-        if self.cooldown > 0:
-            self.cooldown -= time.dt
-            return
-
-        if self.position.xy == self.active_position:
-            self.animate_position(self.idle_position, duration=.25)
-            self.cooldown = .5
-
-
-    def notify(self, text):
-        self.animate_position(self.active_position, duration=.25)
-        self.text.text = text
-        self.cooldown = 2
 
 
 class MainMenu(Entity):
@@ -195,6 +173,44 @@ class PauseMenu(Entity):
                 child.on_enable()
 
 
+class Inventory(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+
+        self.max_buttons = 9
+        self.button_parent = Entity(parent=self)
+
+        self.background_panel = Entity(parent=self,
+                                       model="quad",
+                                       color=color.black66,
+                                       scale=Vec2(1, 1),
+                                       z=1)
+
+        self.panel_overlay = Entity(parent=self,
+                                    model=Mesh(vertices=[(.5,-.5,0), (.5,.8,0), (-.5,.8,0), (-.5,-.5,0)], mode="line", thickness=2),
+                                    color=color.black90,
+                                    scale=Vec2(1, 1),
+                                    z=1)
+
+        button_count = 0
+        for i, voxel in enumerate(resource_loader.voxel_types):
+            if not voxel.inventory:
+                continue
+
+            ItemButton(parent=self.button_parent,
+                       x=(button_count % self.max_buttons) * .1 - .4,
+                       y=-(button_count // self.max_buttons) * .1 + .4,
+                       voxel_id=i)
+
+            button_count += 1
+
+
+    @property
+    def selection(self):
+        return [c.voxel_id for c in self.button_parent.children if c.selected == True]
+
+
 class LoadingMenu(Entity):
 
     def __init__(self, **kwargs):
@@ -231,7 +247,7 @@ class LoadingMenu(Entity):
         if chunk_manager.finished_loading:
             instance.ui_state.state = ""
 
-        self.indicator.rotation_z += 2
+        self.indicator.rotation_z += 150 * time.dt
 
 
     def on_disable(self):
@@ -241,6 +257,40 @@ class LoadingMenu(Entity):
         if chunk_manager.world_loaded:
             player.enable()
             instance.sky.enable()
+
+
+class Notification(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+
+        self.idle_position = window.left+Vec2(-.25, -.4)
+        self.active_position = window.left+Vec2(.25, -.4)
+
+        self.model = Quad(aspect=.35 / .1)
+        self.color = color.black50
+        self.scale = Vec2(.35, .1)
+        self.position = self.idle_position
+
+        self.text = Text(parent=self, text="", z=-.1, scale=Vec2(1/self.scale.x, 1/self.scale.y), origin=Vec2(0, 0), color=color.yellow)
+
+        self.cooldown = 0
+
+
+    def update(self):
+        if self.cooldown > 0:
+            self.cooldown -= time.dt
+            return
+
+        if self.position.xy == self.active_position:
+            self.animate_position(self.idle_position, duration=.25)
+            self.cooldown = .5
+
+
+    def notify(self, text):
+        self.animate_position(self.active_position, duration=.25)
+        self.text.text = text
+        self.cooldown = 2
 
 
 class WorldCreation(MenuContent):
@@ -298,17 +348,21 @@ class WorldLoading(MenuContent):
     def __init__(self, **kwargs):
         super().__init__("Load World", **kwargs)
 
-        self.file_browser = FileBrowser(parent=self, position=window.right+Vec2(-.65, .4), start_path="./saves/")
+        self.max_buttons = 11
+        self.button_parent = Entity(parent=self, position=window.right+Vec2(-.65, 0))
+
+        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_down", scale=.08, rotation_z=180, position=window.right+Vec2(-.35, .35))
+        self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=.08, position=window.right+Vec2(-.35, -.3))
 
         def load_world():
             from src.chunk_manager import instance as chunk_manager
 
-            if not self.file_browser.selection:
+            if not self.selection:
                 instance.main_menu.notification.notify("No world selected")
                 return
 
             try:
-                chunk_manager.load_world(self.file_browser.selection[0])
+                chunk_manager.load_world(self.selection[0])
             except:
                 instance.main_menu.notification.notify("Failed to load world")
                 return
@@ -322,25 +376,78 @@ class WorldLoading(MenuContent):
         def delete_world():
             from src.chunk_manager import instance as chunk_manager
 
-            if not self.file_browser.selection:
+            if not self.selection:
                 instance.main_menu.notification.notify("No world selected")
                 return
 
             try:
-                chunk_manager.delete_world(self.file_browser.selection[0])
+                chunk_manager.delete_world(self.selection[0])
             except:
                 instance.main_menu.notification.notify("Failed to delete world")
                 return
 
-            self.file_browser.on_enable()
+            self.on_enable()
 
 
         self.delete_button = Button(parent=self, text="Delete World", position=window.right+Vec2(-.4, -0.4),
                                     on_click=delete_world)
 
 
+    @property
+    def scroll(self):
+        return self._scroll
+
+    @scroll.setter
+    def scroll(self, value):
+        self._scroll = value
+
+        for i, c in enumerate(self.button_parent.children):
+            if i < value or i >= value + self.max_buttons:
+                c.enabled = False
+            else:
+                c.enabled = True
+
+        self.scroll_up.enabled = value > 0
+        self.scroll_down.enabled = self.max_buttons < len(self.button_parent.children) and \
+                                   value < len(self.button_parent.children) - self.max_buttons
+
+        self.button_parent.y = value * .055
+
+
+    @property
+    def selection(self):
+        return [c.path for c in self.button_parent.children if c.selected == True]
+
+
+    def input(self, key):
+        if key == 'scroll down':
+            if self.scroll + self.max_buttons < len(self.button_parent.children):
+                self.scroll += 1
+
+        if key == 'scroll up':
+            if self.scroll > 0:
+                self.scroll -= 1
+
+
     def on_enable(self):
-        self.file_browser.on_enable()
+        import os
+        from ursina import destroy
+
+        for i in range(len(self.button_parent.children)):
+            destroy(self.button_parent.children.pop())
+
+        if not os.path.exists("./saves/"):
+            return
+
+        files = os.listdir("./saves/")
+        files.sort()
+
+        for i, file in enumerate(files):
+            prefix = ' <light_gray>'
+
+            FileButton(parent=self.button_parent, path=file, text=prefix+file, y=-i*.055 +.3, add_to_scene_entities=False)
+
+        self.scroll = 0
 
 
 class Options(MenuContent):
@@ -409,6 +516,8 @@ class Options(MenuContent):
                              n - toggle noclip mode
 
                              e,q - noclip up / down
+
+                             tab - inventory
 
                              space - jump
 

@@ -17,6 +17,7 @@ cdef class VoxelType:
     cdef public float [:] uvs
     cdef public char occlusion
     cdef public char collision
+    cdef public char inventory
 
 
 cdef class WorldGenerator:

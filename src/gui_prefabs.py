@@ -1,4 +1,5 @@
 import os
+
 from ursina import Entity, Text, Mesh, Vec2, color, destroy, window
 from ursina import InputField as uInputField, Button as uButton
 
@@ -97,11 +98,10 @@ class Button(uButton):
 
 
 class FileButton(uButton):
-    def __init__(self, load_menu, path, **kwargs):
-        self.load_menu = load_menu
-        self.path = path
-
+    def __init__(self, path, **kwargs):
         super().__init__(scale=(.5,.05), pressed_scale=1, **kwargs)
+
+        self.path = path
 
         self.color = color.black50
         self.highlight_color = color.black66
@@ -113,11 +113,11 @@ class FileButton(uButton):
 
 
     def on_click(self):
-        if len([e for e in self.parent.children if e.selected]) >= self.load_menu.selection_limit and not self.selected:
+        if not self.selected:
             for e in self.parent.children:
                 e.selected = False
 
-        self.selected = not self.selected
+        self.selected = True
 
 
     @property
@@ -133,100 +133,46 @@ class FileButton(uButton):
             self.color = self.original_color
 
 
-class FileBrowser(Entity):
-    def __init__(self, start_path, **kwargs):
-        self.start_path = start_path
+class ItemButton(uButton):
+
+    def __init__(self, voxel_id, **kwargs):
         super().__init__(**kwargs)
 
-        self.return_files = True
-        self.return_folders = False
-        self.selection_limit = 1
-        self.max_buttons = 11
+        from src.resource_loader import instance as resource_loader
+        from src.voxel_chunk import VoxelChunk
 
-        self.button_parent = Entity(parent=self)
+        self.voxel_id = voxel_id
+        self.scale = .05
+        # self.rotation = Vec2(-5, 10)
 
-        self.scroll_up = Entity(parent=self,
-                                model='quad',
-                                texture='arrow_down',
-                                rotation_z=180,
-                                scale=(.05,.05),
-                                y=-.04,
-                                z=-.1,
-                                color=color.light_gray,
-                                enabled=False,
-                                add_to_scene_entities=False)
+        self.selector = Entity(parent=self, scale=1.2, model="cube", shader=resource_loader.selector_shader)
 
-        self.scroll_down = Entity(parent=self,
-                                  model='quad',
-                                  texture='arrow_down',
-                                  scale=(.05,.05),
-                                  y=(-self.max_buttons*.055)-.09,
-                                  z=-.1,
-                                  color=color.light_gray,
-                                  enabled=False,
-                                  add_to_scene_entities=False)
+        # self.model = VoxelChunk(shader=resource_loader.voxel_shader)
+        # self.set_shader_input("texture_array", resource_loader.texture_array)
+
+        # voxel_type = resource_loader.voxel_types[self.voxel_id]
+
+        # self.model.update(voxel_type.vertices, voxel_type.uvs)
+
+        self.selected = False
 
 
-    def input(self, key):
-        if key == 'scroll down':
-            if self.scroll + self.max_buttons < len(self.button_parent.children)-1:
-                self.scroll += 1
+    def on_click(self):
+        if not self.selected:
+            for e in self.parent.children:
+                e.selected = False
 
-        if key == 'scroll up':
-            if self.scroll > 0:
-                self.scroll -= 1
+        self.selected = True
 
 
     @property
-    def scroll(self):
-        return self._scroll
+    def selected(self):
+        return self._selected
 
-    @scroll.setter
-    def scroll(self, value):
-        self._scroll = value
-
-        for i, c in enumerate(self.button_parent.children):
-            if i < value or i >= value + self.max_buttons:
-                c.enabled = False
-            else:
-                c.enabled = True
-
-        self.button_parent.y = value * .055
-
-        self.scroll_up.enabled = value > 0
-        self.scroll_down.enabled = value + self.max_buttons + 1 != len(self.button_parent.children)
-
-
-    @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, value):
-        self._path = value
-
-        for i in range(len(self.button_parent.children)):
-            destroy(self.button_parent.children.pop())
-
-        if not os.path.exists(value):
-            return
-
-        files = os.listdir(value)
-        files.sort()
-
-        for i, file in enumerate(files):
-            prefix = ' <light_gray>'
-
-            FileButton(parent=self.button_parent, path=file, text=prefix+file, y=-i*.055 -.09, load_menu=self, add_to_scene_entities=False)
-
-        self.scroll = 0
-
-
-    @property
-    def selection(self):
-        return [c.path for c in self.button_parent.children if c.selected == True]
-
-
-    def on_enable(self):
-        self.path = self.start_path
-        self.scroll = 0
+    @selected.setter
+    def selected(self, value):
+        self._selected = value
+        if value == True:
+            self.selector.enable()
+        else:
+            self.selector.disable()

@@ -16,8 +16,8 @@ class ResourceLoader():
 
 
     def load_shaders(self):
-        self.voxel_shader = Shader.load(Shader.SL_GLSL, "./res/shaders/voxel.vert", "./res/shaders/voxel.frag",)
-        self.selector_shader = Shader.load(Shader.SL_GLSL, "./res/shaders/selector.vert", "./res/shaders/selector.frag",)
+        self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag",)
+        self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag",)
 
 
     def load_voxel_data(self):
@@ -70,6 +70,7 @@ class ResourceLoader():
             voxel_type.uvs = np.array(uvs, dtype=np.single).ravel()
             voxel_type.occlusion = bool(voxel["occlusion"])
             voxel_type.collision = bool(voxel["collision"])
+            voxel_type.inventory = bool(voxel["inventory"])
 
             self.voxel_types.append(voxel_type)
 
