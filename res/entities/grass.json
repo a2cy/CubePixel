@@ -1,0 +1,8 @@
+{   
+    "name": "grass",
+    "model": "grass_block",
+    "textures": ["grass", "grass_side", "dirt"],
+    "occlusion": true,
+    "collision": true,
+    "add_to_inventory": true
+}

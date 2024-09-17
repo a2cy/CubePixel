@@ -1,0 +1,8 @@
+{   
+    "name": "sand",
+    "model": "generic_block",
+    "textures": ["sand"],
+    "occlusion": true,
+    "collision": true,
+    "add_to_inventory": true
+}

@@ -1,0 +1,8 @@
+{   
+    "name": "dirt",
+    "model": "generic_block",
+    "textures": ["dirt"],
+    "occlusion": true,
+    "collision": true,
+    "add_to_inventory": true
+}

@@ -1,0 +1,8 @@
+{   
+    "name": "air",
+    "model": "",
+    "textures": [],
+    "occlusion": false,
+    "collision": false,
+    "add_to_inventory": false
+}
