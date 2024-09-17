@@ -143,16 +143,16 @@ class ItemButton(uButton):
 
         self.voxel_id = voxel_id
         self.scale = .05
-        # self.rotation = Vec2(-5, 10)
+        self.rotation = Vec2(-5, 10)
 
         self.selector = Entity(parent=self, scale=1.2, model="cube", shader=resource_loader.selector_shader)
 
-        # self.model = VoxelChunk(shader=resource_loader.voxel_shader)
-        # self.set_shader_input("texture_array", resource_loader.texture_array)
+        self.model = VoxelChunk(shader=resource_loader.voxel_shader)
+        self.set_shader_input("texture_array", resource_loader.texture_array)
 
-        # voxel_type = resource_loader.voxel_types[self.voxel_id]
+        voxel_type = resource_loader.voxel_types[self.voxel_id]
 
-        # self.model.update(voxel_type.vertices, voxel_type.uvs)
+        self.model.update(voxel_type.vertices, voxel_type.uvs)
 
         self.selected = False
 
