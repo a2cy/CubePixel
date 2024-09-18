@@ -15,7 +15,7 @@ void main() {
     vec2 tr = step(vec2(thickness), 1.0-texcoord);
     pct *= tr.x * tr.y;
 
-    if (pct == 0) {
+    if (pct == 0.0) {
         color = vec4(0.15, 0.15, 0.15, 1.0);
     }
 

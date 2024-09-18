@@ -107,7 +107,8 @@ class MainMenu(Entity):
         self.options_button = MenuButton(parent=self, text="Options", position=window.left+Vec2(.25, .15),
                                          on_click=Func(setattr, self.content_state, "state", "options"))
 
-        self.exit_button = MenuButton(parent=self, text="Exit", position=window.left+Vec2(.25, .05), on_click=Func(application.quit))
+        self.exit_button = MenuButton(parent=self, text="Exit", position=window.left+Vec2(.25, .05),
+                                      on_click=Func(application.quit))
 
 
     def on_enable(self):
@@ -223,10 +224,10 @@ class LoadingMenu(Entity):
                                  z=2)
 
         self.background_panel = Entity(parent=self,
-                                        model=Quad(aspect=.25 / .2, radius=.1),
-                                        color=color.black66,
-                                        scale=Vec2(.25, .2),
-                                        z=1)
+                                       model=Quad(aspect=.25 / .2, radius=.1),
+                                       color=color.black66,
+                                       scale=Vec2(.25, .2),
+                                       z=1)
 
         self.title = Text(parent=self,
                           text="Loading ...",
@@ -235,10 +236,10 @@ class LoadingMenu(Entity):
                           origin=Vec2(0, 0))
 
         self.indicator = Entity(parent=self,
-                             model="quad",
-                             texture="cog",
-                             scale=.05,
-                             position=Vec2(0, -.04))
+                                model="quad",
+                                texture="cog",
+                                scale=.05,
+                                position=Vec2(0, -.04))
 
 
     def update(self):
@@ -370,7 +371,7 @@ class WorldLoading(MenuContent):
             instance.ui_state.state = "loading_menu"
 
 
-        self.load_button = Button(parent=self, text="Load World", position=window.right+Vec2(-.9, -0.4),
+        self.load_button = Button(parent=self, text="Load World", position=window.right+Vec2(-.9, -.4),
                                   on_click=load_world)
 
         def delete_world():
@@ -389,7 +390,7 @@ class WorldLoading(MenuContent):
             self.on_enable()
 
 
-        self.delete_button = Button(parent=self, text="Delete World", position=window.right+Vec2(-.4, -0.4),
+        self.delete_button = Button(parent=self, text="Delete World", position=window.right+Vec2(-.4, -.4),
                                     on_click=delete_world)
 
 

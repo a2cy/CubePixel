@@ -211,7 +211,7 @@ class Player(Entity):
 
             self.direction += self.up * (held_keys["e"] - held_keys["q"])
 
-            self.velocity = lerp(self.velocity, self.direction * self.noclip_speed, self.noclip_acceleration * min(time.dt, 0.05))
+            self.velocity = lerp(self.velocity, self.direction * self.noclip_speed, self.noclip_acceleration * min(time.dt, .05))
 
         else:
             if self.grounded and held_keys["space"]:
@@ -222,13 +222,13 @@ class Player(Entity):
 
             if held_keys["left shift"]:
                 self.direction *= self.sprint_multiplier
-                camera.fov = lerp(camera.fov, self.fov * self.fov_multiplier, self.acceleration * min(time.dt, 0.05))
+                camera.fov = lerp(camera.fov, self.fov * self.fov_multiplier, self.acceleration * min(time.dt, .05))
 
             else:
-                camera.fov = lerp(camera.fov, self.fov, self.acceleration * min(time.dt, 0.05))
+                camera.fov = lerp(camera.fov, self.fov, self.acceleration * min(time.dt, .05))
 
-            self.velocity.xz = lerp(self.velocity, self.direction * self.walk_speed, self.acceleration * min(time.dt, 0.05)).xz
-            self.velocity.y = lerp(self.velocity.y, -self.fall_speed, self.gravity * min(time.dt, 0.05))
+            self.velocity.xz = lerp(self.velocity, self.direction * self.walk_speed, self.acceleration * min(time.dt, .05)).xz
+            self.velocity.y = lerp(self.velocity.y, -self.fall_speed, self.gravity * min(time.dt, .05))
 
             self.grounded = False
 

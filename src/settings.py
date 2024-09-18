@@ -2,7 +2,7 @@ import os
 import json
 
 
-class Settings():
+class Settings:
 
     def __init__(self):
         if not os.path.isfile("./settings.json"):

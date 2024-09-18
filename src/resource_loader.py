@@ -7,7 +7,7 @@ from panda3d.core import Texture as PandaTexture, PNMImage, SamplerState, Shader
 from cython_functions import VoxelType
 
 
-class ResourceLoader():
+class ResourceLoader:
 
     def __init__(self):
         self.load_shaders()
