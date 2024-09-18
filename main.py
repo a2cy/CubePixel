@@ -8,6 +8,6 @@ app = Ursina(development_mode=True, borderless=False, title="CubePixel")
 
 window.color = color.black
 
-from src.gui import instance # starts game
+from src import * # starts game
 
 app.run()
