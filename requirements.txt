@@ -1,4 +1,0 @@
-ursina
-setuptools
-cython
-numpy
