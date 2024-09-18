@@ -9,7 +9,7 @@ Build the cython extension ([build tools for windows](https://visualstudio.micro
 ```
 python setup.py build_ext --inplace
 ```
-Run, again using Poetry
+Run using Poetry
 ```
 poetry run python main.py
 ```
