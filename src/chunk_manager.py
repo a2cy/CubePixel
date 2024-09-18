@@ -151,7 +151,7 @@ class ChunkManager(Entity):
         return self.cached_chunks[chunk_id][index]
 
 
-    def modify_entity(self, position, voxel_id):
+    def modify_voxel(self, position, voxel_id):
         if not self.world_loaded:
             return
 
@@ -163,7 +163,6 @@ class ChunkManager(Entity):
         y_position = round(position[1] - chunk_id[1])
         z_position = round(position[2] - chunk_id[2])
 
-
         index = x_position * self.chunk_size * self.chunk_size + y_position * self.chunk_size + z_position
 
         if not chunk_id in self.cached_chunks:
@@ -171,16 +170,23 @@ class ChunkManager(Entity):
 
         self.cached_chunks[chunk_id][index] = voxel_id
 
-        for i in range(3 * 2):
-            neighbor_id = ((i + 0) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[0],
-                           (i + 1) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[1],
-                           (i + 2) % 3 // 2 * (i // 3 * 2 - 1) * self.chunk_size + chunk_id[2])
+        if x_position == 0:
+            neighbor_ids.append((chunk_id[0] - self.chunk_size, chunk_id[1], chunk_id[2]))
 
-            if not neighbor_id in self.loaded_chunks:
-                continue
+        if x_position == self.chunk_size - 1:
+            neighbor_ids.append((chunk_id[0] + self.chunk_size, chunk_id[1], chunk_id[2]))
 
-            neighbor_ids.append(neighbor_id)
+        if y_position == 0:
+            neighbor_ids.append((chunk_id[0], chunk_id[1] - self.chunk_size, chunk_id[2]))
 
+        if y_position == self.chunk_size - 1:
+            neighbor_ids.append((chunk_id[0], chunk_id[1] + self.chunk_size, chunk_id[2]))
+
+        if z_position == 0:
+            neighbor_ids.append((chunk_id[0], chunk_id[1], chunk_id[2] - self.chunk_size))
+
+        if z_position == self.chunk_size - 1:
+            neighbor_ids.append((chunk_id[0], chunk_id[1], chunk_id[2] + self.chunk_size))
 
         neighbor_ids.append(chunk_id)
 
@@ -222,7 +228,7 @@ class ChunkManager(Entity):
             return
 
         if not chunk_id in self.cached_chunks:
-            print_warning(f"failed to update {chunk_id}")
+            print_warning(f"failed to update {chunk_id} {self.player_chunk}")
             return
 
         neighbors = np.zeros(6, dtype=np.longlong)

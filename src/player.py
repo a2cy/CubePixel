@@ -69,7 +69,7 @@ class Player(Entity):
         self.noclip_mode = False
 
         self.player_collider = AABB(Vec3(0), Vec3(0, -.8, 0), Vec3(.8, 1.8, .8))
-        self.entity_collider = AABB(Vec3(0), Vec3(0), Vec3(1))
+        self.voxel_collider = AABB(Vec3(0), Vec3(0), Vec3(1))
 
         self.fov_multiplier = 1.12
         self.camera_pivot = Entity(parent=self)
@@ -129,12 +129,12 @@ class Player(Entity):
                 current_position.z += step_z
                 hit_normal = Vec3(0, 0, -step_z)
 
-            entity_id = chunk_manager.get_voxel_id(current_position)
+            voxel_id = chunk_manager.get_voxel_id(current_position)
 
-            if entity_id == None:
+            if voxel_id == None:
                 continue
 
-            if not entity_id == resource_loader.voxel_index["air"]:
+            if not voxel_id == resource_loader.voxel_index["air"]:
                 self.selector.position = current_position
                 self.selector.hit_normal = hit_normal
                 self.selector.enabled = True
@@ -243,20 +243,20 @@ class Player(Entity):
 
                     position = round(self.position + velocity + offset, ndigits=0)
 
-                    entity_id = chunk_manager.get_voxel_id(position)
+                    voxel_id = chunk_manager.get_voxel_id(position)
 
-                    if not entity_id:
+                    if not voxel_id:
                         continue
 
-                    collision = resource_loader.voxel_types[entity_id].collision
+                    collision = resource_loader.voxel_types[voxel_id].collision
 
                     if not collision:
                         continue
 
-                    self.entity_collider.position = position
+                    self.voxel_collider.position = position
 
-                    if self.aabb_broadphase(self.player_collider, self.entity_collider, velocity):
-                        collision_time, collision_normal = self.swept_aabb(self.player_collider, self.entity_collider, velocity)
+                    if self.aabb_broadphase(self.player_collider, self.voxel_collider, velocity):
+                        collision_time, collision_normal = self.swept_aabb(self.player_collider, self.voxel_collider, velocity)
 
                         collisions.append((collision_time, collision_normal))
 
@@ -295,14 +295,14 @@ class Player(Entity):
             self.noclip_mode = not self.noclip_mode
 
         if key == "left mouse down" and self.selector.enabled:
-            chunk_manager.modify_entity(self.selector.position, resource_loader.voxel_index["air"])
+            chunk_manager.modify_voxel(self.selector.position, resource_loader.voxel_index["air"])
 
         if key == "right mouse down" and self.selector.enabled:
             point = self.selector.position + self.selector.hit_normal
 
-            self.entity_collider.position = point
-            if not self.aabb_broadphase(self.player_collider, self.entity_collider, Vec3(0)):
-                chunk_manager.modify_entity(point, resource_loader.voxel_index["stone"])
+            self.voxel_collider.position = point
+            if not self.aabb_broadphase(self.player_collider, self.voxel_collider, Vec3(0)):
+                chunk_manager.modify_voxel(point, resource_loader.voxel_index["stone"])
 
 
     def on_enable(self):

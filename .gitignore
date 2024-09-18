@@ -4,4 +4,3 @@ build/
 .venv
 saves/
 settings.json
-ext/cython_functions.c
