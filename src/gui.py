@@ -434,6 +434,8 @@ class WorldLoading(MenuContent):
         import os
         from ursina import destroy
 
+        self.scroll = 0
+
         for i in range(len(self.button_parent.children)):
             destroy(self.button_parent.children.pop())
 
@@ -447,8 +449,6 @@ class WorldLoading(MenuContent):
             prefix = ' <light_gray>'
 
             FileButton(parent=self.button_parent, path=file, text=prefix+file, y=-i*.055 +.3, add_to_scene_entities=False)
-
-        self.scroll = 0
 
 
 class Options(MenuContent):
