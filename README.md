@@ -2,7 +2,7 @@
 
 ## Getting started
 Install dependencies using [Poetry](https://python-poetry.org/):
-```console
+```
 poetry install
 ```
 Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
