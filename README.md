@@ -1,17 +1,19 @@
 # CubePixel
 
 ## Getting started
-Install dependencies using [Poetry](https://python-poetry.org/):
+Python 3.10+ required
+
+1) Install dependencies using pip:
 ```
-poetry install
+pip install requirements.txt
 ```
-Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
+2) Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
 ```
 python setup.py build_ext --inplace
 ```
-Run using Poetry
+3) Run the game:
 ```
-poetry run python main.py
+python main.py
 ```
 
 ## Bug/Issues
