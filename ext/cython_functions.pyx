@@ -11,13 +11,56 @@ import numpy as np
 np.import_array()
 
 
+cdef float[18] face_0 = [0, 0, 0,
+                         1, 0, 0,
+                         1, 1, 0,
+                         1, 1, 0,
+                         0, 1, 0,
+                         0, 0, 0,]
+
+cdef float[18] face_1 = [0, 0, 0,
+                         0, 0, 1,
+                         1, 0, 1,
+                         1, 0, 1,
+                         1, 0, 0,
+                         0, 0, 0,]
+
+cdef float[18] face_2 = [0, 0, 0,
+                         0, 1, 0,
+                         0, 1, 1,
+                         0, 1, 1,
+                         0, 0, 1,
+                         0, 0, 0,]
+
+cdef float[18] face_3 = [0, 0, 1,
+                         0, 1, 1,
+                         1, 1, 1,
+                         1, 1, 1,
+                         1, 0, 1,
+                         0, 0, 1,]
+
+cdef float[18] face_4 = [0, 1, 0,
+                         1, 1, 0,
+                         1, 1, 1,
+                         1, 1, 1,
+                         0, 1, 1,
+                         0, 1, 0,]
+
+cdef float[18] face_5 = [1, 0, 0,
+                         1, 0, 1,
+                         1, 1, 1,
+                         1, 1, 1,
+                         1, 1, 0,
+                         1, 0, 0,]
+
+
 cdef class VoxelType:
-    cdef public unsigned int shape
-    cdef public float [:] vertices
-    cdef public float [:] uvs
-    cdef public char occlusion
-    cdef public char collision
-    cdef public char inventory
+    cdef public unsigned int up
+    cdef public unsigned int down
+    cdef public unsigned int side
+    cdef public bint occlusion
+    cdef public bint collision
+    cdef public bint inventory
 
 
 cdef class WorldGenerator:
@@ -25,6 +68,7 @@ cdef class WorldGenerator:
     cdef VoxelType [:] voxel_types
 
     cdef fnl_state noise2d
+
 
     def __init__(self, VoxelType [:] voxel_types):
         self.voxel_types = voxel_types
@@ -39,14 +83,14 @@ cdef class WorldGenerator:
 
         cdef float amp2d = 16
 
-        cdef unsigned short air = voxel_index["air"]
+        cdef unsigned short air = 0
         cdef unsigned short dirt = voxel_index["dirt"]
         cdef unsigned short grass = voxel_index["grass"]
         cdef unsigned short stone = voxel_index["stone"]
 
         self.noise2d.seed = seed
         self.noise2d.frequency = 0.01
-        self.noise2d.gain = 0.5
+        self.noise2d.gain = 1
         self.noise2d.octaves = 3
 
         cdef np.ndarray[unsigned short, ndim=1] voxel_data = np.zeros(chunk_size**3, dtype=np.ushort)
@@ -77,142 +121,171 @@ cdef class WorldGenerator:
         return voxel_data
 
 
-    def combine_mesh(self, unsigned short chunk_size , int [:] position, unsigned short [:] voxel_data, long long [:] neighbors):
-        cdef int i, shape, vertex_count = 0
-        cdef int[3] voxel_position
-        cdef np.ndarray[int, ndim=1] indices = np.zeros((chunk_size**3), dtype=np.intc)
+    def generate_mesh(self, unsigned short chunk_size, unsigned short [:] voxel_data, long long [:] neighbors):
+        cdef int i, x, y, z, occlusion
         cdef VoxelType voxel
 
-        for i in range(chunk_size**3):
-            shape = self.voxel_types[voxel_data[i]].shape
-
-            if shape == 0:
-                indices[i] = -1
-                continue
-
-            voxel_position[0] = i / chunk_size / chunk_size
-            voxel_position[1] = i / chunk_size % chunk_size
-            voxel_position[2] = i % chunk_size % chunk_size
-
-            if self.check_occlusion(chunk_size, voxel_position, &voxel_data[0], &neighbors[0]):
-                indices[i] = -1
-                continue
-
-            indices[i] = vertex_count
-
-            vertex_count += shape
-
-        cdef np.ndarray[float, ndim=1] vertices = np.zeros((vertex_count*3), dtype=np.single)
-        cdef np.ndarray[float, ndim=1] uvs = np.zeros((vertex_count*3), dtype=np.single)
-
-        if vertex_count == 0:
-            return [vertices, uvs]
+        cdef np.ndarray[unsigned short, ndim=1] occlusion_state = np.zeros(chunk_size**3, dtype=np.ushort)
+        cdef int face_count = 0
 
         for i in range(chunk_size**3):
-            if indices[i] == -1:
+            if not voxel_data[i]:
                 continue
 
-            voxel_position[0] = i / chunk_size / chunk_size + position[0]
-            voxel_position[1] = i / chunk_size % chunk_size + position[1]
-            voxel_position[2] = i % chunk_size % chunk_size + position[2]
+            x = i / chunk_size / chunk_size
+            y = i / chunk_size % chunk_size
+            z = i % chunk_size
 
-            voxel = self.voxel_types[voxel_data[i]]
+            occlusion = self.check_occlusion(chunk_size, x, y, z, &voxel_data[0], &neighbors[0])
 
-            self.translate(voxel.shape, indices[i], &voxel.vertices[0], voxel_position, &vertices[0])
-            self.translate(voxel.shape, indices[i], &voxel.uvs[0], [0, 0, 0], &uvs[0])
+            occlusion_state[i] = occlusion
 
-        return [vertices, uvs]
+            if occlusion >= 32:
+                occlusion -= 32
+                face_count += 1
+
+            if occlusion >= 16:
+                occlusion -= 16
+                face_count += 1
+
+            if occlusion >= 8:
+                occlusion -= 8
+                face_count += 1
+
+            if occlusion >= 4:
+                occlusion -= 4
+                face_count += 1
+
+            if occlusion >= 2:
+                occlusion -= 2
+                face_count += 1
+
+            if occlusion >= 1:
+                occlusion -= 1
+                face_count += 1
+
+        cdef np.ndarray[float, ndim=1] vertices = np.zeros(18 * face_count, dtype=np.single)
+        cdef np.ndarray[unsigned short, ndim=1] vertex_data = np.zeros(12 * face_count, dtype=np.ushort)
+
+        cdef int index = 0
+
+        for i in range(chunk_size**3):
+            if not occlusion_state[i]:
+                continue
+
+            x = i / chunk_size / chunk_size
+            y = i / chunk_size % chunk_size
+            z = i % chunk_size
+
+            voxel = self.voxel_types[voxel_data[i] - 1]
+
+            occlusion = occlusion_state[i]
+
+            if occlusion >= 32:
+                occlusion -= 32
+                self.copy_face(index, x, y, z, face_5, voxel.side, 5, &vertices[0], &vertex_data[0])
+                index += 1
+
+            if occlusion >= 16:
+                occlusion -= 16
+                self.copy_face(index, x, y, z, face_4, voxel.up, 4, &vertices[0], &vertex_data[0])
+                index += 1
+
+            if occlusion >= 8:
+                occlusion -= 8
+                self.copy_face(index, x, y, z, face_3, voxel.side, 3, &vertices[0], &vertex_data[0])
+                index += 1
+
+            if occlusion >= 4:
+                occlusion -= 4
+                self.copy_face(index, x, y, z, face_2, voxel.side, 2, &vertices[0], &vertex_data[0])
+                index += 1
+
+            if occlusion >= 2:
+                occlusion -= 2
+                self.copy_face(index, x, y, z, face_1, voxel.down, 1, &vertices[0], &vertex_data[0])
+                index += 1
+
+            if occlusion >= 1:
+                occlusion -= 1
+                self.copy_face(index, x, y, z, face_0, voxel.side, 0, &vertices[0], &vertex_data[0])
+                index += 1
+
+        return [vertices, vertex_data]
 
 
-    cdef translate(self, unsigned int shape, unsigned int index, float* data, int* position, float* result):
-        cdef unsigned int i
+    cdef void copy_face(self, int index, int x, int y, int z, float* face, unsigned short texture_id, unsigned short normal_id, float* vertices, unsigned short* vertex_data):
+        cdef int i
 
-        for i in range(shape):
-            result[i*3 + index*3 + 0] = data[i*3 + 0] + position[0]
-            result[i*3 + index*3 + 1] = data[i*3 + 1] + position[1]
-            result[i*3 + index*3 + 2] = data[i*3 + 2] + position[2]
+        for i in range(6):
+            vertices[index * 18 + i * 3 + 0] = face[i * 3 + 0] + x
+            vertices[index * 18 + i * 3 + 1] = face[i * 3 + 1] + y
+            vertices[index * 18 + i * 3 + 2] = face[i * 3 + 2] + z
+
+        for i in range(6):
+            vertex_data[index * 12 + i * 2 + 0] = texture_id
+            vertex_data[index * 12 + i * 2 + 1] = normal_id
 
 
-    cdef check_occlusion(self, unsigned short chunk_size, int* position, unsigned short* voxel_data, long long* neighbor_chunks):
-        cdef int x_position, y_position, z_position
-        cdef unsigned int i
+    cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, unsigned short* voxel_data, long long* neighbor_chunks):
+        cdef int i, x_position, y_position, z_position, voxel_id
         cdef unsigned short* neighbor_chunk
 
-        cdef VoxelType neighbor
+        cdef int result = 0
 
         for i in range(3 * 2):
-            x_position = (i + 0) % 3 / 2 * (i / 3 * 2 - 1) + position[0]
-            y_position = (i + 1) % 3 / 2 * (i / 3 * 2 - 1) + position[1]
-            z_position = (i + 2) % 3 / 2 * (i / 3 * 2 - 1) + position[2]
+            x_position = (i + 0) % 3 / 2 * (i / 3 * 2 - 1) + x
+            y_position = (i + 1) % 3 / 2 * (i / 3 * 2 - 1) + y
+            z_position = (i + 2) % 3 / 2 * (i / 3 * 2 - 1) + z
+
+            voxel_id = -1
 
             if x_position < 0:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[2]
+
                 if neighbor_chunk:
-                    neighbor = self.voxel_types[neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
+                    voxel_id = neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]
 
-                    if neighbor.occlusion == False:
-                        return False
-
-                continue
-
-            if x_position >= chunk_size:
+            elif x_position >= chunk_size:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[5]
 
                 if neighbor_chunk:
-                    neighbor = self.voxel_types[neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]]
+                    voxel_id = neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]
 
-                    if neighbor.occlusion == False:
-                        return False
-
-                continue
-
-            if y_position < 0:
+            elif y_position < 0:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[1]
 
                 if neighbor_chunk:
-                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]]
+                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]
 
-                    if neighbor.occlusion == False:
-                        return False
-
-                continue
-
-            if y_position >= chunk_size:
+            elif y_position >= chunk_size:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[4]
 
                 if neighbor_chunk:
-                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]]
+                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]
 
-                    if neighbor.occlusion == False:
-                        return False
-
-                continue
-
-            if z_position < 0:
+            elif z_position < 0:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[0]
 
                 if neighbor_chunk:
-                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]]
+                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]
 
-                    if neighbor.occlusion == False:
-                        return False
-
-                continue
-
-            if z_position >= chunk_size:
+            elif z_position >= chunk_size:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[3]
 
                 if neighbor_chunk:
-                    neighbor = self.voxel_types[neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]]
+                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]
 
-                    if neighbor.occlusion == False:
-                        return False
+            else:
+                voxel_id = voxel_data[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]
 
+            if voxel_id < 0:
                 continue
 
-            neighbor = self.voxel_types[voxel_data[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]]
+            if not voxel_id:
+                result += pow(2, i)
 
-            if neighbor.occlusion == False:
-                return False
+            elif self.voxel_types[voxel_id - 1].occlusion == False:
+                result += pow(2, i)
 
-        return True
+        return result

@@ -13,10 +13,8 @@ class Settings:
 
     def default_settings(self):
         settings = {
-            "vsync": True,
-            "borderless": False,
-            "fullscreen": False,
             "render_distance": 2,
+            "chunk_updates": 2,
             "mouse_sensitivity": 80,
             "fov": 90
         }
@@ -35,5 +33,6 @@ class Settings:
     def save_settings(self):
         with open("./settings.json", "w+") as file:
             json.dump(self.settings, file, indent=4)
+
 
 instance = Settings()

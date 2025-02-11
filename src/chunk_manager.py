@@ -20,16 +20,15 @@ class ChunkManager(Entity):
         self.world_loaded = False
         self.finished_loading = False
         self.player_chunk = ()
-        self.chunks_to_load = []
-        self.chunks_to_unload = []
-        self.chunks_to_update_low = []
-        self.chunks_to_update_high = []
+        self.chunks_to_load = Queue()
+        self.chunks_to_unload = Queue()
+        self.chunks_to_update = Queue()
         self.loaded_chunks = {}
         self.cached_chunks = {}
 
         self.world_generator = WorldGenerator(np.asarray(resource_loader.voxel_types))
 
-        self.chunk_size = 64
+        self.chunk_size = 32
 
         self.reload()
 
@@ -37,6 +36,8 @@ class ChunkManager(Entity):
     def reload(self):
         render_distance = settings.settings["render_distance"]
         self.world_size = render_distance * 2 + 1
+
+        self.chunk_updates = settings.settings["chunk_updates"]
 
         if self.world_loaded:
             self.player_chunk = ()
@@ -106,10 +107,9 @@ class ChunkManager(Entity):
 
         self.world_loaded = False
         self.player_chunk = ()
-        self.chunks_to_load = []
-        self.chunks_to_unload = []
-        self.chunks_to_update_low = []
-        self.chunks_to_update_high = []
+        self.chunks_to_load = Queue()
+        self.chunks_to_unload = Queue()
+        self.chunks_to_update = Queue()
 
         for chunk_id in self.cached_chunks.copy():
             self.unload_chunk(chunk_id)
@@ -155,8 +155,6 @@ class ChunkManager(Entity):
         if not self.world_loaded:
             return
 
-        neighbor_ids = []
-
         chunk_id = self.get_chunk_id(position)
 
         x_position = round(position[0] - chunk_id[0])
@@ -170,30 +168,35 @@ class ChunkManager(Entity):
 
         self.cached_chunks[chunk_id][index] = voxel_id
 
+        self.update_chunk(chunk_id)
+
         if x_position == 0:
-            neighbor_ids.append((chunk_id[0] - self.chunk_size, chunk_id[1], chunk_id[2]))
+            self.update_chunk((chunk_id[0] - self.chunk_size, chunk_id[1], chunk_id[2]))
 
         if x_position == self.chunk_size - 1:
-            neighbor_ids.append((chunk_id[0] + self.chunk_size, chunk_id[1], chunk_id[2]))
+            self.update_chunk((chunk_id[0] + self.chunk_size, chunk_id[1], chunk_id[2]))
 
         if y_position == 0:
-            neighbor_ids.append((chunk_id[0], chunk_id[1] - self.chunk_size, chunk_id[2]))
+            self.update_chunk((chunk_id[0], chunk_id[1] - self.chunk_size, chunk_id[2]))
 
         if y_position == self.chunk_size - 1:
-            neighbor_ids.append((chunk_id[0], chunk_id[1] + self.chunk_size, chunk_id[2]))
+            self.update_chunk((chunk_id[0], chunk_id[1] + self.chunk_size, chunk_id[2]))
 
         if z_position == 0:
-            neighbor_ids.append((chunk_id[0], chunk_id[1], chunk_id[2] - self.chunk_size))
+            self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] - self.chunk_size))
 
         if z_position == self.chunk_size - 1:
-            neighbor_ids.append((chunk_id[0], chunk_id[1], chunk_id[2] + self.chunk_size))
-
-        neighbor_ids.append(chunk_id)
-
-        self.chunks_to_update_high.extend(neighbor_ids)
+            self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] + self.chunk_size))
 
 
     def load_chunk(self, chunk_id):
+        if not chunk_id in self.loaded_chunks:
+            chunk = VoxelChunk(self.chunk_size, shader=resource_loader.voxel_shader)
+            chunk.set_shader_input("texture_array", resource_loader.texture_array)
+            chunk.set_pos(chunk_id)
+            chunk.reparent_to(self)
+            self.loaded_chunks[chunk_id] = chunk
+
         if chunk_id in self.cached_chunks:
             return
 
@@ -207,10 +210,14 @@ class ChunkManager(Entity):
 
         self.cached_chunks[chunk_id] = entities
 
-        self.chunks_to_update_low.append(chunk_id)
+        self.chunks_to_update.put(chunk_id)
 
 
     def unload_chunk(self, chunk_id):
+        if chunk_id in self.loaded_chunks:
+            chunk = self.loaded_chunks.pop(chunk_id)
+            chunk.remove_node()
+
         if not chunk_id in self.cached_chunks:
             return
 
@@ -241,11 +248,11 @@ class ChunkManager(Entity):
             if neighbor_id in self.cached_chunks:
                 neighbors[i] = self.cached_chunks[neighbor_id].ctypes.data
 
-        vertices, uvs = self.world_generator.combine_mesh(self.chunk_size, np.array(chunk_id, dtype=np.intc), self.cached_chunks[chunk_id], neighbors)
+        vertices, vertex_data = self.world_generator.generate_mesh(self.chunk_size, self.cached_chunks[chunk_id], neighbors)
 
         chunk = self.loaded_chunks[chunk_id]
 
-        chunk.update(vertices, uvs)
+        chunk.update(vertices, vertex_data)
 
 
     def update_chunks(self):
@@ -264,19 +271,11 @@ class ChunkManager(Entity):
 
         for chunk_id in chunk_ids:
             if not chunk_id in self.loaded_chunks:
-                chunk = VoxelChunk(shader=resource_loader.voxel_shader)
-                chunk.set_shader_input("texture_array", resource_loader.texture_array)
-                chunk.reparent_to(self)
-                self.loaded_chunks[chunk_id] = chunk
-
-                self.chunks_to_load.append(chunk_id)
+                self.chunks_to_load.put(chunk_id)
 
         for chunk_id in self.loaded_chunks.copy():
             if not chunk_id in chunk_ids:
-                chunk = self.loaded_chunks.pop(chunk_id)
-                chunk.remove_node()
-
-                self.chunks_to_unload.append(chunk_id)
+                self.chunks_to_unload.put(chunk_id)
 
 
     def update(self):
@@ -289,21 +288,20 @@ class ChunkManager(Entity):
 
         new_player_chunk = self.get_chunk_id(player.position)
 
-        if self.chunks_to_update_high:
-            chunk_id = self.chunks_to_update_high.pop(0)
-            self.update_chunk(chunk_id)
+        if not self.chunks_to_unload.empty():
+            for _ in range(min(self.chunk_updates, self.chunks_to_unload.qsize())):
+                chunk_id = self.chunks_to_unload.get()
+                self.unload_chunk(chunk_id)
 
-        elif self.chunks_to_unload:
-            chunk_id = self.chunks_to_unload.pop(0)
-            self.unload_chunk(chunk_id)
+        elif not self.chunks_to_load.empty():
+            for _ in range(min(self.chunk_updates, self.chunks_to_load.qsize())):
+                chunk_id = self.chunks_to_load.get()
+                self.load_chunk(chunk_id)
 
-        elif self.chunks_to_load:
-            chunk_id = self.chunks_to_load.pop(0)
-            self.load_chunk(chunk_id)
-
-        elif self.chunks_to_update_low:
-            chunk_id = self.chunks_to_update_low.pop(0)
-            self.update_chunk(chunk_id)
+        elif not self.chunks_to_update.empty():
+            for _ in range(min(self.chunk_updates, self.chunks_to_update.qsize())):
+                chunk_id = self.chunks_to_update.get()
+                self.update_chunk(chunk_id)
 
         elif not self.player_chunk == new_player_chunk:
             self.player_chunk = new_player_chunk
@@ -312,5 +310,6 @@ class ChunkManager(Entity):
         else:
             self.updating = False
             self.finished_loading = True
+
 
 instance = ChunkManager()

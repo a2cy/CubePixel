@@ -1,6 +1,5 @@
 {   
     "name": "glass",
-    "model": "generic_block",
     "textures": ["glass"],
     "occlusion": false,
     "collision": true,

@@ -1,6 +1,5 @@
 {   
     "name": "stone",
-    "model": "generic_block",
     "textures": ["stone"],
     "occlusion": true,
     "collision": true,

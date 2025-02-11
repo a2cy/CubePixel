@@ -1,7 +1,9 @@
-from ursina import Entity, Text, Slider, Mesh, Func, Animator, Vec2, Sky, application, color, time, Quad, camera, scene, window
+from ursina import Entity, Text, Slider, CheckBox, Mesh, Func, Animator, Vec2, color, time, camera, window
 
-from src.gui_prefabs import MenuButton, MenuContent, InputField, Button, FileButton, ItemButton
+from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton
 from src.resource_loader import instance as resource_loader
+from src.chunk_manager import instance as chunk_manager
+from src.player import instance as player
 from src.settings import instance as settings
 
 
@@ -9,6 +11,8 @@ class Gui(Entity):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        from ursina import Sky, scene
 
         self.sky = Sky(parent=scene)
         self.sky.disable()
@@ -21,6 +25,8 @@ class Gui(Entity):
 
         self.loading_menu = LoadingMenu()
 
+        self.debug_overlay = DebugOverlay(enabled=False)
+
         self.ui_state = Animator({"": None,
                                   "main_menu": self.main_menu,
                                   "pause_menu": self.pause_menu,
@@ -30,8 +36,6 @@ class Gui(Entity):
 
 
     def input(self, key):
-        from src.player import instance as player
-
         if self.ui_state.state == "" and key == "escape":
             self.ui_state.state = "pause_menu"
             player.disable()
@@ -57,6 +61,8 @@ class MainMenu(Entity):
 
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
+
+        from ursina import application
 
         self.background = Entity(parent=self,
                                  model="quad",
@@ -147,8 +153,6 @@ class PauseMenu(Entity):
         self.options = Options(parent=self)
 
         def _continue():
-            from src.player import instance as player
-
             instance.ui_state.state = ""
             player.enable()
 
@@ -157,8 +161,6 @@ class PauseMenu(Entity):
                                           on_click=_continue)
 
         def _return():
-            from src.chunk_manager import instance as chunk_manager
-
             instance.ui_state.state = "main_menu"
             chunk_manager.unload_world()
             instance.sky.disable()
@@ -180,7 +182,7 @@ class Inventory(Entity):
         super().__init__(parent=camera.ui, **kwargs)
 
         self.max_buttons = 9
-        self.button_parent = Entity(parent=self)
+        self.button_parent = Entity(parent=self, z=-1)
 
         self.background_panel = Entity(parent=self,
                                        model="quad",
@@ -202,7 +204,7 @@ class Inventory(Entity):
             ItemButton(parent=self.button_parent,
                        x=(button_count % self.max_buttons) * .1 - .4,
                        y=-(button_count // self.max_buttons) * .1 + .4,
-                       voxel_id=i)
+                       voxel_id=i+1)
 
             button_count += 1
 
@@ -216,6 +218,8 @@ class LoadingMenu(Entity):
 
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
+
+        from ursina import Quad
 
         self.background = Entity(parent=self,
                                  model="quad",
@@ -243,8 +247,6 @@ class LoadingMenu(Entity):
 
 
     def update(self):
-        from src.chunk_manager import instance as chunk_manager
-
         if chunk_manager.finished_loading:
             instance.ui_state.state = ""
 
@@ -252,9 +254,6 @@ class LoadingMenu(Entity):
 
 
     def on_disable(self):
-        from src.player import instance as player
-        from src.chunk_manager import instance as chunk_manager
-
         if chunk_manager.world_loaded:
             player.enable()
             instance.sky.enable()
@@ -264,6 +263,8 @@ class Notification(Entity):
 
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
+
+        from ursina import Quad
 
         self.idle_position = window.left+Vec2(-.25, -.4)
         self.active_position = window.left+Vec2(.25, -.4)
@@ -294,6 +295,38 @@ class Notification(Entity):
         self.cooldown = 2
 
 
+class DebugOverlay(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, z=2, **kwargs)
+
+        self.coordinates = Text(parent=self, position=window.top_left)
+        self.direction = Text(parent=self, position=window.top_left + Vec2(0, -.03))
+
+
+    def update(self):
+        rotation = player.rotation_y
+        heading = "none"
+
+        if rotation < 0:
+            rotation += 360
+
+        if rotation > 315 or rotation < 45:
+            heading = "north z+"
+
+        if rotation > 45 and rotation < 135:
+            heading = "east x+"
+
+        if rotation > 135 and rotation < 225:
+            heading = "south z-"
+
+        if rotation > 225 and rotation < 315:
+            heading = "west x-"
+
+        self.coordinates.text = f"position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
+        self.direction.text = f"facing : {heading}"
+
+
 class WorldCreation(MenuContent):
 
     def __init__(self, **kwargs):
@@ -316,8 +349,6 @@ class WorldCreation(MenuContent):
                                      origin=Vec2(-.5, 0))
 
         def create_world():
-            from src.chunk_manager import instance as chunk_manager
-
             if not self.world_name.text:
                 instance.main_menu.notification.notify("Missing world name")
                 return
@@ -333,7 +364,7 @@ class WorldCreation(MenuContent):
             instance.ui_state.state = "loading_menu"
 
 
-        self.create_button = Button(parent=self, text="Create World", position=window.right+Vec2(-.65, 0),
+        self.create_button = ButtonPrefab(parent=self, text="Create World", position=window.right+Vec2(-.65, 0),
                                     on_click=create_world)
 
         self.world_name.next_field = self.world_seed
@@ -356,8 +387,6 @@ class WorldLoading(MenuContent):
         self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=.08, position=window.right+Vec2(-.35, -.3))
 
         def load_world():
-            from src.chunk_manager import instance as chunk_manager
-
             if not self.selection:
                 instance.main_menu.notification.notify("No world selected")
                 return
@@ -371,12 +400,10 @@ class WorldLoading(MenuContent):
             instance.ui_state.state = "loading_menu"
 
 
-        self.load_button = Button(parent=self, text="Load World", position=window.right+Vec2(-.9, -.4),
+        self.load_button = ButtonPrefab(parent=self, text="Load World", position=window.right+Vec2(-.9, -.4),
                                   on_click=load_world)
 
         def delete_world():
-            from src.chunk_manager import instance as chunk_manager
-
             if not self.selection:
                 instance.main_menu.notification.notify("No world selected")
                 return
@@ -390,7 +417,7 @@ class WorldLoading(MenuContent):
             self.on_enable()
 
 
-        self.delete_button = Button(parent=self, text="Delete World", position=window.right+Vec2(-.4, -.4),
+        self.delete_button = ButtonPrefab(parent=self, text="Delete World", position=window.right+Vec2(-.4, -.4),
                                     on_click=delete_world)
 
 
@@ -456,36 +483,49 @@ class Options(MenuContent):
     def __init__(self, **kwargs):
         super().__init__("Options", **kwargs)
 
-        self.render_distance = Slider(parent=self, position=Vec2(0, .3), min=1, max=8, step=1)
-
         self.render_distance_label = Text(parent=self,
                                           text="Render Distance",
                                           scale=1.2,
-                                          position=self.render_distance.position+Vec2(-.2, 0),
+                                          position=Vec2(-.2, .3),
                                           origin=Vec2(0, 0))
 
-        def render_distance_setter():
-            from src.chunk_manager import instance as chunk_handeler
+        self.render_distance = Slider(parent=self, position=self.render_distance_label.position+Vec2(.2, 0), min=1, max=8, step=1)
 
+        def render_distance_setter():
             settings.settings["render_distance"] = self.render_distance.value
             settings.save_settings()
 
-            chunk_handeler.reload()
+            chunk_manager.reload()
 
 
         self.render_distance.on_value_changed = render_distance_setter
 
-        self.mouse_sensitivity = Slider(parent=self, position=Vec2(0, .22), min=60, max=120, step=1)
+        self.chunk_updates_label = Text(parent=self,
+                                          text="Chunk Updates",
+                                          scale=1.2,
+                                          position=Vec2(-.2, .22),
+                                          origin=Vec2(0, 0))
+
+        self.chunk_updates = Slider(parent=self, position=self.chunk_updates_label.position+Vec2(.2, 0), min=1, max=8, step=1)
+
+        def chunk_updates_setter():
+            settings.settings["chunk_updates"] = self.chunk_updates.value
+            settings.save_settings()
+
+            chunk_manager.reload()
+
+
+        self.chunk_updates.on_value_changed = chunk_updates_setter
 
         self.mouse_sensitivity_label = Text(parent=self,
                                             text="Mouse Sensitivity",
                                             scale=1.2,
-                                            position=self.mouse_sensitivity.position+Vec2(-.2, 0),
+                                            position=Vec2(-.2, .14),
                                             origin=Vec2(0, 0))
 
-        def mouse_sensitivity_setter():
-            from src.player import instance as player
+        self.mouse_sensitivity = Slider(parent=self, position=self.mouse_sensitivity_label.position+Vec2(.2, 0), min=60, max=120, step=1)
 
+        def mouse_sensitivity_setter():
             settings.settings["mouse_sensitivity"] = self.mouse_sensitivity.value
             settings.save_settings()
 
@@ -494,47 +534,70 @@ class Options(MenuContent):
 
         self.mouse_sensitivity.on_value_changed = mouse_sensitivity_setter
 
-        self.fov = Slider(parent=self, position=Vec2(0, .14), min=60, max=120, dynamic=True, step=1)
-
         self.fov_label = Text(parent=self,
                               text="Fov",
                               scale=1.2,
-                              position=self.fov.position+Vec2(-.2, 0),
+                              position=Vec2(-.2, .06),
                               origin=Vec2(0, 0))
 
-        def fov_setter():
-            from src.player import instance as player
+        self.fov = Slider(parent=self, position=self.fov_label.position+Vec2(.2, 0), min=60, max=120, dynamic=True, step=1)
 
+        def fov_setter():
             settings.settings["fov"] = self.fov.value
             settings.save_settings()
 
             player.reload()
 
-        self.controls = Text(parent=self,
-                             text="""
-                             w,a,s,d - movement
-
-                             n - toggle noclip mode
-
-                             e,q - noclip up / down
-
-                             tab - inventory
-
-                             space - jump
-
-                             shift - sprint
-                             """,
-                             scale=1.2,
-                             position=Vec2(.12, -.15),
-                             origin=Vec2(0, 0))
-
 
         self.fov.on_value_changed = fov_setter
+
+        self.debug_label = Text(parent=self,
+                              text="Debug Overlay",
+                              scale=1.2,
+                              position=Vec2(-.2, -.02),
+                              origin=Vec2(0, 0))
+
+        self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position+Vec2(.2, 0), start_value=False)
+
+        def toggle_debug():
+            self.debug_toggle.value = not self.debug_toggle.value
+
+            instance.debug_overlay.enabled = self.debug_toggle.value
+
+
+        self.debug_toggle.on_click = toggle_debug
+
+        from ursina import Button, Tooltip
+
+        info_text ="""  w,a,s,d - movement
+
+  space - jump
+
+  shift - sprint
+
+  n - toggle noclip mode
+
+  e,q - noclip up / down
+
+  tab - inventory
+
+  L mouse - break voxel
+
+  R mouse - place voxel"""
+
+        self.controls = Button(parent=self,
+                               model='circle',
+                               text='?',
+                               position=window.bottom_right+Vec2(-.085, .03),
+                               scale=.025,
+                               tooltip=Tooltip(info_text, scale=.75))
 
 
     def on_enable(self):
         self.render_distance.value = settings.settings["render_distance"]
+        self.chunk_updates.value = settings.settings["chunk_updates"]
         self.mouse_sensitivity.value = settings.settings["mouse_sensitivity"]
         self.fov.value = settings.settings["fov"]
+
 
 instance = Gui()

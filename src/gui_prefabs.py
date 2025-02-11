@@ -1,7 +1,5 @@
-import os
-
-from ursina import Entity, Text, Mesh, Vec2, color, destroy, window
-from ursina import InputField as uInputField, Button as uButton
+from ursina import Entity, Text, Mesh, Vec2, color, window
+from ursina import InputField as uInputField, Button as Button
 
 
 class MenuButton(Entity):
@@ -87,7 +85,7 @@ class InputField(uInputField):
         self.background = Entity(parent=self, model=Mesh(vertices=[(-.46,-.4,0), (.46,-.4,0)], mode="line", thickness=2), color=self.default_color)
 
 
-class Button(uButton):
+class ButtonPrefab(Button):
 
     def __init__(self, **kwargs):
         super().__init__(scale = Vec2(.2, .08), **kwargs)
@@ -97,7 +95,7 @@ class Button(uButton):
         self.pressed_color = color.black90
 
 
-class FileButton(uButton):
+class FileButton(Button):
     def __init__(self, path, **kwargs):
         super().__init__(scale=(.5,.05), pressed_scale=1, **kwargs)
 
@@ -133,26 +131,48 @@ class FileButton(uButton):
             self.color = self.original_color
 
 
-class ItemButton(uButton):
+class ItemButton(Button):
 
     def __init__(self, voxel_id, **kwargs):
         super().__init__(**kwargs)
 
         from src.resource_loader import instance as resource_loader
+        from src.chunk_manager import instance as chunk_manager
         from src.voxel_chunk import VoxelChunk
 
         self.voxel_id = voxel_id
+        self.color = color.white
+        self.highlight_color = color.white
+        self.pressed_color = color.white
         self.scale = .05
-        self.rotation = Vec2(-5, 10)
 
-        self.selector = Entity(parent=self, scale=1.2, model="cube", shader=resource_loader.selector_shader)
+        self.selector = Entity(parent=self, scale=1.25, model="quad", shader=resource_loader.selector_shader)
 
-        self.model = VoxelChunk(shader=resource_loader.voxel_shader)
-        self.set_shader_input("texture_array", resource_loader.texture_array)
+        self.model = VoxelChunk(chunk_manager.chunk_size, shader=resource_loader.voxel_shader)
+        self.model.set_shader_input("texture_array", resource_loader.texture_array)
+        self.model.reparent_to(self)
 
-        voxel_type = resource_loader.voxel_types[self.voxel_id]
+        voxel_type = resource_loader.voxel_types[self.voxel_id - 1]
 
-        self.model.update(voxel_type.vertices, voxel_type.uvs)
+        import numpy as np
+
+        vertices = np.array([0, 0, 0,
+                             1, 0, 0,
+                             1, 1, 0,
+                             1, 1, 0,
+                             0, 1, 0,
+                             0, 0, 0,],
+        dtype=np.single)
+
+        vertex_data = np.array([voxel_type.side, 3,
+                                voxel_type.side, 3,
+                                voxel_type.side, 3,
+                                voxel_type.side, 3,
+                                voxel_type.side, 3,
+                                voxel_type.side, 3,],
+        dtype=np.ushort)
+
+        self.model.update(vertices, vertex_data)
 
         self.selected = False
 

@@ -1,7 +1,6 @@
 {   
     "name": "grass",
-    "model": "grass_block",
-    "textures": ["grass", "grass_side", "dirt"],
+    "textures": ["grass", "dirt", "grass_side"],
     "occlusion": true,
     "collision": true,
     "inventory": true

@@ -5,3 +5,4 @@ build/
 saves/
 settings.json
 ext/cython_functions.c
+ext/cython_functions.html

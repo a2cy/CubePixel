@@ -7,46 +7,26 @@ from src.resource_loader import instance as resource_loader
 class AABB:
 
     def __init__(self, position, origin, scale):
+        self._scale = scale
+        self._origin = origin
         self.position = position
-        self.origin = origin
-        self.scale = scale
 
 
     @property
-    def x(self):
-        return self.position.x + self.origin.x
+    def position(self):
+        return self._position
 
-    @property
-    def y(self):
-        return self.position.y + self.origin.y
+    @position.setter
+    def position(self, value):
+        self._position = value
 
-    @property
-    def z(self):
-        return self.position.z + self.origin.z
+        self.x_1 = value.x + self._origin.x - self._scale.x / 2
+        self.y_1 = value.y + self._origin.y - self._scale.y / 2
+        self.z_1 = value.z + self._origin.z - self._scale.z / 2
 
-    @property
-    def x_1(self):
-        return self.position.x + self.origin.x - self.scale.x / 2
-
-    @property
-    def y_1(self):
-        return self.position.y + self.origin.y - self.scale.y / 2
-
-    @property
-    def z_1(self):
-        return self.position.z + self.origin.z - self.scale.z / 2
-
-    @property
-    def x_2(self):
-        return self.position.x + self.origin.x + self.scale.x / 2
-
-    @property
-    def y_2(self):
-        return self.position.y + self.origin.y + self.scale.y / 2
-
-    @property
-    def z_2(self):
-        return self.position.z + self.origin.z + self.scale.z / 2
+        self.x_2 = value.x + self._origin.x + self._scale.x / 2
+        self.y_2 = value.y + self._origin.y + self._scale.y / 2
+        self.z_2 = value.z + self._origin.z + self._scale.z / 2
 
 
 class Player(Entity):
@@ -58,28 +38,28 @@ class Player(Entity):
         super().__init__(**kwargs)
 
         self.walk_speed = 6
-        self.fall_speed = 32
-        self.gravity = 1.8
         self.acceleration = 16
-        self.jump_height = 1.2
         self.sprint_multiplier = 1.6
+
+        self.gravity = 25
+        self.jump_height = 1.2
 
         self.noclip_speed = 24
         self.noclip_acceleration = 6
         self.noclip_mode = False
 
-        self.player_collider = AABB(Vec3(0), Vec3(0, -.8, 0), Vec3(.8, 1.8, .8))
+        self.player_collider = AABB(Vec3(0), Vec3(0, -.6, 0), Vec3(.8, 1.8, .8))
         self.voxel_collider = AABB(Vec3(0), Vec3(0), Vec3(1))
 
         self.fov_multiplier = 1.12
         self.camera_pivot = Entity(parent=self)
         camera.parent = self.camera_pivot
-        camera.position = Vec3(0,0,0)
-        camera.rotation = Vec3(0,0,0)
+        camera.position = Vec3(0)
+        camera.rotation = Vec3(0)
 
         self.grounded = False
-        self.direction = Vec3(0,0,0)
-        self.velocity = Vec3(0,0,0)
+        self.direction = Vec3(0)
+        self.velocity = Vec3(0)
 
         self.reload()
 
@@ -91,6 +71,10 @@ class Player(Entity):
 
 
     def update_selector(self, position, direction, max_distance):
+        self.selector.enabled = False
+        if self.noclip_mode:
+            return
+
         from src.chunk_manager import instance as chunk_manager
 
         current_position = round(position, ndigits=0)
@@ -131,16 +115,11 @@ class Player(Entity):
 
             voxel_id = chunk_manager.get_voxel_id(current_position)
 
-            if voxel_id == None:
-                continue
-
-            if not voxel_id == resource_loader.voxel_index["air"]:
+            if voxel_id:
                 self.selector.position = current_position
                 self.selector.hit_normal = hit_normal
                 self.selector.enabled = True
-                return
-
-        self.selector.enabled = False
+                break
 
 
     def aabb_broadphase(self, collider_1, collider_2, direction):
@@ -170,16 +149,16 @@ class Player(Entity):
         z_exit = get_time(collider_2.z_2 - collider_1.z_1 if direction.z > 0 else collider_2.z_1 - collider_1.z_2, direction.z)
 
         if x_entry < 0 and y_entry < 0 and z_entry < 0:
-            return 1, Vec3(0, 0, 0)
+            return 1, Vec3(0)
 
         if x_entry > 1 or y_entry > 1 or z_entry > 1:
-            return 1, Vec3(0, 0, 0)
+            return 1, Vec3(0)
 
         entry_time = max(x_entry, y_entry, z_entry)
         exit_time = min(x_exit, y_exit, z_exit)
 
         if entry_time > exit_time:
-            return 1, Vec3(0, 0, 0)
+            return 1, Vec3(0)
 
         normal_x = (0, -1 if direction.x > 0 else 1)[entry_time == x_entry]
         normal_y = (0, -1 if direction.y > 0 else 1)[entry_time == y_entry]
@@ -215,7 +194,7 @@ class Player(Entity):
 
         else:
             if self.grounded and held_keys["space"]:
-                self.velocity.y = 2 * (self.fall_speed * self.gravity * self.jump_height)**.5
+                self.velocity.y = (self.gravity * self.jump_height * 2)**.5
 
             self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"])
                                   + self.right * (held_keys["d"] - held_keys["a"])).normalized()
@@ -228,9 +207,11 @@ class Player(Entity):
                 camera.fov = lerp(camera.fov, self.fov, self.acceleration * min(time.dt, .05))
 
             self.velocity.xz = lerp(self.velocity, self.direction * self.walk_speed, self.acceleration * min(time.dt, .05)).xz
-            self.velocity.y = lerp(self.velocity.y, -self.fall_speed, self.gravity * min(time.dt, .05))
+            self.velocity.y = self.velocity.y - self.gravity * time.dt
 
             self.grounded = False
+
+            self.player_collider.position = self.position
 
             for _ in range(3):
                 velocity = self.velocity * time.dt
@@ -248,7 +229,7 @@ class Player(Entity):
                     if not voxel_id:
                         continue
 
-                    collision = resource_loader.voxel_types[voxel_id].collision
+                    collision = resource_loader.voxel_types[voxel_id - 1].collision
 
                     if not collision:
                         continue
@@ -290,28 +271,34 @@ class Player(Entity):
 
     def input(self, key):
         from src.chunk_manager import instance as chunk_manager
+        from src.gui import instance as gui
 
         if key == "n":
             self.noclip_mode = not self.noclip_mode
 
         if key == "left mouse down" and self.selector.enabled:
-            chunk_manager.modify_voxel(self.selector.position, resource_loader.voxel_index["air"])
+            chunk_manager.modify_voxel(self.selector.position, 0)
 
         if key == "right mouse down" and self.selector.enabled:
-            point = self.selector.position + self.selector.hit_normal
+            if not gui.inventory.selection:
+                return
 
+            point = self.selector.position + self.selector.hit_normal
             self.voxel_collider.position = point
+
             if not self.aabb_broadphase(self.player_collider, self.voxel_collider, Vec3(0)):
-                chunk_manager.modify_voxel(point, resource_loader.voxel_index["stone"])
+                chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
 
     def on_enable(self):
         self.cursor.enable()
+        mouse.position = Vec3(0)
         mouse.locked = True
 
 
     def on_disable(self):
         self.cursor.disable()
         mouse.locked = False
+
 
 instance = Player(enabled=False)
