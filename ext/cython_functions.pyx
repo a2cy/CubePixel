@@ -1,8 +1,6 @@
-# cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
+# cython: language_level=3, boundscheck=False, wraparound=False, initializedcheck=False, cdivision=True, cpow=True
 # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
-
-
-from fast_noise_lite cimport fnl_state, FNL_NOISE_OPENSIMPLEX2, FNL_FRACTAL_FBM, fnlCreateState, fnlGetNoise2D
+from fast_noise_lite cimport *
 
 cimport numpy as np
 import numpy as np
@@ -81,17 +79,16 @@ cdef class WorldGenerator:
     def generate_voxels(self, unsigned short chunk_size, dict voxel_index, int seed, int [:] position):
         cdef int i, x, y, z, max_y
 
-        cdef float amp2d = 16
+        cdef float amp2d = 32
 
-        cdef unsigned short air = 0
         cdef unsigned short dirt = voxel_index["dirt"]
         cdef unsigned short grass = voxel_index["grass"]
         cdef unsigned short stone = voxel_index["stone"]
 
         self.noise2d.seed = seed
-        self.noise2d.frequency = 0.01
+        self.noise2d.frequency = 0.002
         self.noise2d.gain = 1
-        self.noise2d.octaves = 3
+        self.noise2d.octaves = 4
 
         cdef np.ndarray[unsigned short, ndim=1] voxel_data = np.zeros(chunk_size**3, dtype=np.ushort)
 
@@ -103,8 +100,7 @@ cdef class WorldGenerator:
 
             for y in range(chunk_size):
                 i = x * chunk_size * chunk_size + y * chunk_size + z
-                y = y + position[1]
-                diff = max_y - y
+                diff = max_y - (y + position[1])
 
                 if diff == 0:
                     voxel_data[i] = grass
@@ -114,9 +110,6 @@ cdef class WorldGenerator:
 
                 elif diff >= 5:
                     voxel_data[i] = stone
-
-                else:
-                    voxel_data[i] = air
 
         return voxel_data
 
@@ -136,33 +129,7 @@ cdef class WorldGenerator:
             y = i / chunk_size % chunk_size
             z = i % chunk_size
 
-            occlusion = self.check_occlusion(chunk_size, x, y, z, &voxel_data[0], &neighbors[0])
-
-            occlusion_state[i] = occlusion
-
-            if occlusion >= 32:
-                occlusion -= 32
-                face_count += 1
-
-            if occlusion >= 16:
-                occlusion -= 16
-                face_count += 1
-
-            if occlusion >= 8:
-                occlusion -= 8
-                face_count += 1
-
-            if occlusion >= 4:
-                occlusion -= 4
-                face_count += 1
-
-            if occlusion >= 2:
-                occlusion -= 2
-                face_count += 1
-
-            if occlusion >= 1:
-                occlusion -= 1
-                face_count += 1
+            face_count += self.check_occlusion(chunk_size, x, y, z, i, &occlusion_state[0], &voxel_data[0], &neighbors[0])
 
         cdef np.ndarray[float, ndim=1] vertices = np.zeros(18 * face_count, dtype=np.single)
         cdef np.ndarray[unsigned short, ndim=1] vertex_data = np.zeros(12 * face_count, dtype=np.ushort)
@@ -227,11 +194,12 @@ cdef class WorldGenerator:
             vertex_data[index * 12 + i * 2 + 1] = normal_id
 
 
-    cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, unsigned short* voxel_data, long long* neighbor_chunks):
+    cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, int index, unsigned short* occlusion, unsigned short* voxel_data, long long* neighbor_chunks):
         cdef int i, x_position, y_position, z_position, voxel_id
         cdef unsigned short* neighbor_chunk
 
-        cdef int result = 0
+        cdef unsigned short result = 0
+        cdef int face_count = 0
 
         for i in range(3 * 2):
             x_position = (i + 0) % 3 / 2 * (i / 3 * 2 - 1) + x
@@ -282,10 +250,16 @@ cdef class WorldGenerator:
             if voxel_id < 0:
                 continue
 
+            if voxel_id == voxel_data[x * chunk_size * chunk_size + y * chunk_size + z]:
+                continue
+
             if not voxel_id:
-                result += pow(2, i)
+                result += 2**i
+                face_count += 1
 
             elif self.voxel_types[voxel_id - 1].occlusion == False:
-                result += pow(2, i)
+                result += 2**i
+                face_count += 1
 
-        return result
+        occlusion[index] = result
+        return face_count
