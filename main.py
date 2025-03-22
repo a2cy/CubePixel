@@ -8,6 +8,6 @@ app = Ursina(development_mode=True, forced_aspect_ratio=1.778, borderless=False,
 
 window.color = color.black
 
-from src import * # starts game
+from src.gui import instance # starts game
 
 app.run()
