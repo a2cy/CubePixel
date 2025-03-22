@@ -11,17 +11,9 @@ from cython_functions import VoxelType
 class ResourceLoader:
 
     def __init__(self):
-        self.load_shaders()
-
-        self.load_voxel_data()
-
-
-    def load_shaders(self):
         self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag",)
         self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag",)
 
-
-    def load_voxel_data(self):
         files = os.listdir("./res/entities/")
         files.sort()
 
