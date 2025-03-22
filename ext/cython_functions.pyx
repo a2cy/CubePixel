@@ -203,6 +203,7 @@ cdef class WorldGenerator:
 
         cdef int voxel_id = voxel_data[x * chunk_size * chunk_size + y * chunk_size + z]
         cdef int[6][3] neighbor_offsets = [[-1, 0, 0], [0, -1, 0], [0, 0, -1], [1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        cdef unsigned short[6] face_indices = [1, 2, 4, 8, 16, 32]
 
         for i in range(6):
             x_position = neighbor_offsets[i][0] + x
@@ -254,11 +255,11 @@ cdef class WorldGenerator:
                 continue
 
             if not neighbor_id:
-                result += 2**i
+                result += face_indices[i]
                 face_count += 1
 
             elif self.voxel_types[neighbor_id - 1].occlusion == False:
-                result += 2**i
+                result += face_indices[i]
                 face_count += 1
 
         occlusion[index] = result

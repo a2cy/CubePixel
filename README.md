@@ -9,7 +9,7 @@ pip install requirements.txt
 ```
 2) Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
 ```
-python setup.py build_ext --inplace
+python setup.py build_ext -i
 ```
 3) Run the game:
 ```
