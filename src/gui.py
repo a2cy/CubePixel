@@ -489,7 +489,7 @@ class Options(MenuContent):
                                           position=Vec2(-.2, .3),
                                           origin=Vec2(0, 0))
 
-        self.render_distance = Slider(parent=self, position=self.render_distance_label.position+Vec2(.2, 0), min=1, max=8, step=1)
+        self.render_distance = Slider(parent=self, position=self.render_distance_label.position+Vec2(.2, 0), min=2, max=8, step=1)
 
         def render_distance_setter():
             settings.settings["render_distance"] = self.render_distance.value
