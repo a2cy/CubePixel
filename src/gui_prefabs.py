@@ -164,12 +164,12 @@ class ItemButton(Button):
                              0, 0, 0,],
         dtype=np.single)
 
-        vertex_data = np.array([voxel_type.side, 3,
-                                voxel_type.side, 3,
-                                voxel_type.side, 3,
-                                voxel_type.side, 3,
-                                voxel_type.side, 3,
-                                voxel_type.side, 3,],
+        vertex_data = np.array([voxel_type.side, 2,
+                                voxel_type.side, 2,
+                                voxel_type.side, 2,
+                                voxel_type.side, 2,
+                                voxel_type.side, 2,
+                                voxel_type.side, 2,],
         dtype=np.ushort)
 
         self.model.update(vertices, vertex_data)

@@ -209,7 +209,7 @@ class ChunkManager(Entity):
 
         self.loaded_chunks[chunk_id] = entities
 
-        for id in [(0, 0, -1), (0, -1, 0), (-1, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0)]:
+        for id in [(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]:
             neighbor_id = (id[0] * self.chunk_size + chunk_id[0],
                            id[1] * self.chunk_size + chunk_id[1],
                            id[2] * self.chunk_size + chunk_id[2])
@@ -246,7 +246,7 @@ class ChunkManager(Entity):
 
         neighbors = np.zeros(6, dtype=np.longlong)
 
-        for i, id in enumerate([(0, 0, -1), (0, -1, 0), (-1, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0)]):
+        for i, id in enumerate([(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]):
             neighbor_id = (id[0] * self.chunk_size + chunk_id[0],
                            id[1] * self.chunk_size + chunk_id[1],
                            id[2] * self.chunk_size + chunk_id[2])

@@ -10,10 +10,10 @@ np.import_array()
 
 
 cdef float[18] face_0 = [0, 0, 0,
-                         1, 0, 0,
-                         1, 1, 0,
-                         1, 1, 0,
                          0, 1, 0,
+                         0, 1, 1,
+                         0, 1, 1,
+                         0, 0, 1,
                          0, 0, 0,]
 
 cdef float[18] face_1 = [0, 0, 0,
@@ -24,18 +24,18 @@ cdef float[18] face_1 = [0, 0, 0,
                          0, 0, 0,]
 
 cdef float[18] face_2 = [0, 0, 0,
+                         1, 0, 0,
+                         1, 1, 0,
+                         1, 1, 0,
                          0, 1, 0,
-                         0, 1, 1,
-                         0, 1, 1,
-                         0, 0, 1,
                          0, 0, 0,]
 
-cdef float[18] face_3 = [0, 0, 1,
-                         0, 1, 1,
-                         1, 1, 1,
-                         1, 1, 1,
+cdef float[18] face_3 = [1, 0, 0,
                          1, 0, 1,
-                         0, 0, 1,]
+                         1, 1, 1,
+                         1, 1, 1,
+                         1, 1, 0,
+                         1, 0, 0,]
 
 cdef float[18] face_4 = [0, 1, 0,
                          1, 1, 0,
@@ -44,12 +44,12 @@ cdef float[18] face_4 = [0, 1, 0,
                          0, 1, 1,
                          0, 1, 0,]
 
-cdef float[18] face_5 = [1, 0, 0,
+cdef float[18] face_5 = [0, 0, 1,
+                         0, 1, 1,
+                         1, 1, 1,
+                         1, 1, 1,
                          1, 0, 1,
-                         1, 1, 1,
-                         1, 1, 1,
-                         1, 1, 0,
-                         1, 0, 0,]
+                         0, 0, 1,]
 
 
 cdef class VoxelType:
@@ -195,69 +195,69 @@ cdef class WorldGenerator:
 
 
     cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, int index, unsigned short* occlusion, unsigned short* voxel_data, long long* neighbor_chunks):
-        cdef int i, x_position, y_position, z_position, voxel_id
+        cdef int i, x_position, y_position, z_position, neighbor_id
         cdef unsigned short* neighbor_chunk
 
         cdef unsigned short result = 0
         cdef int face_count = 0
 
-        for i in range(3 * 2):
-            x_position = (i + 0) % 3 / 2 * (i / 3 * 2 - 1) + x
-            y_position = (i + 1) % 3 / 2 * (i / 3 * 2 - 1) + y
-            z_position = (i + 2) % 3 / 2 * (i / 3 * 2 - 1) + z
+        cdef int voxel_id = voxel_data[x * chunk_size * chunk_size + y * chunk_size + z]
+        cdef int[6][3] neighbor_offsets = [[-1, 0, 0], [0, -1, 0], [0, 0, -1], [1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
-            voxel_id = -1
+        for i in range(6):
+            x_position = neighbor_offsets[i][0] + x
+            y_position = neighbor_offsets[i][1] + y
+            z_position = neighbor_offsets[i][2] + z
+
+            neighbor_id = -1
 
             if x_position < 0:
-                neighbor_chunk = <unsigned short*>neighbor_chunks[2]
+                neighbor_chunk = <unsigned short*>neighbor_chunks[0]
 
                 if neighbor_chunk:
-                    voxel_id = neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]
+                    neighbor_id = neighbor_chunk[(x_position + chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]
 
             elif x_position >= chunk_size:
-                neighbor_chunk = <unsigned short*>neighbor_chunks[5]
+                neighbor_chunk = <unsigned short*>neighbor_chunks[3]
 
                 if neighbor_chunk:
-                    voxel_id = neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]
+                    neighbor_id = neighbor_chunk[(x_position - chunk_size) * chunk_size * chunk_size + y_position * chunk_size + z_position]
 
             elif y_position < 0:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[1]
 
                 if neighbor_chunk:
-                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]
+                    neighbor_id = neighbor_chunk[x_position * chunk_size * chunk_size + (y_position + chunk_size) * chunk_size + z_position]
 
             elif y_position >= chunk_size:
                 neighbor_chunk = <unsigned short*>neighbor_chunks[4]
 
                 if neighbor_chunk:
-                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]
+                    neighbor_id = neighbor_chunk[x_position * chunk_size * chunk_size + (y_position - chunk_size) * chunk_size + z_position]
 
             elif z_position < 0:
-                neighbor_chunk = <unsigned short*>neighbor_chunks[0]
+                neighbor_chunk = <unsigned short*>neighbor_chunks[2]
 
                 if neighbor_chunk:
-                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]
+                    neighbor_id = neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position + chunk_size)]
 
             elif z_position >= chunk_size:
-                neighbor_chunk = <unsigned short*>neighbor_chunks[3]
+                neighbor_chunk = <unsigned short*>neighbor_chunks[5]
 
                 if neighbor_chunk:
-                    voxel_id = neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]
+                    neighbor_id = neighbor_chunk[x_position * chunk_size * chunk_size + y_position * chunk_size + (z_position - chunk_size)]
 
             else:
-                voxel_id = voxel_data[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]
+                neighbor_id = voxel_data[x_position * chunk_size * chunk_size + y_position * chunk_size + z_position]
 
-            if voxel_id < 0:
+            if neighbor_id < 0 or neighbor_id == voxel_id:
                 continue
 
-            if voxel_id == voxel_data[x * chunk_size * chunk_size + y * chunk_size + z]:
-                continue
-
-            if not voxel_id:
+            if not neighbor_id:
                 result += 2**i
                 face_count += 1
 
-            elif self.voxel_types[voxel_id - 1].occlusion == False:
+            elif self.voxel_types[neighbor_id - 1].occlusion == False:
                 result += 2**i
                 face_count += 1
 
