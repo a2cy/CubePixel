@@ -193,12 +193,6 @@ class ChunkManager(Entity):
         if chunk_id in self.loaded_chunks:
             return
 
-        chunk = VoxelChunk(self.chunk_size, shader=resource_loader.voxel_shader)
-        chunk.set_shader_input("texture_array", resource_loader.texture_array)
-        chunk.set_pos(chunk_id)
-        chunk.reparent_to(self)
-        self.chunk_objects[chunk_id] = chunk
-
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
         if os.path.exists(filename):
@@ -224,8 +218,9 @@ class ChunkManager(Entity):
         if not chunk_id in self.loaded_chunks:
             return
 
-        chunk = self.chunk_objects.pop(chunk_id)
-        chunk.remove_node()
+        if chunk_id in self.chunk_objects:
+            chunk = self.chunk_objects.pop(chunk_id)
+            chunk.remove_node()
 
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
@@ -237,9 +232,6 @@ class ChunkManager(Entity):
 
 
     def update_chunk(self, chunk_id):
-        if not chunk_id in self.chunk_objects:
-            return
-
         if not chunk_id in self.loaded_chunks:
             print_warning(f"failed to update {chunk_id} {self.player_chunk}")
             return
@@ -255,6 +247,16 @@ class ChunkManager(Entity):
                 neighbors[i] = self.loaded_chunks[neighbor_id].ctypes.data
 
         vertex_data = self.world_generator.generate_mesh(self.chunk_size, self.loaded_chunks[chunk_id], neighbors)
+
+        if len(vertex_data) == 0:
+            return
+
+        if not chunk_id in self.chunk_objects:
+            chunk = VoxelChunk(self.chunk_size, shader=resource_loader.voxel_shader)
+            chunk.set_shader_input("texture_array", resource_loader.texture_array)
+            chunk.set_pos(chunk_id)
+            chunk.reparent_to(self)
+            self.chunk_objects[chunk_id] = chunk
 
         chunk = self.chunk_objects[chunk_id]
 
