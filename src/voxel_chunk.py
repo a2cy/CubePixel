@@ -5,14 +5,10 @@ from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat
 class VoxelChunk(NodePath):
 
     v_array = GeomVertexArrayFormat()
-    v_array.add_column("vertex", 3, Geom.NT_float32, Geom.C_point)
-
-    t_array = GeomVertexArrayFormat()
-    t_array.add_column("vertex_data", 2, Geom.NT_uint16, Geom.C_other)
+    v_array.add_column("vertex_data", 1, Geom.NT_uint32, Geom.C_other)
 
     vertex_format = GeomVertexFormat()
     vertex_format.add_array(v_array)
-    vertex_format.add_array(t_array)
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
     def __init__(self, chunk_size, shader=None, **kwargs):
@@ -36,8 +32,8 @@ class VoxelChunk(NodePath):
         self.geom_node.add_geom(geom)
 
 
-    def update(self, vertices=None, vertex_data=None):
-        if vertices is None:
+    def update(self, vertex_data=None):
+        if vertex_data is None:
             return
 
         geom = self.geom_node.modify_geom(0)
@@ -45,14 +41,10 @@ class VoxelChunk(NodePath):
         v_data = geom.modify_vertex_data()
         prim = geom.modify_primitive(0)
 
-        v_data.unclean_set_num_rows(len(vertices)//3)
+        v_data.unclean_set_num_rows(len(vertex_data))
 
-        memview = memoryview(v_data.modify_array(0)).cast("B").cast("f")
-        memview[:] = vertices
-
-        if not vertex_data is None:
-            memview = memoryview(v_data.modify_array(1)).cast("B").cast("H")
-            memview[:] = vertex_data
+        memview = memoryview(v_data.modify_array(0)).cast("B").cast("I")
+        memview[:] = vertex_data
 
         prim.clear_vertices()
-        prim.add_next_vertices(len(vertices)//3)
+        prim.add_next_vertices(len(vertex_data))

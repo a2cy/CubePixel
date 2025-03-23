@@ -156,23 +156,15 @@ class ItemButton(Button):
 
         import numpy as np
 
-        vertices = np.array([0, 0, 0,
-                             1, 0, 0,
-                             1, 1, 0,
-                             1, 1, 0,
-                             0, 1, 0,
-                             0, 0, 0,],
-        dtype=np.single)
+        vertex_data = np.array([((0 | (0 << 6)) | (2 << 18)) | (voxel_type.side << 21),
+                                ((1 | (0 << 6)) | (2 << 18)) | (voxel_type.side << 21),
+                                ((1 | (1 << 6)) | (2 << 18)) | (voxel_type.side << 21),
+                                ((1 | (1 << 6)) | (2 << 18)) | (voxel_type.side << 21),
+                                ((0 | (1 << 6)) | (2 << 18)) | (voxel_type.side << 21),
+                                ((0 | (0 << 6)) | (2 << 18)) | (voxel_type.side << 21),],
+        dtype=np.uintc)
 
-        vertex_data = np.array([voxel_type.side, 2,
-                                voxel_type.side, 2,
-                                voxel_type.side, 2,
-                                voxel_type.side, 2,
-                                voxel_type.side, 2,
-                                voxel_type.side, 2,],
-        dtype=np.ushort)
-
-        self.model.update(vertices, vertex_data)
+        self.model.update(vertex_data)
 
         self.selected = False
 

@@ -254,11 +254,11 @@ class ChunkManager(Entity):
             if neighbor_id in self.loaded_chunks:
                 neighbors[i] = self.loaded_chunks[neighbor_id].ctypes.data
 
-        vertices, vertex_data = self.world_generator.generate_mesh(self.chunk_size, self.loaded_chunks[chunk_id], neighbors)
+        vertex_data = self.world_generator.generate_mesh(self.chunk_size, self.loaded_chunks[chunk_id], neighbors)
 
         chunk = self.chunk_objects[chunk_id]
 
-        chunk.update(vertices, vertex_data)
+        chunk.update(vertex_data)
 
 
     def update_chunks(self):
