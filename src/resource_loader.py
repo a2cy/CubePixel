@@ -74,7 +74,7 @@ class ResourceLoader:
                 voxel_type.side = loaded_textures.index(texture_names[2])
 
             else:
-                print_info(f"failed to load voxel: {voxel["name"]} (wrong texture definition)")
+                print_info(f"failed to load voxel: {voxel['name']} (wrong texture definition)")
                 continue
 
             voxel_type.occlusion = bool(voxel["occlusion"])

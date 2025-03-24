@@ -249,6 +249,10 @@ class ChunkManager(Entity):
         vertex_data = self.world_generator.generate_mesh(self.chunk_size, self.loaded_chunks[chunk_id], neighbors)
 
         if len(vertex_data) == 0:
+            if chunk_id in self.chunk_objects:
+                chunk = self.chunk_objects.pop(chunk_id)
+                chunk.remove_node()
+
             return
 
         if not chunk_id in self.chunk_objects:
