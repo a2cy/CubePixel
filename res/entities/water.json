@@ -1,6 +1,6 @@
-{
-    "name": "",
-    "textures": [],
+{   
+    "name": "water",
+    "textures": ["water"],
     "occlusion": false,
     "collision": false,
     "inventory": false

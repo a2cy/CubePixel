@@ -84,6 +84,7 @@ cdef class WorldGenerator:
         cdef unsigned short dirt = voxel_index["dirt"]
         cdef unsigned short grass = voxel_index["grass"]
         cdef unsigned short stone = voxel_index["stone"]
+        cdef unsigned short water = voxel_index["water"]
 
         self.noise2d.seed = seed
         self.noise2d.frequency = 0.002
@@ -100,16 +101,20 @@ cdef class WorldGenerator:
 
             for y in range(chunk_size):
                 i = x * chunk_size * chunk_size + y * chunk_size + z
-                diff = max_y - (y + position[1])
+                y = y + position[1]
+                diff = max_y - y
 
-                if diff == 0:
+                if diff == 0 and y >= 0:
                     voxel_data[i] = grass
 
-                elif diff < 5 and diff > 0:
+                elif diff < 5 and diff >= 0:
                     voxel_data[i] = dirt
 
                 elif diff >= 5:
                     voxel_data[i] = stone
+
+                if y <= 0 and diff < 0:
+                    voxel_data[i] = water
 
         return voxel_data
 
@@ -180,7 +185,7 @@ cdef class WorldGenerator:
         return vertex_data
 
 
-    cdef void copy_face(self, int index, int x, int y, int z, int texture_id, int normal_id, int* face, unsigned int* vertex_data):
+    cdef void copy_face(self, int index, int x, int y, int z, int texture_id, int normal_id, int* face, unsigned int* vertex_data) noexcept:
         cdef int i
         cdef unsigned int data
 
@@ -194,7 +199,7 @@ cdef class WorldGenerator:
 
             vertex_data[index * 6 + i] = data
 
-    cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, int index, unsigned char* occlusion, unsigned char* voxel_data, long long* neighbor_chunks):
+    cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, int index, unsigned char* occlusion, unsigned char* voxel_data, long long* neighbor_chunks) noexcept:
         cdef int i, x_position, y_position, z_position, neighbor_id
         cdef unsigned char* neighbor_chunk
 

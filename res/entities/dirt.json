@@ -1,4 +1,4 @@
-{   
+{
     "name": "dirt",
     "textures": ["dirt"],
     "occlusion": true,

@@ -1,4 +1,4 @@
-{   
+{
     "name": "grass",
     "textures": ["grass", "dirt", "grass_side"],
     "occlusion": true,

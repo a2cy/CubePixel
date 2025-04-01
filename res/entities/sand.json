@@ -1,4 +1,4 @@
-{   
+{
     "name": "sand",
     "textures": ["sand"],
     "occlusion": true,

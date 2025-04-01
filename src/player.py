@@ -72,8 +72,6 @@ class Player(Entity):
 
     def update_selector(self, position, direction, max_distance):
         self.selector.enabled = False
-        if self.noclip_mode:
-            return
 
         from src.chunk_manager import instance as chunk_manager
 
@@ -115,7 +113,7 @@ class Player(Entity):
 
             voxel_id = chunk_manager.get_voxel_id(current_position)
 
-            if voxel_id:
+            if voxel_id and resource_loader.voxel_types[voxel_id - 1].inventory:
                 self.selector.position = current_position
                 self.selector.hit_normal = hit_normal
                 self.selector.enabled = True
