@@ -1,5 +1,8 @@
 # CubePixel
 
+![](./screenshot.png)
+
+
 ## Getting started
 
 Python 3.10+ required
@@ -20,3 +23,4 @@ python main.py
 ## Known Bugs
 
 - loading save files is slow on windows
+
