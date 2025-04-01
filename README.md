@@ -1,20 +1,22 @@
 # CubePixel
 
 ## Getting started
+
 Python 3.10+ required
 
-1) Install dependencies using pip:
+1. Install dependencies using pip:
 ```
 pip install -r requirements.txt
 ```
-2) Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
+2. Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
 ```
 python setup.py build_ext -i
 ```
-3) Run the game:
+3. Run the game:
 ```
 python main.py
 ```
 
-## Bug/Issues
-If you find a bug or you have any issues please let me know by creating an issue.
+## Known Bugs
+
+- loading save files is slow on windows
