@@ -1,8 +1,8 @@
 #version 150
 
 uniform sampler2DArray texture_array;
+uniform float texture_id;
 
-in float texture_id;
 in vec3 fragcoord;
 in vec3 normal;
 

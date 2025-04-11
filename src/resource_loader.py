@@ -12,6 +12,7 @@ class ResourceLoader:
 
     def __init__(self):
         self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag",)
+        self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel_display.vert", "./shaders/voxel_display.frag",)
         self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag",)
 
         files = os.listdir("./res/entities/")

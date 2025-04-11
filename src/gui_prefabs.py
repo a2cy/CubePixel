@@ -134,37 +134,20 @@ class FileButton(Button):
 class ItemButton(Button):
 
     def __init__(self, voxel_id, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(model="quad", **kwargs)
 
         from src.resource_loader import instance as resource_loader
-        from src.chunk_manager import instance as chunk_manager
-        from src.voxel_chunk import VoxelChunk
 
         self.voxel_id = voxel_id
-        self.color = color.white
-        self.highlight_color = color.white
-        self.pressed_color = color.white
         self.scale = .05
 
         self.selector = Entity(parent=self, scale=1.25, model="quad", shader=resource_loader.selector_shader)
 
-        self.model = VoxelChunk(chunk_manager.chunk_size, shader=resource_loader.voxel_shader)
-        self.model.set_shader_input("texture_array", resource_loader.texture_array)
-        self.model.reparent_to(self)
-
         voxel_type = resource_loader.voxel_types[self.voxel_id - 1]
 
-        import numpy as np
-
-        vertex_data = np.array([((0 | (0 << 6)) | (2 << 18)) | (voxel_type.side << 21),
-                                ((1 | (0 << 6)) | (2 << 18)) | (voxel_type.side << 21),
-                                ((1 | (1 << 6)) | (2 << 18)) | (voxel_type.side << 21),
-                                ((1 | (1 << 6)) | (2 << 18)) | (voxel_type.side << 21),
-                                ((0 | (1 << 6)) | (2 << 18)) | (voxel_type.side << 21),
-                                ((0 | (0 << 6)) | (2 << 18)) | (voxel_type.side << 21),],
-        dtype=np.uintc)
-
-        self.model.update(vertex_data)
+        self.shader = resource_loader.voxel_display_shader
+        self.set_shader_input("texture_array", resource_loader.texture_array)
+        self.set_shader_input("texture_id", voxel_type.side)
 
         self.selected = False
 
