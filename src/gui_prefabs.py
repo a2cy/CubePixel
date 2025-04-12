@@ -1,5 +1,5 @@
-from ursina import Entity, Text, Mesh, Vec2, color, window
-from ursina import InputField as uInputField, Button as Button
+from ursina import Entity, Button, Slider, Text, Mesh, Vec2, color, Quad, window
+from ursina import InputField as uInputField
 
 
 class MenuButton(Entity):
@@ -55,7 +55,7 @@ class MenuContent(Entity):
 
         self.background_panel = Entity(parent=self,
                                        model="quad",
-                                       color=color.black66,
+                                       color=color.black50,
                                        position=window.right+Vec2(-.65, 0),
                                        scale=Vec2(1.2, 1),
                                        z=1)
@@ -69,7 +69,7 @@ class MenuContent(Entity):
 
         self.label = Text(parent=self,
                           text=text,
-                          scale=1.4,
+                          scale=1.5,
                           position=window.right+Vec2(-.65, .42),
                           origin=Vec2(0, 0))
 
@@ -125,8 +125,10 @@ class FileButton(Button):
     @selected.setter
     def selected(self, value):
         self._selected = value
+
         if value == True:
             self.color = self.pressed_color
+
         else:
             self.color = self.original_color
 
@@ -167,7 +169,21 @@ class ItemButton(Button):
     @selected.setter
     def selected(self, value):
         self._selected = value
+
         if value == True:
             self.selector.enable()
+            self.scale = .06
+
         else:
             self.selector.disable()
+            self.scale = .05
+
+
+class ThinSlider(Slider):
+
+    def __init__(self, *args, **kwargs):
+        kwargs['height'] = Text.size
+        super().__init__(*args, **kwargs)
+
+        self.bg.model = Quad(scale=(.525, Text.size/2), radius=Text.size/4, segments=3)
+        self.bg.origin = self.bg.origin

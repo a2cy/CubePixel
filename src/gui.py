@@ -1,6 +1,6 @@
-from ursina import Entity, Text, Slider, CheckBox, Mesh, Func, Animator, Vec2, color, time, camera, window
+from ursina import Entity, Text, CheckBox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
-from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton
+from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
 from src.resource_loader import instance as resource_loader
 from src.chunk_manager import instance as chunk_manager
 from src.player import instance as player
@@ -72,7 +72,7 @@ class MainMenu(Entity):
 
         self.background_panel = Entity(parent=self,
                                        model="quad",
-                                       color=color.black66,
+                                       color=color.black50,
                                        position=window.left+Vec2(.25, 0),
                                        scale=Vec2(.4, 1),
                                        z=1)
@@ -86,8 +86,8 @@ class MainMenu(Entity):
 
         self.title = Text(parent=self,
                           text="CubePixel",
-                          scale=1.8,
-                          position=window.left+Vec2(.25, .45),
+                          scale=2,
+                          position=window.left+Vec2(.25, .43),
                           origin=Vec2(0, 0))
 
         self.notification = Notification()
@@ -132,7 +132,7 @@ class PauseMenu(Entity):
 
         self.background_panel = Entity(parent=self,
                                        model="quad",
-                                       color=color.black66,
+                                       color=color.black50,
                                        position=window.left+Vec2(.25, 0),
                                        scale=Vec2(.4, 1),
                                        z=1)
@@ -146,8 +146,8 @@ class PauseMenu(Entity):
 
         self.title = Text(parent=self,
                           text="CubePixel",
-                          scale=1.8,
-                          position=window.left+Vec2(.25, .45),
+                          scale=2,
+                          position=window.left+Vec2(.25, .43),
                           origin=Vec2(0, 0))
 
         self.options = Options(parent=self)
@@ -181,20 +181,14 @@ class Inventory(Entity):
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
 
-        self.max_buttons = 9
+        self.max_buttons = 10
         self.button_parent = Entity(parent=self, z=-1)
 
         self.background_panel = Entity(parent=self,
-                                       model="quad",
-                                       color=color.black66,
-                                       scale=Vec2(1, 1),
+                                       model=Quad(aspect=1 / .8, radius=.02),
+                                       color=color.black50,
+                                       scale=Vec2(1, .8),
                                        z=1)
-
-        self.panel_overlay = Entity(parent=self,
-                                    model=Mesh(vertices=[(.5,-.5,0), (.5,.8,0), (-.5,.8,0), (-.5,-.5,0)], mode="line", thickness=2),
-                                    color=color.black90,
-                                    scale=Vec2(1, 1),
-                                    z=1)
 
         button_count = 0
         for i, voxel in enumerate(resource_loader.voxel_types):
@@ -202,8 +196,8 @@ class Inventory(Entity):
                 continue
 
             ItemButton(parent=self.button_parent,
-                       x=(button_count % self.max_buttons) * .1 - .4,
-                       y=-(button_count // self.max_buttons) * .1 + .4,
+                       x=(button_count % self.max_buttons) * .1 - .45,
+                       y=-(button_count // self.max_buttons) * .1 + .35,
                        voxel_id=i+1)
 
             button_count += 1
@@ -219,8 +213,6 @@ class LoadingMenu(Entity):
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
 
-        from ursina import Quad
-
         self.background = Entity(parent=self,
                                  model="quad",
                                  texture="shore",
@@ -229,7 +221,7 @@ class LoadingMenu(Entity):
 
         self.background_panel = Entity(parent=self,
                                        model=Quad(aspect=.25 / .2, radius=.1),
-                                       color=color.black66,
+                                       color=color.black50,
                                        scale=Vec2(.25, .2),
                                        z=1)
 
@@ -263,8 +255,6 @@ class Notification(Entity):
 
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
-
-        from ursina import Quad
 
         self.idle_position = window.left+Vec2(-.25, -.4)
         self.active_position = window.left+Vec2(.25, -.4)
@@ -486,10 +476,10 @@ class Options(MenuContent):
         self.render_distance_label = Text(parent=self,
                                           text="Render Distance",
                                           scale=1.2,
-                                          position=Vec2(-.2, .3),
-                                          origin=Vec2(0, 0))
+                                          position=Vec2(-.28, .3),
+                                          origin=Vec2(-.5, 0))
 
-        self.render_distance = Slider(parent=self, position=self.render_distance_label.position+Vec2(.2, 0), min=2, max=8, step=1)
+        self.render_distance = ThinSlider(parent=self, position=self.render_distance_label.position+Vec2(.28, 0), height=Text.size/5, radius=Text.size/10, min=2, max=16, step=1)
 
         def render_distance_setter():
             settings.settings["render_distance"] = self.render_distance.value
@@ -503,10 +493,10 @@ class Options(MenuContent):
         self.chunk_updates_label = Text(parent=self,
                                           text="Chunk Updates",
                                           scale=1.2,
-                                          position=Vec2(-.2, .22),
-                                          origin=Vec2(0, 0))
+                                          position=Vec2(-.28, .22),
+                                          origin=Vec2(-.5, 0))
 
-        self.chunk_updates = Slider(parent=self, position=self.chunk_updates_label.position+Vec2(.2, 0), min=1, max=8, step=1)
+        self.chunk_updates = ThinSlider(parent=self, position=self.chunk_updates_label.position+Vec2(.28, 0), min=1, max=40, step=1)
 
         def chunk_updates_setter():
             settings.settings["chunk_updates"] = self.chunk_updates.value
@@ -520,10 +510,10 @@ class Options(MenuContent):
         self.mouse_sensitivity_label = Text(parent=self,
                                             text="Mouse Sensitivity",
                                             scale=1.2,
-                                            position=Vec2(-.2, .14),
-                                            origin=Vec2(0, 0))
+                                            position=Vec2(-.28, .14),
+                                            origin=Vec2(-.5, 0))
 
-        self.mouse_sensitivity = Slider(parent=self, position=self.mouse_sensitivity_label.position+Vec2(.2, 0), min=60, max=120, step=1)
+        self.mouse_sensitivity = ThinSlider(parent=self, position=self.mouse_sensitivity_label.position+Vec2(.28, 0), min=60, max=120, step=1)
 
         def mouse_sensitivity_setter():
             settings.settings["mouse_sensitivity"] = self.mouse_sensitivity.value
@@ -535,12 +525,12 @@ class Options(MenuContent):
         self.mouse_sensitivity.on_value_changed = mouse_sensitivity_setter
 
         self.fov_label = Text(parent=self,
-                              text="Fov",
+                              text="Field of view",
                               scale=1.2,
-                              position=Vec2(-.2, .06),
-                              origin=Vec2(0, 0))
+                              position=Vec2(-.28, .06),
+                              origin=Vec2(-.5, 0))
 
-        self.fov = Slider(parent=self, position=self.fov_label.position+Vec2(.2, 0), min=60, max=120, dynamic=True, step=1)
+        self.fov = ThinSlider(parent=self, position=self.fov_label.position+Vec2(.28, 0), min=60, max=120, dynamic=True, step=1)
 
         def fov_setter():
             settings.settings["fov"] = self.fov.value
@@ -554,10 +544,10 @@ class Options(MenuContent):
         self.debug_label = Text(parent=self,
                               text="Debug Overlay",
                               scale=1.2,
-                              position=Vec2(-.2, -.02),
-                              origin=Vec2(0, 0))
+                              position=Vec2(-.28, -.02),
+                              origin=Vec2(-.5, 0))
 
-        self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position+Vec2(.2, 0), start_value=False)
+        self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position+Vec2(.28, 0), start_value=False)
 
         def toggle_debug():
             self.debug_toggle.value = not self.debug_toggle.value
