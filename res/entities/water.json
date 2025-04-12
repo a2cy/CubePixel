@@ -1,5 +1,5 @@
-{   
-    "name": "water",
+{
+    "index": 5,
     "textures": ["water"],
     "occlusion": false,
     "collision": false,

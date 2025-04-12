@@ -1,5 +1,5 @@
 {
-    "name": "grass",
+    "index": 2,
     "textures": ["grass", "dirt", "grass_side"],
     "occlusion": true,
     "collision": true,

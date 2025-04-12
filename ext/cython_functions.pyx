@@ -76,15 +76,10 @@ cdef class WorldGenerator:
         self.noise2d.fractal_type = FNL_FRACTAL_FBM
 
 
-    def generate_voxels(self, unsigned short chunk_size, dict voxel_index, int seed, int [:] position):
+    def generate_voxels(self, unsigned short chunk_size, int seed, int [:] position):
         cdef int i, x, y, z, max_y
 
         cdef float amp2d = 32
-
-        cdef unsigned short dirt = voxel_index["dirt"]
-        cdef unsigned short grass = voxel_index["grass"]
-        cdef unsigned short stone = voxel_index["stone"]
-        cdef unsigned short water = voxel_index["water"]
 
         self.noise2d.seed = seed
         self.noise2d.frequency = 0.002
@@ -105,16 +100,16 @@ cdef class WorldGenerator:
                 diff = max_y - y
 
                 if diff == 0 and y >= 0:
-                    voxel_data[i] = grass
+                    voxel_data[i] = 2
 
                 elif diff < 5 and diff >= 0:
-                    voxel_data[i] = dirt
+                    voxel_data[i] = 1
 
                 elif diff >= 5:
-                    voxel_data[i] = stone
+                    voxel_data[i] = 3
 
                 if y <= 0 and diff < 0:
-                    voxel_data[i] = water
+                    voxel_data[i] = 5
 
         return voxel_data
 

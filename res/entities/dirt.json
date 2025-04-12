@@ -1,5 +1,5 @@
 {
-    "name": "dirt",
+    "index": 1,
     "textures": ["dirt"],
     "occlusion": true,
     "collision": true,

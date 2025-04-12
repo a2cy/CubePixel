@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 from queue import Queue
-from ursina import Entity, Vec3, print_info, print_warning
+from ursina import Entity, Vec3, print_info
 
 from src.voxel_chunk import VoxelChunk
 from src.settings import instance as settings
@@ -200,7 +200,7 @@ class ChunkManager(Entity):
             entities = np.load(filename)
 
         else:
-            entities = self.world_generator.generate_voxels(self.chunk_size, resource_loader.voxel_index, self.seed, np.array(chunk_id, dtype=np.intc))
+            entities = self.world_generator.generate_voxels(self.chunk_size, self.seed, np.array(chunk_id, dtype=np.intc))
 
         self.loaded_chunks[chunk_id] = entities
 

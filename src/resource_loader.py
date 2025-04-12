@@ -16,13 +16,14 @@ class ResourceLoader:
         self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag",)
 
         files = os.listdir("./res/entities/")
-        files.sort()
 
         voxels = []
         for file_name in files:
             with open(f"./res/entities/{file_name}") as file:
                 data = json.load(file)
                 voxels.append(data)
+
+        voxels.sort(key=lambda value: value["index"])
 
         loaded_textures = []
 
@@ -52,19 +53,16 @@ class ResourceLoader:
                 print_info(f"failed to load texture: {texture_name} (wrong format)")
 
         self.voxel_types = []
-        self.voxel_index = {}
 
-        for i, voxel in enumerate(voxels):
-            self.voxel_index[voxel["name"]] = i + 1
-
+        for voxel in voxels:
             texture_names = voxel["textures"]
+
+            if len(texture_names) == 0:
+                continue
 
             voxel_type = VoxelType()
 
-            if len(texture_names) == 0:
-                pass
-
-            elif len(texture_names) == 1:
+            if len(texture_names) == 1:
                 voxel_type.up = loaded_textures.index(texture_names[0])
                 voxel_type.down = loaded_textures.index(texture_names[0])
                 voxel_type.side = loaded_textures.index(texture_names[0])
@@ -86,5 +84,3 @@ class ResourceLoader:
 
 
 instance = ResourceLoader()
-
-# print(instance.voxel_index)
