@@ -1,7 +1,0 @@
-{
-    "name": "sand",
-    "textures": ["sand"],
-    "occlusion": true,
-    "collision": true,
-    "inventory": true
-}
