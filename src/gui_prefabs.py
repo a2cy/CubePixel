@@ -181,9 +181,9 @@ class ItemButton(Button):
 
 class ThinSlider(Slider):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         kwargs['height'] = Text.size
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
         self.bg.model = Quad(scale=(.525, Text.size/2), radius=Text.size/4, segments=3)
         self.bg.origin = self.bg.origin

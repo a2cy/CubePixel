@@ -196,9 +196,10 @@ class Inventory(Entity):
                 continue
 
             ItemButton(parent=self.button_parent,
+                       voxel_id=i+1,
                        x=(button_count % self.max_buttons) * .1 - .45,
                        y=-(button_count // self.max_buttons) * .1 + .35,
-                       voxel_id=i+1)
+                       add_to_scene_entities=False)
 
             button_count += 1
 
@@ -465,7 +466,11 @@ class WorldLoading(MenuContent):
         for i, file in enumerate(files):
             prefix = ' <light_gray>'
 
-            FileButton(parent=self.button_parent, path=file, text=prefix+file, y=-i*.055 +.3, add_to_scene_entities=False)
+            FileButton(parent=self.button_parent,
+                       path=file,
+                       text=prefix+file,
+                       y=-i*.055 +.3,
+                       add_to_scene_entities=False)
 
 
 class Options(MenuContent):

@@ -197,12 +197,12 @@ class ChunkManager(Entity):
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
         if os.path.exists(filename):
-            entities = np.load(filename)
+            voxels = np.load(filename)
 
         else:
-            entities = self.world_generator.generate_voxels(self.chunk_size, self.seed, np.array(chunk_id, dtype=np.intc))
+            voxels = self.world_generator.generate_voxels(self.chunk_size, self.seed, np.array(chunk_id, dtype=np.intc))
 
-        self.loaded_chunks[chunk_id] = entities
+        self.loaded_chunks[chunk_id] = voxels
 
         for id in [(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]:
             neighbor_id = (id[0] * self.chunk_size + chunk_id[0],
@@ -225,9 +225,9 @@ class ChunkManager(Entity):
 
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
-        entities = self.loaded_chunks[chunk_id]
+        voxels = self.loaded_chunks[chunk_id]
 
-        np.save(filename, entities)
+        np.save(filename, voxels)
 
         self.loaded_chunks.pop(chunk_id)
 
