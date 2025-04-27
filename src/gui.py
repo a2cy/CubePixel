@@ -344,10 +344,12 @@ class WorldCreation(MenuContent):
                 instance.main_menu.notification.notify("Missing world name")
                 return
 
-            seed = int(self.world_seed.text) if self.world_seed.text else int(time.time())
+            if not self.world_seed.text:
+                instance.main_menu.notification.notify("Missing world seed")
+                return
 
             try:
-                chunk_manager.create_world(self.world_name.text, seed)
+                chunk_manager.create_world(self.world_name.text, int(self.world_seed.text))
             except:
                 instance.main_menu.notification.notify("World name already used")
                 return
