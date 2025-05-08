@@ -4,7 +4,7 @@ from src.settings import instance as settings
 from src.resource_loader import instance as resource_loader
 
 
-class AABB:
+class AABBCollider:
 
     def __init__(self, position, origin, scale):
         self._scale = scale
@@ -29,6 +29,51 @@ class AABB:
         self.z_2 = value.z + self._origin.z + self._scale.z / 2
 
 
+    def intersect(self, collider):
+        return (self.x_1 < collider.x_2 and self.x_2 > collider.x_1 and
+                self.y_1 < collider.y_2 and self.y_2 > collider.y_1 and
+                self.z_1 < collider.z_2 and self.z_2 > collider.z_1)
+
+
+    def collide(self, collider, direction):
+        get_time = lambda x, y: x / y if y else float("-" * (x > 0) + "inf")
+
+        no_collision = 1, None
+
+        x_entry = get_time(collider.x_1 - self.x_2 if direction.x > 0 \
+                           else collider.x_2 - self.x_1, direction.x)
+        x_exit = get_time(collider.x_2 - self.x_1 if direction.x > 0 \
+                          else collider.x_1 - self.x_2, direction.x)
+
+        y_entry = get_time(collider.y_1 - self.y_2 if direction.y > 0 \
+                           else collider.y_2 - self.y_1, direction.y)
+        y_exit = get_time(collider.y_2 - self.y_1 if direction.y > 0 \
+                          else collider.y_1 - self.y_2, direction.y)
+
+        z_entry = get_time(collider.z_1 - self.z_2 if direction.z > 0 \
+                           else collider.z_2 - self.z_1, direction.z)
+        z_exit = get_time(collider.z_2 - self.z_1 if direction.z > 0 \
+                          else collider.z_1 - self.z_2, direction.z)
+
+        if x_entry < 0 and y_entry < 0 and z_entry < 0:
+            return no_collision
+
+        if x_entry > 1 or y_entry > 1 or z_entry > 1:
+            return no_collision
+
+        entry_time = max(x_entry, y_entry, z_entry)
+        exit_time = min(x_exit, y_exit, z_exit)
+
+        if entry_time > exit_time:
+            return no_collision
+
+        normal_x = (0, -1 if direction.x > 0 else 1)[entry_time == x_entry]
+        normal_y = (0, -1 if direction.y > 0 else 1)[entry_time == y_entry]
+        normal_z = (0, -1 if direction.z > 0 else 1)[entry_time == z_entry]
+
+        return entry_time, Vec3(normal_x, normal_y, normal_z)
+
+
 class Player(Entity):
 
     def __init__(self, **kwargs):
@@ -37,19 +82,20 @@ class Player(Entity):
 
         super().__init__(**kwargs)
 
+        self.gravity = 25
         self.walk_speed = 6
+        self.max_fall_speed = 60
         self.acceleration = 16
         self.sprint_multiplier = 1.6
-
-        self.gravity = 25
         self.jump_height = 1.2
+        self.grounded = False
 
         self.noclip_speed = 24
         self.noclip_acceleration = 6
         self.noclip_mode = False
 
-        self.player_collider = AABB(Vec3(0), Vec3(0, -.6, 0), Vec3(.8, 1.8, .8))
-        self.voxel_collider = AABB(Vec3(0), Vec3(0), Vec3(1))
+        self.player_collider = AABBCollider(Vec3(0), Vec3(0, -0.6, 0), Vec3(0.8, 1.8, 0.8))
+        self.voxel_collider = AABBCollider(Vec3(0), Vec3(0), Vec3(1))
 
         self.fov_multiplier = 1.12
         self.camera_pivot = Entity(parent=self)
@@ -57,7 +103,6 @@ class Player(Entity):
         camera.position = Vec3(0)
         camera.rotation = Vec3(0)
 
-        self.grounded = False
         self.direction = Vec3(0)
         self.velocity = Vec3(0)
 
@@ -120,51 +165,6 @@ class Player(Entity):
                 break
 
 
-    def aabb_broadphase(self, collider_1, collider_2, direction):
-        x_1 = min(collider_1.x_1, collider_1.x_1 + direction.x)
-        y_1 = min(collider_1.y_1, collider_1.y_1 + direction.y)
-        z_1 = min(collider_1.z_1, collider_1.z_1 + direction.z)
-
-        x_2 = max(collider_1.x_2, collider_1.x_2 + direction.x)
-        y_2 = max(collider_1.y_2, collider_1.y_2 + direction.y)
-        z_2 = max(collider_1.z_2, collider_1.z_2 + direction.z)
-
-        return (x_1 < collider_2.x_2 and x_2 > collider_2.x_1 and
-                y_1 < collider_2.y_2 and y_2 > collider_2.y_1 and
-                z_1 < collider_2.z_2 and z_2 > collider_2.z_1)
-
-
-    def swept_aabb(self, collider_1, collider_2, direction):
-        get_time = lambda x, y: x / y if y else float("-" * (x > 0) + "inf")
-
-        x_entry = get_time(collider_2.x_1 - collider_1.x_2 if direction.x > 0 else collider_2.x_2 - collider_1.x_1, direction.x)
-        x_exit = get_time(collider_2.x_2 - collider_1.x_1 if direction.x > 0 else collider_2.x_1 - collider_1.x_2, direction.x)
-
-        y_entry = get_time(collider_2.y_1 - collider_1.y_2 if direction.y > 0 else collider_2.y_2 - collider_1.y_1, direction.y)
-        y_exit = get_time(collider_2.y_2 - collider_1.y_1 if direction.y > 0 else collider_2.y_1 - collider_1.y_2, direction.y)
-
-        z_entry = get_time(collider_2.z_1 - collider_1.z_2 if direction.z > 0 else collider_2.z_2 - collider_1.z_1, direction.z)
-        z_exit = get_time(collider_2.z_2 - collider_1.z_1 if direction.z > 0 else collider_2.z_1 - collider_1.z_2, direction.z)
-
-        if x_entry < 0 and y_entry < 0 and z_entry < 0:
-            return 1, Vec3(0)
-
-        if x_entry > 1 or y_entry > 1 or z_entry > 1:
-            return 1, Vec3(0)
-
-        entry_time = max(x_entry, y_entry, z_entry)
-        exit_time = min(x_exit, y_exit, z_exit)
-
-        if entry_time > exit_time:
-            return 1, Vec3(0)
-
-        normal_x = (0, -1 if direction.x > 0 else 1)[entry_time == x_entry]
-        normal_y = (0, -1 if direction.y > 0 else 1)[entry_time == y_entry]
-        normal_z = (0, -1 if direction.z > 0 else 1)[entry_time == z_entry]
-
-        return entry_time, Vec3(normal_x, normal_y, normal_z)
-
-
     def update(self):
         from src.chunk_manager import instance as chunk_manager
 
@@ -188,7 +188,9 @@ class Player(Entity):
 
             self.direction += self.up * (held_keys["e"] - held_keys["q"])
 
-            self.velocity = lerp(self.velocity, self.direction * self.noclip_speed, self.noclip_acceleration * min(time.dt, .05))
+            self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, .5**(self.noclip_acceleration * time.dt))
+
+            self.position += self.velocity * time.dt
 
         else:
             if self.grounded and held_keys["space"]:
@@ -199,20 +201,20 @@ class Player(Entity):
 
             if held_keys["left shift"]:
                 self.direction *= self.sprint_multiplier
-                camera.fov = lerp(camera.fov, self.fov * self.fov_multiplier, self.acceleration * min(time.dt, .05))
+                camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, .5**(self.acceleration * time.dt))
 
             else:
-                camera.fov = lerp(camera.fov, self.fov, self.acceleration * min(time.dt, .05))
+                camera.fov = lerp(self.fov, camera.fov, .5**(self.acceleration * time.dt))
 
-            self.velocity.xz = lerp(self.velocity, self.direction * self.walk_speed, self.acceleration * min(time.dt, .05)).xz
-            self.velocity.y = self.velocity.y - self.gravity * time.dt
+            self.velocity.xz = lerp(self.direction * self.walk_speed, self.velocity, .5**(self.acceleration * time.dt)).xz
+            self.velocity.y = self.velocity.y - self.gravity * min(time.dt, .5)
+            self.velocity.y = max(self.velocity.y, -self.max_fall_speed)
 
             self.grounded = False
-
             self.player_collider.position = self.position
+            move_delta = self.velocity * time.dt
 
-            for _ in range(3):
-                velocity = self.velocity * time.dt
+            for _ in range(4):
                 collisions = []
 
                 for i in range(3 * 3 * 4):
@@ -220,9 +222,7 @@ class Player(Entity):
                                   i // 3 % 4 - 2,
                                   i % 3 % 4 - 1)
 
-                    position = round(self.position + velocity + offset, ndigits=0)
-
-                    voxel_id = chunk_manager.get_voxel_id(position)
+                    voxel_id = chunk_manager.get_voxel_id(self.position + move_delta + offset)
 
                     if not voxel_id:
                         continue
@@ -232,37 +232,37 @@ class Player(Entity):
                     if not collision:
                         continue
 
-                    self.voxel_collider.position = position
+                    self.voxel_collider.position = round(self.position + move_delta + offset, ndigits=0)
 
-                    if self.aabb_broadphase(self.player_collider, self.voxel_collider, velocity):
-                        collision_time, collision_normal = self.swept_aabb(self.player_collider, self.voxel_collider, velocity)
+                    collision_time, normal = self.player_collider.collide(self.voxel_collider, move_delta)
 
-                        collisions.append((collision_time, collision_normal))
+                    if normal is None:
+                        continue
+
+                    collisions.append((collision_time, normal))
 
                 if not collisions:
                     break
 
-                collision_time, collision_normal = min(collisions, key= lambda x: x[0])
-                collision_time -= .0001
+                collision_time, normal = min(collisions, key=lambda x: x[0])
+                collision_time *= 0.5
 
-                if collision_normal.x:
+                if normal.x:
                     self.velocity.x = 0
-                    self.position.x += velocity.x * collision_time
+                    move_delta.x = move_delta.x * collision_time
 
-                if collision_normal.y:
+                if normal.y:
                     self.velocity.y = 0
-                    self.position.y += velocity.y * collision_time
+                    move_delta.y = move_delta.y * collision_time
 
-                if collision_normal.z:
+                if normal.z:
                     self.velocity.z = 0
-                    self.position.z += velocity.z * collision_time
+                    move_delta.z = move_delta.z * collision_time
 
-                if collision_normal.y == 1:
+                if normal.y == 1:
                     self.grounded = True
 
-        self.position += self.velocity * time.dt
-
-        self.player_collider.position = self.position
+            self.position += move_delta
 
         self.update_selector(self.camera_pivot.world_position, self.camera_pivot.forward, 5)
 
@@ -284,7 +284,7 @@ class Player(Entity):
             point = self.selector.position + self.selector.hit_normal
             self.voxel_collider.position = point
 
-            if not self.aabb_broadphase(self.player_collider, self.voxel_collider, Vec3(0)):
+            if not self.player_collider.intersect(self.voxel_collider):
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
 
