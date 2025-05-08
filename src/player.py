@@ -211,7 +211,6 @@ class Player(Entity):
             self.velocity.y = max(self.velocity.y, -self.max_fall_speed)
 
             self.grounded = False
-            self.player_collider.position = self.position
             move_delta = self.velocity * time.dt
 
             for _ in range(4):
@@ -264,6 +263,7 @@ class Player(Entity):
 
             self.position += move_delta
 
+        self.player_collider.position = self.position
         self.update_selector(self.camera_pivot.world_position, self.camera_pivot.forward, 5)
 
 
@@ -284,7 +284,7 @@ class Player(Entity):
             point = self.selector.position + self.selector.hit_normal
             self.voxel_collider.position = point
 
-            if not self.player_collider.intersect(self.voxel_collider):
+            if not self.player_collider.intersect(self.voxel_collider) or self.noclip_mode:
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
 
