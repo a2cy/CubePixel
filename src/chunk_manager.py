@@ -19,6 +19,7 @@ class ChunkManager(Entity):
         self.updating = False
         self.world_loaded = False
         self.finished_loading = False
+        self.set_player_position = False
         self.player_chunk = (0, 0, 0)
         self.chunks_to_load = Queue()
         self.chunks_to_unload = Queue()
@@ -47,33 +48,36 @@ class ChunkManager(Entity):
 
 
     def create_world(self, world_name, seed):
-        world_path = f"./saves/{world_name}/"
+        if os.path.exists(f"./saves/{world_name}/"):
+            return
 
-        if os.path.exists(world_path):
-            raise
+        os.makedirs(f"./saves/{world_name}/chunks/", exist_ok=True)
+        world_data = {"seed": seed, "player_position": [0, 0, 0], "player_rotation": [0, 0]}
 
-        os.makedirs(f"{world_path}chunks/", exist_ok=True)
-        world_data = {"seed": seed, "player_position": [0, 40, 0], "player_rotation": [0, 0]}
+        self.set_player_position = True
 
-        with open(f"{world_path}data.json", "w+") as file:
+        with open(f"./saves/{world_name}/data.json", "w+") as file:
             json.dump(world_data, file, indent=4)
 
         self.load_world(world_name)
 
+        return True
+
 
     def delete_world(self, world_name):
-        world_path = f"./saves/{world_name}/"
+        if os.path.isfile(f"./saves/{world_name}/data.json"):
+            os.remove(f"./saves/{world_name}/data.json")
 
-        if not os.path.exists(f"{world_path}/chunks"):
-            raise
+        if os.path.exists(f"./saves/{world_name}/chunks"):
+            files = os.listdir(f"./saves/{world_name}/chunks/")
 
-        files = os.listdir(f"{world_path}chunks/")
+            for file in files:
+                os.remove(f"./saves/{world_name}/chunks/{file}")
 
-        for file in files:
-            os.remove(f"{world_path}chunks/{file}")
+            os.removedirs(f"./saves/{world_name}/chunks")
 
-        os.remove(f"{world_path}data.json")
-        os.removedirs(f"{world_path}chunks/")
+        if os.path.exists(f"./saves/{world_name}"):
+            os.removedirs(f"./saves/{world_name}")
 
 
     def load_world(self, world_name):
@@ -84,8 +88,11 @@ class ChunkManager(Entity):
 
         self.world_name = world_name
 
-        if not os.path.exists(f"./saves/{self.world_name}/chunks") or not os.path.exists(f"./saves/{self.world_name}/data.json"):
-            raise
+        if not os.path.exists(f"./saves/{world_name}/chunks"):
+            return
+
+        if not os.path.isfile(f"./saves/{world_name}/data.json"):
+            return
 
         with open(f"./saves/{world_name}/data.json") as file:
             self.world_data = json.load(file)
@@ -103,6 +110,8 @@ class ChunkManager(Entity):
         self.update_chunks_all()
 
         print_info(f"loaded world {self.world_name} with seed {self.seed}")
+
+        return True
 
 
     def unload_world(self):
@@ -190,7 +199,30 @@ class ChunkManager(Entity):
             self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] + self.chunk_size))
 
 
-    def load_chunk(self, chunk_id):
+    def get_terrain_height(self, position: Vec3):
+        current_position = round(position, ndigits=0)
+
+        voxel_id = self.get_voxel_id(current_position)
+
+        if voxel_id and resource_loader.voxel_types[voxel_id - 1].collision:
+            step_y = 1
+        else:
+            step_y = -1
+
+        for _ in range(50):
+            voxel_id = self.get_voxel_id(current_position)
+
+            if voxel_id and resource_loader.voxel_types[voxel_id - 1].collision:
+                if step_y < 0:
+                    return current_position
+
+            elif step_y > 0:
+                return current_position - Vec3.up
+
+            current_position.y += step_y
+
+
+    def load_chunk(self, chunk_id: tuple):
         if chunk_id in self.loaded_chunks:
             return
 
@@ -215,7 +247,7 @@ class ChunkManager(Entity):
         self.chunks_to_update.put(chunk_id)
 
 
-    def unload_chunk(self, chunk_id):
+    def unload_chunk(self, chunk_id: tuple):
         if not chunk_id in self.loaded_chunks:
             return
 
@@ -232,7 +264,7 @@ class ChunkManager(Entity):
         self.loaded_chunks.pop(chunk_id)
 
 
-    def update_chunk(self, chunk_id):
+    def update_chunk(self, chunk_id: tuple):
         if not chunk_id in self.loaded_chunks:
             return
 
@@ -290,7 +322,7 @@ class ChunkManager(Entity):
                 self.chunks_to_unload.put(chunk_id)
 
 
-    def update_chunks_slice_x(self, direction):
+    def update_chunks_slice_x(self, direction: int):
         x = self.render_distance * direction
         for i in range(self.world_size**2):
             y = i // self.world_size - self.render_distance
@@ -305,7 +337,7 @@ class ChunkManager(Entity):
                                        int(z * self.chunk_size + self.player_chunk[2])))
 
 
-    def update_chunks_slice_y(self, direction):
+    def update_chunks_slice_y(self, direction: int):
         y = self.render_distance * direction
         for i in range(self.world_size**2):
             x = i // self.world_size - self.render_distance
@@ -320,7 +352,7 @@ class ChunkManager(Entity):
                                        int(z * self.chunk_size + self.player_chunk[2])))
 
 
-    def update_chunks_slice_z(self, direction):
+    def update_chunks_slice_z(self, direction: int):
         z = self.render_distance * direction
         for i in range(self.world_size**2):
             y = i // self.world_size - self.render_distance
@@ -384,6 +416,14 @@ class ChunkManager(Entity):
         else:
             self.updating = False
             self.finished_loading = True
+
+            if self.set_player_position:
+                player_position = self.get_terrain_height(Vec3(0))
+
+                if player_position:
+                    player.position = player_position + Vec3(0, 2, 0)
+
+                self.set_player_position = False
 
 
 instance = ChunkManager()

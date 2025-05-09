@@ -206,9 +206,7 @@ class WorldCreation(MenuContent):
                 instance.main_menu.notification.notify("Missing world seed")
                 return
 
-            try:
-                chunk_manager.create_world(self.world_name.text, int(self.world_seed.text))
-            except:
+            if not chunk_manager.create_world(self.world_name.text, int(self.world_seed.text)):
                 instance.main_menu.notification.notify("World name already used")
                 return
 
@@ -242,9 +240,7 @@ class WorldLoading(MenuContent):
                 instance.main_menu.notification.notify("No world selected")
                 return
 
-            try:
-                chunk_manager.load_world(self.selection[0])
-            except:
+            if not chunk_manager.load_world(self.selection[0]):
                 instance.main_menu.notification.notify("Failed to load world")
                 return
 
@@ -259,11 +255,7 @@ class WorldLoading(MenuContent):
                 instance.main_menu.notification.notify("No world selected")
                 return
 
-            try:
-                chunk_manager.delete_world(self.selection[0])
-            except:
-                instance.main_menu.notification.notify("Failed to delete world")
-                return
+            chunk_manager.delete_world(self.selection[0])
 
             self.on_enable()
 
