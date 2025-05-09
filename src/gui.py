@@ -176,148 +176,6 @@ class PauseMenu(Entity):
                 child.on_enable()
 
 
-class Inventory(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__(parent=camera.ui, **kwargs)
-
-        self.max_buttons = 10
-        self.button_parent = Entity(parent=self, z=-1)
-
-        self.background_panel = Entity(parent=self,
-                                       model=Quad(aspect=1 / .8, radius=.02),
-                                       color=color.black50,
-                                       scale=Vec2(1, .8),
-                                       z=1)
-
-        button_count = 0
-        for i, voxel in enumerate(resource_loader.voxel_types):
-            if not voxel.inventory:
-                continue
-
-            ItemButton(parent=self.button_parent,
-                       voxel_id=i+1,
-                       x=(button_count % self.max_buttons) * .1 - .45,
-                       y=-(button_count // self.max_buttons) * .1 + .35,
-                       add_to_scene_entities=False)
-
-            button_count += 1
-
-
-    @property
-    def selection(self):
-        return [c.voxel_id for c in self.button_parent.children if c.selected == True]
-
-
-class LoadingMenu(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__(parent=camera.ui, **kwargs)
-
-        self.background = Entity(parent=self,
-                                 model="quad",
-                                 texture="shore",
-                                 scale=window.aspect_ratio,
-                                 z=2)
-
-        self.background_panel = Entity(parent=self,
-                                       model=Quad(aspect=.25 / .2, radius=.1),
-                                       color=color.black50,
-                                       scale=Vec2(.25, .2),
-                                       z=1)
-
-        self.title = Text(parent=self,
-                          text="Loading ...",
-                          scale=1.8,
-                          position=Vec2(0, .03),
-                          origin=Vec2(0, 0))
-
-        self.indicator = Entity(parent=self,
-                                model="quad",
-                                texture="cog",
-                                scale=.05,
-                                position=Vec2(0, -.04))
-
-
-    def update(self):
-        if chunk_manager.finished_loading:
-            instance.ui_state.state = ""
-
-        self.indicator.rotation_z += 150 * time.dt
-
-
-    def on_disable(self):
-        if chunk_manager.world_loaded:
-            player.enable()
-            instance.sky.enable()
-
-
-class Notification(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__(parent=camera.ui, **kwargs)
-
-        self.idle_position = window.left+Vec2(-.25, -.4)
-        self.active_position = window.left+Vec2(.25, -.4)
-
-        self.model = Quad(aspect=.35 / .1)
-        self.color = color.black50
-        self.scale = Vec2(.35, .1)
-        self.position = self.idle_position
-
-        self.text = Text(parent=self, text="", z=-.1, scale=Vec2(1/self.scale.x, 1/self.scale.y), origin=Vec2(0, 0), color=color.yellow)
-
-        self.cooldown = 0
-
-
-    def update(self):
-        if self.cooldown > 0:
-            self.cooldown -= time.dt
-            return
-
-        if self.position.xy == self.active_position:
-            self.animate_position(self.idle_position, duration=.25)
-            self.cooldown = .5
-
-
-    def notify(self, text):
-        self.animate_position(self.active_position, duration=.25)
-        self.text.text = text
-        self.cooldown = 2
-
-
-class DebugOverlay(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__(parent=camera.ui, z=2, **kwargs)
-
-        self.coordinates = Text(parent=self, position=window.top_left)
-        self.direction = Text(parent=self, position=window.top_left + Vec2(0, -.03))
-
-
-    def update(self):
-        rotation = player.rotation_y
-        heading = "none"
-
-        if rotation < 0:
-            rotation += 360
-
-        if rotation > 315 or rotation < 45:
-            heading = "north z+"
-
-        if rotation > 45 and rotation < 135:
-            heading = "east x+"
-
-        if rotation > 135 and rotation < 225:
-            heading = "south z-"
-
-        if rotation > 225 and rotation < 315:
-            heading = "west x-"
-
-        self.coordinates.text = f"position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
-        self.direction.text = f"facing : {heading}"
-
-
 class WorldCreation(MenuContent):
 
     def __init__(self, **kwargs):
@@ -595,6 +453,148 @@ class Options(MenuContent):
         self.chunk_updates.value = settings.settings["chunk_updates"]
         self.mouse_sensitivity.value = settings.settings["mouse_sensitivity"]
         self.fov.value = settings.settings["fov"]
+
+
+class Inventory(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+
+        self.max_buttons = 10
+        self.button_parent = Entity(parent=self, z=-1)
+
+        self.background_panel = Entity(parent=self,
+                                       model=Quad(aspect=1 / .8, radius=.02),
+                                       color=color.black50,
+                                       scale=Vec2(1, .8),
+                                       z=1)
+
+        button_count = 0
+        for i, voxel in enumerate(resource_loader.voxel_types):
+            if not voxel.inventory:
+                continue
+
+            ItemButton(parent=self.button_parent,
+                       voxel_id=i+1,
+                       x=(button_count % self.max_buttons) * .1 - .45,
+                       y=-(button_count // self.max_buttons) * .1 + .35,
+                       add_to_scene_entities=False)
+
+            button_count += 1
+
+
+    @property
+    def selection(self):
+        return [c.voxel_id for c in self.button_parent.children if c.selected == True]
+
+
+class LoadingMenu(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+
+        self.background = Entity(parent=self,
+                                 model="quad",
+                                 texture="shore",
+                                 scale=window.aspect_ratio,
+                                 z=2)
+
+        self.background_panel = Entity(parent=self,
+                                       model=Quad(aspect=.25 / .2, radius=.1),
+                                       color=color.black50,
+                                       scale=Vec2(.25, .2),
+                                       z=1)
+
+        self.title = Text(parent=self,
+                          text="Loading ...",
+                          scale=1.8,
+                          position=Vec2(0, .03),
+                          origin=Vec2(0, 0))
+
+        self.indicator = Entity(parent=self,
+                                model="quad",
+                                texture="cog",
+                                scale=.05,
+                                position=Vec2(0, -.04))
+
+
+    def update(self):
+        if chunk_manager.finished_loading:
+            instance.ui_state.state = ""
+
+        self.indicator.rotation_z += 150 * time.dt
+
+
+    def on_disable(self):
+        if chunk_manager.world_loaded:
+            player.enable()
+            instance.sky.enable()
+
+
+class Notification(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+
+        self.idle_position = window.left+Vec2(-.25, -.4)
+        self.active_position = window.left+Vec2(.25, -.4)
+
+        self.model = Quad(aspect=.35 / .1)
+        self.color = color.black50
+        self.scale = Vec2(.35, .1)
+        self.position = self.idle_position
+
+        self.text = Text(parent=self, text="", z=-.1, scale=Vec2(1/self.scale.x, 1/self.scale.y), origin=Vec2(0, 0), color=color.yellow)
+
+        self.cooldown = 0
+
+
+    def update(self):
+        if self.cooldown > 0:
+            self.cooldown -= time.dt
+            return
+
+        if self.position.xy == self.active_position:
+            self.animate_position(self.idle_position, duration=.25)
+            self.cooldown = .5
+
+
+    def notify(self, text):
+        self.animate_position(self.active_position, duration=.25)
+        self.text.text = text
+        self.cooldown = 2
+
+
+class DebugOverlay(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, z=2, **kwargs)
+
+        self.coordinates = Text(parent=self, position=window.top_left)
+        self.direction = Text(parent=self, position=window.top_left + Vec2(0, -.03))
+
+
+    def update(self):
+        rotation = player.rotation_y
+        heading = "none"
+
+        if rotation < 0:
+            rotation += 360
+
+        if rotation > 315 or rotation < 45:
+            heading = "north z+"
+
+        if rotation > 45 and rotation < 135:
+            heading = "east x+"
+
+        if rotation > 135 and rotation < 225:
+            heading = "south z-"
+
+        if rotation > 225 and rotation < 315:
+            heading = "west x-"
+
+        self.coordinates.text = f"position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
+        self.direction.text = f"facing : {heading}"
 
 
 instance = Gui()
