@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 from queue import Queue
-from ursina import Entity, Vec3, print_info
+from ursina import Entity, Vec3, print_info, print_warning
 
 from src.voxel_chunk import VoxelChunk
 from src.settings import instance as settings
@@ -52,7 +52,7 @@ class ChunkManager(Entity):
             return
 
         os.makedirs(f"./saves/{world_name}/chunks/", exist_ok=True)
-        world_data = {"seed": seed, "player_position": [0, 0, 0], "player_rotation": [0, 0]}
+        world_data = {"seed": seed, "player_position": [0, 0, 0], "player_rotation": [0, 0], "player_noclip": False}
 
         self.set_player_position = True
 
@@ -97,9 +97,42 @@ class ChunkManager(Entity):
         with open(f"./saves/{world_name}/data.json") as file:
             self.world_data = json.load(file)
 
+        # Validate file content
+        keys = {"seed": int, "player_position": list, "player_rotation": list, "player_noclip": bool}
+        player_position = self.world_data["player_position"]
+        player_rotation = self.world_data["player_rotation"]
+
+        for key, value in keys.items():
+            if not key in self.world_data.keys():
+                print_warning(f"Failed to load world \'{world_name}\' (missing key \'{key}\' in data.json)")
+                return
+
+            if not isinstance(self.world_data[key], value):
+                print_warning(f"Failed to load world \'{world_name}\' (key \'{key}\' has wrong type in data.json)")
+                return
+
+        if not len(player_position) == 3:
+            print_warning(f"Failed to load world \'{world_name}\' (wrong player position in data.json)")
+            return
+
+        for item in player_position:
+            if not type(item) == float:
+                print_warning(f"Failed to load world \'{world_name}\' (wrong player position in data.json)")
+                return
+
+        if not len(player_rotation) == 2:
+            print_warning(f"Failed to load world \'{world_name}\' (wrong player rotation in data.json)")
+            return
+
+        for item in player_rotation:
+            if not type(item) == float:
+                print_warning(f"Failed to load world \'{world_name}\' (wrong player rotation in data.json)")
+                return
+
         player.position = self.world_data["player_position"]
         player.rotation_y = self.world_data["player_rotation"][0]
         player.camera_pivot.rotation_x = self.world_data["player_rotation"][1]
+        player.noclip_mode = self.world_data["player_noclip"]
 
         self.seed = self.world_data["seed"]
 
@@ -129,8 +162,9 @@ class ChunkManager(Entity):
             self.unload_chunk(chunk_id)
 
         with open(f"./saves/{self.world_name}/data.json", "w+") as file:
-            self.world_data["player_position"] = list(player.position + Vec3(0, .1, 0))
+            self.world_data["player_position"] = list(player.position)
             self.world_data["player_rotation"] = [player.rotation_y, player.camera_pivot.rotation_x]
+            self.world_data["player_noclip"] = player.noclip_mode
 
             json.dump(self.world_data, file, indent=4)
 
@@ -138,9 +172,9 @@ class ChunkManager(Entity):
 
 
     def get_chunk_id(self, position):
-        return (int(((position[0] + .5) // self.chunk_size) * self.chunk_size),
-                int(((position[1] + .5) // self.chunk_size) * self.chunk_size),
-                int(((position[2] + .5) // self.chunk_size) * self.chunk_size))
+        return (int(((position[0] + 0.5) // self.chunk_size) * self.chunk_size),
+                int(((position[1] + 0.5) // self.chunk_size) * self.chunk_size),
+                int(((position[2] + 0.5) // self.chunk_size) * self.chunk_size))
 
 
     def get_voxel_id(self, position):
