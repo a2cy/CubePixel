@@ -9,7 +9,7 @@ class MenuButton(Entity):
 
         self.model = "quad"
         self.collider = "box"
-        self.scale=Vec2(.3, .08)
+        self.scale=Vec2(0.3, 0.08)
         self.color = color.clear
 
 
@@ -17,7 +17,7 @@ class MenuButton(Entity):
         self.highlight_color = color.azure
         self.pressed_color = color.orange
 
-        self.background = Entity(parent=self, model=Mesh(vertices=[(-.4,-.4,0), (.4,-.4,0)], mode="line", thickness=2), color=self.default_color)
+        self.background = Entity(parent=self, model=Mesh(vertices=[(-0.4,-0.4,0), (0.4,-0.4,0)], mode="line", thickness=2), color=self.default_color)
 
         self.text_entity = Text(parent=self, text=text, scale=(self.scale*50).yx, origin=Vec2(0, 0), color=self.default_color, add_to_scene_entities=False)
 
@@ -56,21 +56,21 @@ class MenuContent(Entity):
         self.background_panel = Entity(parent=self,
                                        model="quad",
                                        color=color.black50,
-                                       position=window.right+Vec2(-.65, 0),
+                                       position=window.right+Vec2(-0.65, 0),
                                        scale=Vec2(1.2, 1),
                                        z=1)
 
         self.panel_overlay = Entity(parent=self,
-                                    model=Mesh(vertices=[(.5,-.5,0), (.5,.5,0), (-.5,.5,0), (-.5,-.5,0)], mode="line", thickness=2),
+                                    model=Mesh(vertices=[(0.5,-0.5,0), (0.5,0.5,0), (-0.5,0.5,0), (-0.5,-0.5,0)], mode="line", thickness=2),
                                     color=color.black90,
-                                    position=window.right+Vec2(-.65, 0),
+                                    position=window.right+Vec2(-0.65, 0),
                                     scale=Vec2(1.2, 1),
                                     z=1)
 
         self.label = Text(parent=self,
                           text=text,
                           scale=1.5,
-                          position=window.right+Vec2(-.65, .42),
+                          position=window.right+Vec2(-0.65, 0.42),
                           origin=Vec2(0, 0))
 
 
@@ -82,13 +82,13 @@ class InputField(uInputField):
         self.color = color.black50
         self.highlight_color = color.black66
 
-        self.background = Entity(parent=self, model=Mesh(vertices=[(-.46,-.4,0), (.46,-.4,0)], mode="line", thickness=2), color=self.default_color)
+        self.background = Entity(parent=self, model=Mesh(vertices=[(-0.46,-0.4,0), (0.46,-0.4,0)], mode="line", thickness=2), color=self.default_color)
 
 
 class ButtonPrefab(Button):
 
     def __init__(self, **kwargs):
-        super().__init__(scale = Vec2(.2, .08), **kwargs)
+        super().__init__(scale = Vec2(0.2, 0.08), **kwargs)
 
         self.color = color.black50
         self.highlight_color = color.black66
@@ -97,7 +97,7 @@ class ButtonPrefab(Button):
 
 class FileButton(Button):
     def __init__(self, path, **kwargs):
-        super().__init__(scale=(.5,.05), pressed_scale=1, **kwargs)
+        super().__init__(scale=(0.5,0.05), pressed_scale=1, **kwargs)
 
         self.path = path
 
@@ -141,7 +141,7 @@ class ItemButton(Button):
         from src.resource_loader import instance as resource_loader
 
         self.voxel_id = voxel_id
-        self.scale = .05
+        self.scale = 0.05
 
         self.selector = Entity(parent=self, scale=1.25, model="quad", shader=resource_loader.selector_shader)
 
@@ -172,11 +172,11 @@ class ItemButton(Button):
 
         if value == True:
             self.selector.enable()
-            self.scale = .06
+            self.scale = 0.06
 
         else:
             self.selector.disable()
-            self.scale = .05
+            self.scale = 0.05
 
 
 class ThinSlider(Slider):
@@ -185,5 +185,5 @@ class ThinSlider(Slider):
         kwargs['height'] = Text.size
         super().__init__(**kwargs)
 
-        self.bg.model = Quad(scale=(.525, Text.size/2), radius=Text.size/4, segments=3)
+        self.bg.model = Quad(scale=(0.525, Text.size/2), radius=Text.size/4, segments=3)
         self.bg.origin = self.bg.origin

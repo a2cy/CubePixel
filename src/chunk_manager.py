@@ -18,9 +18,9 @@ class ChunkManager(Entity):
 
         self.updating = False
         self.world_loaded = False
-        self.finished_loading = False
-        self.set_player_position = False
-        self.player_chunk = (0, 0, 0)
+        self.finished_loading = False # Used to disable loading screen
+        self.set_player_position = False # If set to true, the player position is set to (0, terrain height, 0) after loading finished.
+        self.player_chunk = (0, 0, 0) # Used to determine if the player crossed a chunk border
         self.chunks_to_load = Queue()
         self.chunks_to_unload = Queue()
         self.chunks_to_update = Queue()
@@ -35,6 +35,8 @@ class ChunkManager(Entity):
 
 
     def reload(self):
+        # Loads settings stored in settings.json
+
         from src.player import instance as player
 
         self.render_distance = settings.settings["render_distance"]
@@ -214,6 +216,7 @@ class ChunkManager(Entity):
 
         self.update_chunk(chunk_id)
 
+        # Check if neighboring chunks need to be updated
         if x_position == 0:
             self.update_chunk((chunk_id[0] - self.chunk_size, chunk_id[1], chunk_id[2]))
 

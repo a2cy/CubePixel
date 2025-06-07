@@ -7,7 +7,7 @@ from src.resource_loader import instance as resource_loader
 class AABBCollider:
 
     def __init__(self, position, origin, scale):
-        self._scale = scale
+        self._half_scale = scale / 2
         self._origin = origin
         self.position = position
 
@@ -20,13 +20,13 @@ class AABBCollider:
     def position(self, value):
         self._position = value
 
-        self.x_1 = value.x + self._origin.x - self._scale.x / 2
-        self.y_1 = value.y + self._origin.y - self._scale.y / 2
-        self.z_1 = value.z + self._origin.z - self._scale.z / 2
+        self.x_1 = value.x + self._origin.x - self._half_scale.x
+        self.y_1 = value.y + self._origin.y - self._half_scale.y
+        self.z_1 = value.z + self._origin.z - self._half_scale.z
 
-        self.x_2 = value.x + self._origin.x + self._scale.x / 2
-        self.y_2 = value.y + self._origin.y + self._scale.y / 2
-        self.z_2 = value.z + self._origin.z + self._scale.z / 2
+        self.x_2 = value.x + self._origin.x + self._half_scale.x
+        self.y_2 = value.y + self._origin.y + self._half_scale.y
+        self.z_2 = value.z + self._origin.z + self._half_scale.z
 
 
     def intersect(self, collider):
@@ -35,41 +35,27 @@ class AABBCollider:
                 self.z_1 < collider.z_2 and self.z_2 > collider.z_1)
 
 
-    def collide(self, collider, direction):
+    def collide(self, collider, move_delta):
         get_time = lambda x, y: x / y if y else float("-" * (x > 0) + "inf")
 
-        no_collision = 1, None
+        x_entry = get_time(collider.x_1 - self.x_2 if move_delta.x > 0 else collider.x_2 - self.x_1, move_delta.x)
+        x_exit = get_time(collider.x_2 - self.x_1 if move_delta.x > 0 else collider.x_1 - self.x_2, move_delta.x)
 
-        x_entry = get_time(collider.x_1 - self.x_2 if direction.x > 0 \
-                           else collider.x_2 - self.x_1, direction.x)
-        x_exit = get_time(collider.x_2 - self.x_1 if direction.x > 0 \
-                          else collider.x_1 - self.x_2, direction.x)
+        y_entry = get_time(collider.y_1 - self.y_2 if move_delta.y > 0 else collider.y_2 - self.y_1, move_delta.y)
+        y_exit = get_time(collider.y_2 - self.y_1 if move_delta.y > 0 else collider.y_1 - self.y_2, move_delta.y)
 
-        y_entry = get_time(collider.y_1 - self.y_2 if direction.y > 0 \
-                           else collider.y_2 - self.y_1, direction.y)
-        y_exit = get_time(collider.y_2 - self.y_1 if direction.y > 0 \
-                          else collider.y_1 - self.y_2, direction.y)
-
-        z_entry = get_time(collider.z_1 - self.z_2 if direction.z > 0 \
-                           else collider.z_2 - self.z_1, direction.z)
-        z_exit = get_time(collider.z_2 - self.z_1 if direction.z > 0 \
-                          else collider.z_1 - self.z_2, direction.z)
-
-        if x_entry < 0 and y_entry < 0 and z_entry < 0:
-            return no_collision
-
-        if x_entry > 1 or y_entry > 1 or z_entry > 1:
-            return no_collision
+        z_entry = get_time(collider.z_1 - self.z_2 if move_delta.z > 0 else collider.z_2 - self.z_1, move_delta.z)
+        z_exit = get_time(collider.z_2 - self.z_1 if move_delta.z > 0 else collider.z_1 - self.z_2, move_delta.z)
 
         entry_time = max(x_entry, y_entry, z_entry)
         exit_time = min(x_exit, y_exit, z_exit)
 
-        if entry_time > exit_time:
-            return no_collision
+        if entry_time > exit_time or entry_time > 1 or entry_time < 0:
+            return 1, None
 
-        normal_x = (0, -1 if direction.x > 0 else 1)[entry_time == x_entry]
-        normal_y = (0, -1 if direction.y > 0 else 1)[entry_time == y_entry]
-        normal_z = (0, -1 if direction.z > 0 else 1)[entry_time == z_entry]
+        normal_x = (0, -1 if move_delta.x > 0 else 1)[entry_time == x_entry]
+        normal_y = (0, -1 if move_delta.y > 0 else 1)[entry_time == y_entry]
+        normal_z = (0, -1 if move_delta.z > 0 else 1)[entry_time == z_entry]
 
         return entry_time, Vec3(normal_x, normal_y, normal_z)
 
@@ -77,7 +63,7 @@ class AABBCollider:
 class Player(Entity):
 
     def __init__(self, **kwargs):
-        self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=.008, rotation_z=45)
+        self.cursor = Entity(parent=camera.ui, model="quad", color=color.pink, scale=0.008, rotation_z=45)
         self.selector = Entity(model="cube", shader=resource_loader.selector_shader, scale=1.005)
 
         super().__init__(**kwargs)
@@ -190,33 +176,33 @@ class Player(Entity):
 
             self.direction += self.up * (held_keys["e"] - held_keys["q"])
 
-            self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, .5**(self.noclip_acceleration * time.dt))
+            self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, 0.5**(self.noclip_acceleration * time.dt))
 
             self.position += self.velocity * time.dt
 
         else:
             if self.grounded and held_keys["space"]:
-                self.velocity.y = (self.gravity * self.jump_height * 2)**.5
+                self.velocity.y = (self.gravity * self.jump_height * 2)**0.5
 
             self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"])
                                   + self.right * (held_keys["d"] - held_keys["a"])).normalized()
 
             if held_keys["left shift"]:
                 self.direction *= self.sprint_multiplier
-                camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, .5**(self.acceleration * time.dt))
+                camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, 0.5**(self.acceleration * time.dt))
 
             else:
-                camera.fov = lerp(self.fov, camera.fov, .5**(self.acceleration * time.dt))
+                camera.fov = lerp(self.fov, camera.fov, 0.5**(self.acceleration * time.dt))
 
-            self.velocity.xz = lerp(self.direction * self.walk_speed, self.velocity, .5**(self.acceleration * time.dt)).xz
-            self.velocity.y = self.velocity.y - self.gravity * min(time.dt, .5)
+            self.velocity.xz = lerp(self.direction * self.walk_speed, self.velocity, 0.5**(self.acceleration * time.dt)).xz
+            self.velocity.y = self.velocity.y - self.gravity * min(time.dt, 0.5)
             self.velocity.y = max(self.velocity.y, -self.max_fall_speed)
 
             self.grounded = False
             self.player_collider.position = self.position
             move_delta = self.velocity * time.dt
 
-            for _ in range(4):
+            for _ in range(3):
                 collisions = []
 
                 for i in range(3 * 3 * 4):
@@ -224,17 +210,12 @@ class Player(Entity):
                                   i // 3 % 4 - 2,
                                   i % 3 % 4 - 1)
 
-                    voxel_id = chunk_manager.get_voxel_id(self.position + move_delta + offset)
+                    voxel_id = chunk_manager.get_voxel_id(self.position + offset)
 
-                    if not voxel_id:
+                    if not voxel_id or not resource_loader.voxel_types[voxel_id - 1].collision:
                         continue
 
-                    collision = resource_loader.voxel_types[voxel_id - 1].collision
-
-                    if not collision:
-                        continue
-
-                    self.voxel_collider.position = round(self.position + move_delta + offset, ndigits=0)
+                    self.voxel_collider.position = round(self.position + offset, ndigits=0)
 
                     collision_time, normal = self.player_collider.collide(self.voxel_collider, move_delta)
 
