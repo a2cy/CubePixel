@@ -20,6 +20,17 @@ python setup.py build_ext -i
 python main.py
 ```
 
+## Planed features
+
+- Input binding
+- Multithreaded chunk meshing
+- Viewmodel
+- Structure generation
+- Dynamic lighting and shadows
+- Water surface and underwater shader
+- Multiplayer (maybe)
+- Physics (maybe)
+
 ## Known Bugs
 
 - loading save files is slow on windows
