@@ -321,8 +321,7 @@ class WorldLoading(MenuContent):
             FileButton(parent=self.button_parent,
                        path=file,
                        text=prefix+file,
-                       y=-i*0.055 + 0.3,
-                       add_to_scene_entities=False)
+                       y=-i*0.055 + 0.3)
 
 
 class Options(MenuContent):
@@ -469,8 +468,7 @@ class Inventory(Entity):
             ItemButton(parent=self.button_parent,
                        voxel_id=i+1,
                        x=(button_count % self.max_buttons) * 0.1 - 0.45,
-                       y=-(button_count // self.max_buttons) * 0.1 + 0.35,
-                       add_to_scene_entities=False)
+                       y=-(button_count // self.max_buttons) * 0.1 + 0.35)
 
             button_count += 1
 
