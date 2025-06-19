@@ -461,10 +461,7 @@ class Inventory(Entity):
                                        z=1)
 
         button_count = 0
-        for i, voxel in enumerate(resource_loader.voxel_types):
-            if not voxel.inventory:
-                continue
-
+        for i in range(len(resource_loader.voxel_types)):
             ItemButton(parent=self.button_parent,
                        voxel_id=i+1,
                        x=(button_count % self.max_buttons) * 0.1 - 0.45,

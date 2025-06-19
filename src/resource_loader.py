@@ -60,7 +60,6 @@ class ResourceLoader:
 
             voxel_type.occlusion = bool(voxel["occlusion"])
             voxel_type.collision = bool(voxel["collision"])
-            voxel_type.inventory = bool(voxel["inventory"])
 
             self.voxel_types.append(voxel_type)
 
@@ -80,7 +79,7 @@ class ResourceLoader:
 
 
     def validate_type(self, type: dict):
-        keys = {"index": int, "textures": list, "occlusion": bool, "collision": bool, "inventory": bool}
+        keys = {"index": int, "textures": list, "occlusion": bool, "collision": bool}
         texture_names = type["textures"]
 
         for key, value in keys.items():

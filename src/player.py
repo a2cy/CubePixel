@@ -144,7 +144,7 @@ class Player(Entity):
 
             voxel_id = chunk_manager.get_voxel_id(current_position)
 
-            if voxel_id and resource_loader.voxel_types[voxel_id - 1].inventory:
+            if voxel_id:
                 self.selector.position = current_position
                 self.selector.hit_normal = hit_normal
                 self.selector.enabled = True

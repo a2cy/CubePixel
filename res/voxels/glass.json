@@ -2,6 +2,5 @@
     "index": 4,
     "textures": ["glass"],
     "occlusion": false,
-    "collision": true,
-    "inventory": true
+    "collision": true
 }

@@ -58,7 +58,6 @@ cdef class VoxelType:
     cdef public unsigned int side
     cdef public bint occlusion
     cdef public bint collision
-    cdef public bint inventory
 
 
 cdef class WorldGenerator:
