@@ -157,8 +157,6 @@ class Player(Entity):
         if not chunk_manager.finished_loading:
             return
 
-        floor_2d = lambda x: int(x * 100) / 100
-
         self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity
 
         if self.rotation_y > 360:
@@ -231,15 +229,15 @@ class Player(Entity):
 
                 if normal.x:
                     self.velocity.x = 0
-                    move_delta.x = floor_2d(move_delta.x * collision_time)
+                    move_delta.x = 0
 
                 if normal.y:
                     self.velocity.y = 0
-                    move_delta.y = floor_2d(move_delta.y * collision_time)
+                    move_delta.y = int(move_delta.y * collision_time * 10000) / 10000
 
                 if normal.z:
                     self.velocity.z = 0
-                    move_delta.z = floor_2d(move_delta.z * collision_time)
+                    move_delta.z = 0
 
                 if normal.y == 1:
                     self.grounded = True
