@@ -54,16 +54,14 @@ class ChunkManager(Entity):
             return
 
         os.makedirs(f"./saves/{world_name}/chunks/", exist_ok=True)
-        world_data = {"seed": seed, "player_position": [0, 0, 0], "player_rotation": [0, 0], "player_noclip": False}
+        world_data = {"seed": seed, "player_position": [0.0, 0.0, 0.0], "player_rotation": [0.0, 0.0], "player_noclip": False}
 
         self.set_player_position = True
 
         with open(f"./saves/{world_name}/data.json", "w+") as file:
             json.dump(world_data, file, indent=4)
 
-        self.load_world(world_name)
-
-        return True
+        return self.load_world(world_name)
 
 
     def delete_world(self, world_name):

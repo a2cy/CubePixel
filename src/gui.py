@@ -316,11 +316,9 @@ class WorldLoading(MenuContent):
         files.sort()
 
         for i, file in enumerate(files):
-            prefix = ' <light_gray>'
-
             FileButton(parent=self.button_parent,
                        path=file,
-                       text=prefix+file,
+                       text=file,
                        y=-i*0.055 + 0.3)
 
 
