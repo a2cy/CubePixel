@@ -23,6 +23,7 @@ python main.py
 ## Planed features
 
 - Input binding
+- Level of detail
 - Multithreaded chunk meshing
 - Viewmodel
 - Structure generation
