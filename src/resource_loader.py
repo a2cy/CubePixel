@@ -72,7 +72,7 @@ class ResourceLoader:
         for i, texture_name in enumerate(loaded_textures):
             try:
                 texture = PNMImage()
-                texture.read(f"./res/textures/{texture_name}.png")
+                texture.read(f"./res/textures/voxels/{texture_name}.png")
                 self.texture_array.load(texture, z=i, n=0)
             except:
                 print_warning(f"failed to load texture \'{texture_name}\' (wrong format)")
@@ -93,7 +93,7 @@ class ResourceLoader:
             return "wrong texture definition"
 
         for texture_name in texture_names:
-            if not os.path.isfile(f"./res/textures/{texture_name}.png"):
+            if not os.path.isfile(f"./res/textures/voxels/{texture_name}.png"):
                 return f"missing texture \'{texture_name}\'"
 
 

@@ -449,8 +449,12 @@ class Inventory(Entity):
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
 
-        self.max_buttons = 10
+        self.max_buttons_x = 10
+        self.max_buttons_y = 8
         self.button_parent = Entity(parent=self, z=-1)
+
+        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_up", scale=0.08, position=window.right+Vec2(-0.36, 0.35))
+        self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right+Vec2(-0.36, -0.35))
 
         self.background_panel = Entity(parent=self,
                                        model=Quad(aspect=1 / 0.8, radius=0.02),
@@ -462,15 +466,50 @@ class Inventory(Entity):
         for i in range(len(resource_loader.voxel_types)):
             ItemButton(parent=self.button_parent,
                        voxel_id=i+1,
-                       x=(button_count % self.max_buttons) * 0.1 - 0.45,
-                       y=-(button_count // self.max_buttons) * 0.1 + 0.35)
+                       x=(button_count % self.max_buttons_x) * 0.1 - 0.45,
+                       y=-(button_count // self.max_buttons_x) * 0.1 + 0.35)
 
             button_count += 1
 
 
     @property
+    def scroll(self):
+        return self._scroll
+
+    @scroll.setter
+    def scroll(self, value):
+        self._scroll = value
+
+        for i, button in enumerate(self.button_parent.children):
+            if i / self.max_buttons_x < value or i / self.max_buttons_x >= value + self.max_buttons_y:
+                button.enabled = False
+            else:
+                button.enabled = True
+
+        self.scroll_up.enabled = value > 0
+        self.scroll_down.enabled = self.max_buttons_y < len(self.button_parent.children) / self.max_buttons_x and \
+                                   value < len(self.button_parent.children) / self.max_buttons_x - self.max_buttons_y
+
+        self.button_parent.y = value * 0.1
+
+
+    @property
     def selection(self):
         return [c.voxel_id for c in self.button_parent.children if c.selected == True]
+
+
+    def input(self, key):
+        if key == 'scroll down':
+            if self.scroll + self.max_buttons_y < len(self.button_parent.children) / self.max_buttons_x:
+                self.scroll += 1
+
+        if key == 'scroll up':
+            if self.scroll > 0:
+                self.scroll -= 1
+
+
+    def on_enable(self):
+        self.scroll = 0
 
 
 class LoadingMenu(Entity):
