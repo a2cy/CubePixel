@@ -232,7 +232,7 @@ class WorldLoading(MenuContent):
         self.max_buttons = 11
         self.button_parent = Entity(parent=self, position=window.right+Vec2(-0.65, 0))
 
-        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_down", scale=0.08, rotation_z=180, position=window.right+Vec2(-0.35, 0.35))
+        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_up", scale=0.08, position=window.right+Vec2(-0.35, 0.35))
         self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right+Vec2(-0.35, -0.3))
 
         def load_world():
@@ -272,11 +272,11 @@ class WorldLoading(MenuContent):
     def scroll(self, value):
         self._scroll = value
 
-        for i, c in enumerate(self.button_parent.children):
+        for i, button in enumerate(self.button_parent.children):
             if i < value or i >= value + self.max_buttons:
-                c.enabled = False
+                button.enabled = False
             else:
-                c.enabled = True
+                button.enabled = True
 
         self.scroll_up.enabled = value > 0
         self.scroll_down.enabled = self.max_buttons < len(self.button_parent.children) and \
@@ -304,8 +304,6 @@ class WorldLoading(MenuContent):
         import os
         from ursina import destroy
 
-        self.scroll = 0
-
         for i in range(len(self.button_parent.children)):
             destroy(self.button_parent.children.pop())
 
@@ -319,7 +317,9 @@ class WorldLoading(MenuContent):
             FileButton(parent=self.button_parent,
                        path=file,
                        text=file,
-                       y=-i*0.055 + 0.3)
+                       y=-i * 0.055 + 0.3)
+
+        self.scroll = 0
 
 
 class Options(MenuContent):
