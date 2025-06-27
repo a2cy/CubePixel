@@ -265,7 +265,7 @@ class Player(Entity):
             point = self.selector.position + self.selector.hit_normal
             self.voxel_collider.position = point
 
-            if not self.player_collider.intersect(self.voxel_collider) or self.noclip_mode:
+            if (not self.player_collider.intersect(self.voxel_collider) or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
 
