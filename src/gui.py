@@ -1,6 +1,6 @@
 from ursina import Entity, Text, CheckBox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
-from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider, Notification
+from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
 from src.resource_loader import instance as resource_loader
 from src.chunk_manager import instance as chunk_manager
 from src.player import instance as player
@@ -89,6 +89,8 @@ class MainMenu(Entity):
                           scale=2,
                           position=window.left+Vec2(0.25, 0.43),
                           origin=Vec2(0, 0))
+
+        self.notification = Notification()
 
         self.world_creation = WorldCreation(parent=self)
 
@@ -197,15 +199,15 @@ class WorldCreation(MenuContent):
 
         def create_world():
             if not self.world_name.text:
-                Notification("Missing world name", parent=self, position=window.right+Vec2(-0.65, 0.1))
+                instance.main_menu.notification.notify("Missing world name")
                 return
 
             if not self.world_seed.text:
-                Notification("Missing world seed", parent=self, position=window.right+Vec2(-0.65, 0.1))
+                instance.main_menu.notification.notify("Missing world seed")
                 return
 
             if not chunk_manager.create_world(self.world_name.text, int(self.world_seed.text)):
-                Notification("World name already used", parent=self, position=window.right+Vec2(-0.65, 0.1))
+                instance.main_menu.notification.notify("World name already used")
                 return
 
             instance.ui_state.state = "loading_menu"
@@ -235,11 +237,11 @@ class WorldLoading(MenuContent):
 
         def load_world():
             if not self.selection:
-                Notification("No world selected", parent=self, position=window.right+Vec2(-0.65, -0.4))
+                instance.main_menu.notification.notify("No world selected")
                 return
 
             if not chunk_manager.load_world(self.selection[0]):
-                Notification("Failed to load world", parent=self, position=window.right+Vec2(-0.65, -0.4))
+                instance.main_menu.notification.notify("Failed to load world")
                 return
 
             instance.ui_state.state = "loading_menu"
@@ -250,7 +252,7 @@ class WorldLoading(MenuContent):
 
         def delete_world():
             if not self.selection:
-                Notification("No world selected", parent=self, position=window.right+Vec2(-0.65, -0.4))
+                instance.main_menu.notification.notify("No world selected")
                 return
 
             chunk_manager.delete_world(self.selection[0])
@@ -551,6 +553,41 @@ class LoadingMenu(Entity):
         if chunk_manager.world_loaded:
             player.enable()
             instance.sky.enable()
+
+
+class Notification(Entity):
+
+    def __init__(self, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+
+        self.model = Quad(aspect=0.35 / 0.1)
+        self.color = color.clear
+        self.scale = Vec2(0.35, 0.1)
+        self.position = window.left+Vec2(0.25, -0.4)
+
+        self.text = Text(parent=self, text="", z=-0.1, scale=Vec2(1/self.scale.x, 1/self.scale.y), origin=Vec2(0, 0), color=color.clear)
+
+        self.cooldown = 0
+        self.active = False
+
+
+    def update(self):
+        if self.cooldown > 0:
+            self.cooldown -= time.dt
+            return
+
+        if self.active:
+            self.animate_color(color.clear, duration=0.15)
+            self.text.animate_color(color.clear, duration=0.15)
+            self.active = False
+
+
+    def notify(self, text):
+        self.animate_color(color.black50, duration=0.15)
+        self.text.animate_color(color.yellow, duration=0.15)
+        self.text.text = text
+        self.cooldown = 2
+        self.active = True
 
 
 class DebugOverlay(Entity):

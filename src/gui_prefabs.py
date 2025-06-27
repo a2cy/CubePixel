@@ -1,4 +1,4 @@
-from ursina import Entity, Button, Slider, Text, Mesh, Vec2, color, Quad, invoke, destroy, window, curve
+from ursina import Entity, Button, Slider, Text, Mesh, Vec2, color, Quad, window
 from ursina import InputField as uInputField
 
 
@@ -187,15 +187,3 @@ class ThinSlider(Slider):
 
         self.bg.model = Quad(scale=(0.525, Text.size/2), radius=Text.size/4, segments=3)
         self.bg.origin = self.bg.origin
-
-
-class Notification(Text):
-
-    def __init__(self, text="", **kwargs):
-        super().__init__(text=text, **kwargs)
-
-        self.origin = Vec2(0)
-        self.color = color.clear
-
-        self.animate_color(color.red, duration=0.2, curve=curve.out_expo)
-        invoke(destroy, self, delay=1.5)
