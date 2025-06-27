@@ -1,6 +1,6 @@
 from ursina import Entity, Text, CheckBox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
-from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
+from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider, Notification
 from src.resource_loader import instance as resource_loader
 from src.chunk_manager import instance as chunk_manager
 from src.player import instance as player
@@ -90,8 +90,6 @@ class MainMenu(Entity):
                           position=window.left+Vec2(0.25, 0.43),
                           origin=Vec2(0, 0))
 
-        self.notification = Notification()
-
         self.world_creation = WorldCreation(parent=self)
 
         self.world_loading = WorldLoading(parent=self)
@@ -113,7 +111,7 @@ class MainMenu(Entity):
         self.options_button = MenuButton(parent=self, text="Options", position=window.left+Vec2(0.25, 0.15),
                                          on_click=Func(setattr, self.content_state, "state", "options"))
 
-        self.exit_button = MenuButton(parent=self, text="Exit", position=window.left+Vec2(0.25, 0.05),
+        self.exit_button = MenuButton(parent=self, text="Exit", default_color=color.rgb(0.7, 0, 0), position=window.left+Vec2(0.25, 0.05),
                                       on_click=Func(application.quit))
 
 
@@ -199,15 +197,15 @@ class WorldCreation(MenuContent):
 
         def create_world():
             if not self.world_name.text:
-                instance.main_menu.notification.notify("Missing world name")
+                Notification("Missing world name", parent=self, position=window.right+Vec2(-0.65, 0.1))
                 return
 
             if not self.world_seed.text:
-                instance.main_menu.notification.notify("Missing world seed")
+                Notification("Missing world seed", parent=self, position=window.right+Vec2(-0.65, 0.1))
                 return
 
             if not chunk_manager.create_world(self.world_name.text, int(self.world_seed.text)):
-                instance.main_menu.notification.notify("World name already used")
+                Notification("World name already used", parent=self, position=window.right+Vec2(-0.65, 0.1))
                 return
 
             instance.ui_state.state = "loading_menu"
@@ -237,11 +235,11 @@ class WorldLoading(MenuContent):
 
         def load_world():
             if not self.selection:
-                instance.main_menu.notification.notify("No world selected")
+                Notification("No world selected", parent=self, position=window.right+Vec2(-0.65, -0.4))
                 return
 
             if not chunk_manager.load_world(self.selection[0]):
-                instance.main_menu.notification.notify("Failed to load world")
+                Notification("Failed to load world", parent=self, position=window.right+Vec2(-0.65, -0.4))
                 return
 
             instance.ui_state.state = "loading_menu"
@@ -252,7 +250,7 @@ class WorldLoading(MenuContent):
 
         def delete_world():
             if not self.selection:
-                instance.main_menu.notification.notify("No world selected")
+                Notification("No world selected", parent=self, position=window.right+Vec2(-0.65, -0.4))
                 return
 
             chunk_manager.delete_world(self.selection[0])
@@ -555,40 +553,6 @@ class LoadingMenu(Entity):
             instance.sky.enable()
 
 
-class Notification(Entity):
-
-    def __init__(self, **kwargs):
-        super().__init__(parent=camera.ui, **kwargs)
-
-        self.idle_position = window.left+Vec2(-0.25, -0.4)
-        self.active_position = window.left+Vec2(0.25, -0.4)
-
-        self.model = Quad(aspect=0.35 / 0.1)
-        self.color = color.black50
-        self.scale = Vec2(0.35, 0.1)
-        self.position = self.idle_position
-
-        self.text = Text(parent=self, text="", z=-0.1, scale=Vec2(1/self.scale.x, 1/self.scale.y), origin=Vec2(0, 0), color=color.yellow)
-
-        self.cooldown = 0
-
-
-    def update(self):
-        if self.cooldown > 0:
-            self.cooldown -= time.dt
-            return
-
-        if self.position.xy == self.active_position:
-            self.animate_position(self.idle_position, duration=0.25)
-            self.cooldown = 0.5
-
-
-    def notify(self, text):
-        self.animate_position(self.active_position, duration=0.25)
-        self.text.text = text
-        self.cooldown = 2
-
-
 class DebugOverlay(Entity):
 
     def __init__(self, **kwargs):
@@ -596,29 +560,31 @@ class DebugOverlay(Entity):
 
         self.coordinates = Text(parent=self, position=window.top_left)
         self.direction = Text(parent=self, position=window.top_left + Vec2(0, -0.03))
+        self.updating = Text(parent=self, position=window.top_left + Vec2(0, -0.06))
 
 
     def update(self):
         rotation = player.rotation_y
-        heading = "none"
+        heading = "None"
 
         if rotation < 0:
             rotation += 360
 
         if rotation > 315 or rotation < 45:
-            heading = "north z+"
+            heading = "North z+"
 
         if rotation > 45 and rotation < 135:
-            heading = "east x+"
+            heading = "East x+"
 
         if rotation > 135 and rotation < 225:
-            heading = "south z-"
+            heading = "South z-"
 
         if rotation > 225 and rotation < 315:
-            heading = "west x-"
+            heading = "West x-"
 
-        self.coordinates.text = f"position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
-        self.direction.text = f"facing : {heading}"
+        self.coordinates.text = f"Position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
+        self.direction.text = f"Facing : {heading}"
+        self.updating.text = f"Updating : {chunk_manager.updating}"
 
 
 instance = Gui()
