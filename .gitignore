@@ -4,5 +4,5 @@ build/
 .venv
 saves/
 settings.json
-ext/cython_functions.html
-ext/cython_functions.c
+ext/c_extensions.html
+ext/c_extensions.c

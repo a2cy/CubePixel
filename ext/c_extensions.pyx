@@ -63,9 +63,7 @@ cdef class VoxelType:
 cdef class WorldGenerator:
 
     cdef VoxelType [:] voxel_types
-
     cdef fnl_state noise2d
-
 
     def __init__(self, VoxelType [:] voxel_types):
         self.voxel_types = voxel_types
@@ -73,17 +71,18 @@ cdef class WorldGenerator:
         self.noise2d = fnlCreateState()
         self.noise2d.noise_type = FNL_NOISE_OPENSIMPLEX2
         self.noise2d.fractal_type = FNL_FRACTAL_FBM
-
-
-    def generate_voxels(self, unsigned short chunk_size, int seed, int [:] position):
-        cdef int i, x, y, z, max_y
-
-        cdef float amp2d = 32
-
-        self.noise2d.seed = seed
         self.noise2d.frequency = 0.002
         self.noise2d.gain = 1
         self.noise2d.octaves = 4
+
+
+    def generate_voxels(self, unsigned short chunk_size, int seed, int [:] position):
+        cdef int i, x, y, z, diff, max_y
+
+        cdef float amp2d = 32
+        cdef int y_offset = 12
+
+        self.noise2d.seed = seed
 
         cdef np.ndarray[unsigned char, ndim=1] voxel_data = np.zeros(chunk_size**3, dtype=np.ubyte)
 
@@ -91,7 +90,7 @@ cdef class WorldGenerator:
             x = i // chunk_size
             z = i % chunk_size
 
-            max_y = <int>(fnlGetNoise2D(&self.noise2d, x + position[0], z + position[2]) * amp2d + amp2d / 2)
+            max_y = <int>(fnlGetNoise2D(&self.noise2d, x + position[0], z + position[2]) * amp2d + y_offset)
 
             for y in range(chunk_size):
                 i = x * chunk_size * chunk_size + y * chunk_size + z

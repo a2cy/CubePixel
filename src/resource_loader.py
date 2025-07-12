@@ -5,7 +5,7 @@ from ursina import print_warning
 
 from panda3d.core import Texture, PNMImage, SamplerState, Shader
 
-from cython_functions import VoxelType
+from c_extensions import VoxelType
 
 
 class ResourceLoader:

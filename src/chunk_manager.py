@@ -8,7 +8,7 @@ from ursina import Entity, Vec3, print_info, print_warning
 from src.voxel_chunk import VoxelChunk
 from src.settings import instance as settings
 from src.resource_loader import instance as resource_loader
-from cython_functions import WorldGenerator
+from c_extensions import WorldGenerator
 
 
 class ChunkManager(Entity):
