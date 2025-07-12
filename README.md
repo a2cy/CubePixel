@@ -11,9 +11,13 @@ Python 3.10+ required
 ```
 python -m pip install -r requirements.txt
 ```
-2. Build the cython extension ([build tools for windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)):
+2. Build the cython extension:
 ```
 python setup.py build_ext -i
+```
+- Or if you are using mingw on windows use:
+```
+python setup.py build_ext --compiler=mingw32 -i
 ```
 3. Run the game:
 ```
