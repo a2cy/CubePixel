@@ -1,4 +1,4 @@
-ursina==7.0.0
+ursina==8.1.1
 setuptools==80.9.0
 Cython==3.1.2
 numpy==2.3.1

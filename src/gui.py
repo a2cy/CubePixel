@@ -1,4 +1,4 @@
-from ursina import Entity, Text, CheckBox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
+from ursina import Entity, Text, Checkbox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
 from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
 from src.resource_loader import instance as resource_loader
@@ -166,7 +166,7 @@ class PauseMenu(Entity):
             instance.sky.disable()
 
 
-        self.return_button = MenuButton(parent=self, text="Return To Menu", position=window.left+Vec2(0.25, 0.25),
+        self.return_button = MenuButton(parent=self, text="Return To Menu", default_color=color.rgb(0.7, 0, 0), position=window.left+Vec2(0.25, 0.25),
                                         on_click=_return)
 
 
@@ -232,8 +232,8 @@ class WorldLoading(MenuContent):
         self.max_buttons = 11
         self.button_parent = Entity(parent=self, position=window.right+Vec2(-0.65, 0))
 
-        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_up", scale=0.08, position=window.right+Vec2(-0.35, 0.35))
-        self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right+Vec2(-0.35, -0.3))
+        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_up", scale=0.08, position=window.right+Vec2(-0.35, 0.35), enabled=False)
+        self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right+Vec2(-0.35, -0.3), enabled=False)
 
         def load_world():
             if not self.selection:
@@ -401,7 +401,7 @@ class Options(MenuContent):
                               position=Vec2(-0.28, -0.02),
                               origin=Vec2(-0.5, 0))
 
-        self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position+Vec2(0.28, 0), start_value=False)
+        self.debug_toggle = Checkbox(parent=self, position=self.debug_label.position+Vec2(0.28, 0), start_value=False)
 
         def toggle_debug():
             self.debug_toggle.value = not self.debug_toggle.value
