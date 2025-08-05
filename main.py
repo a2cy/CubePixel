@@ -4,7 +4,7 @@ from ursina import Ursina, color, window
 # load_prc_file_data("", "want-pstats 1")
 # load_prc_file_data("", "pstats-python-profiler 1")
 
-app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel")
+app = Ursina(development_mode=False, show_ursina_splash=True, forced_aspect_ratio=1.778, title="CubePixel")
 
 window.color = color.black
 
