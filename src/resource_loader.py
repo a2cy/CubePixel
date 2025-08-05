@@ -15,7 +15,7 @@ class ResourceLoader:
         self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel_display.vert", "./shaders/voxel_display.frag",)
         self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag",)
 
-        files = os.listdir("./res/voxels/")
+        files = os.listdir("./res/voxel_types/")
 
         voxels = []
         loaded_textures = []
@@ -25,7 +25,7 @@ class ResourceLoader:
             if not file_name.endswith(".json"):
                 continue
 
-            with open(f"./res/voxels/{file_name}") as file:
+            with open(f"./res/voxel_types/{file_name}") as file:
                 data = json.load(file)
                 result = self.validate_type(data)
 
