@@ -5,7 +5,7 @@
 
 ## Getting started
 
-Python 3.10+ required
+Python 3.12+ required
 
 1. Install dependencies using pip:
 ```
