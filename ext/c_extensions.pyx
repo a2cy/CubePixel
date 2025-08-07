@@ -192,6 +192,7 @@ cdef class WorldGenerator:
 
             vertex_data[index * 6 + i] = data
 
+
     cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, int index, unsigned char* occlusion, unsigned char* voxel_data, long long* neighbor_chunks) noexcept:
         cdef int i, x_position, y_position, z_position, neighbor_id
         cdef unsigned char* neighbor_chunk
