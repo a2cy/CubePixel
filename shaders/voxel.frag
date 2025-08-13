@@ -3,10 +3,8 @@
 uniform sampler2DArray texture_array;
 
 in float texture_id;
-in vec3 model_fragcoord;
-in vec3 model_normal;
-in vec3 view_fragcoord;
-in vec3 view_normal;
+in vec3 fragcoord;
+in vec3 normal;
 
 out vec4 p3d_FragColor;
 
@@ -31,7 +29,15 @@ vec4 triplanar(vec3 point, vec3 normal, float texture_id, sampler2DArray texture
 
 
 void main() {
-    vec4 color = triplanar(model_fragcoord, model_normal, texture_id, texture_array);
+    vec4 ambient_color = vec4(0.4, 0.4, 0.4, 1.0);
+    vec4 light_color = vec4(0.8, 0.8, 0.8, 1.0);
 
-    p3d_FragColor = color.rgba;
+    vec3 light_direction = normalize(vec3(1.0, 0.8, 0.5));
+
+    vec4 color = triplanar(fragcoord, normal, texture_id, texture_array);
+
+    vec4 ambient = ambient_color * color;
+    vec4 diffuse = max(dot(light_direction, normal), 0.0) * light_color * color;
+
+    p3d_FragColor = ambient + diffuse;
 }
