@@ -30,9 +30,25 @@ class AABBCollider:
 
 
     def intersect(self, collider):
-        return (self.x_1 < collider.x_2 and self.x_2 > collider.x_1 and
-                self.y_1 < collider.y_2 and self.y_2 > collider.y_1 and
-                self.z_1 < collider.z_2 and self.z_2 > collider.z_1)
+        x_max = self.x_1 - collider.x_2
+        x_min = collider.x_1 - self.x_2
+
+        y_max = self.y_1 - collider.y_2
+        y_min = collider.y_1 - self.y_2
+
+        z_max = self.z_1 - collider.z_2
+        z_min = collider.z_1 - self.z_2
+
+        min_dist = max(x_max, x_min, y_max, y_min, z_max, z_min)
+
+        if min_dist >= 0:
+            return 1, None
+
+        normal_x = (0, 1, -1, 0)[(min_dist == x_max) + (min_dist == x_min) * 2]
+        normal_y = (0, 1, -1, 0)[(min_dist == y_max) + (min_dist == y_min) * 2]
+        normal_z = (0, 1, -1, 0)[(min_dist == z_max) + (min_dist == z_min) * 2]
+
+        return -min_dist, Vec3(normal_x, normal_y, normal_z)
 
 
     def collide(self, collider, move_delta):
@@ -229,18 +245,59 @@ class Player(Entity):
 
                 if normal.x:
                     self.velocity.x = 0
-                    move_delta.x = 0
+                    move_delta.x = move_delta.x * collision_time
 
                 if normal.y:
                     self.velocity.y = 0
-                    move_delta.y = int(move_delta.y * collision_time * 10000) / 10000
+                    move_delta.y = move_delta.y * collision_time
 
                 if normal.z:
                     self.velocity.z = 0
-                    move_delta.z = 0
+                    move_delta.z = move_delta.z * collision_time
 
                 if normal.y == 1:
                     self.grounded = True
+
+            self.player_collider.position = self.position + move_delta
+
+            for _ in range(3):
+                collisions = []
+
+                for i in range(3 * 3 * 4):
+                    offset = Vec3(i // 3 // 4 - 1,
+                                  i // 3 % 4 - 2,
+                                  i % 3 % 4 - 1)
+
+                    voxel_id = chunk_manager.get_voxel_id(self.position + offset)
+
+                    if not voxel_id or not resource_loader.voxel_types[voxel_id - 1].collision:
+                        continue
+
+                    self.voxel_collider.position = round(self.position + offset, ndigits=0)
+
+                    min_dist, normal = self.player_collider.intersect(self.voxel_collider)
+
+                    if normal is None:
+                        continue
+
+                    collisions.append((min_dist, normal))
+
+                if not collisions:
+                    break
+
+                min_dist, normal = min(collisions, key=lambda x: x[0])
+
+                if normal.x:
+                    self.velocity.x = 0
+                    move_delta.x = min_dist * normal.x
+
+                if normal.y:
+                    self.velocity.y = 0
+                    move_delta.y = min_dist * normal.y
+
+                if normal.z:
+                    self.velocity.z = 0
+                    move_delta.z = min_dist * normal.z
 
             self.position += move_delta
 
@@ -265,7 +322,7 @@ class Player(Entity):
             point = self.selector.position + self.selector.hit_normal
             self.voxel_collider.position = point
 
-            if (not self.player_collider.intersect(self.voxel_collider) or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
+            if (not self.player_collider.intersect(self.voxel_collider)[1] or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
 

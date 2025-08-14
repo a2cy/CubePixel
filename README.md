@@ -39,5 +39,3 @@ python main.py
 ## Known Bugs
 
 - loading save files is slow on windows
-- collisions break at slow velocity
-
