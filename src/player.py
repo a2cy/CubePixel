@@ -258,10 +258,9 @@ class Player(Entity):
                 if normal.y == 1:
                     self.grounded = True
 
-            self.player_collider.position = self.position + move_delta
-
             for _ in range(3):
                 collisions = []
+                self.player_collider.position = self.position + move_delta
 
                 for i in range(3 * 3 * 4):
                     offset = Vec3(i // 3 // 4 - 1,
@@ -301,7 +300,6 @@ class Player(Entity):
 
             self.position += move_delta
 
-        self.player_collider.position = self.position
         self.update_selector(self.camera_pivot.world_position, self.camera_pivot.forward, 5)
 
 
