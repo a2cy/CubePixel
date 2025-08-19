@@ -235,7 +235,7 @@ class ChunkManager(Entity):
             self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] + CHUNK_SIZE))
 
 
-    def get_terrain_height(self, position: Vec3):
+    def get_terrain_height(self, position):
         current_position = round(position, ndigits=0)
 
         voxel_id = self.get_voxel_id(current_position)
@@ -258,7 +258,7 @@ class ChunkManager(Entity):
             current_position.y += step_y
 
 
-    def load_chunk(self, chunk_id: tuple):
+    def load_chunk(self, chunk_id):
         if chunk_id in self.loaded_chunks:
             return
 
@@ -268,7 +268,7 @@ class ChunkManager(Entity):
             voxels = np.load(filename)
 
         else:
-            voxels = self.world_generator.generate_voxels(CHUNK_SIZE, self.seed, np.array(chunk_id, dtype=np.intc))
+            voxels = self.world_generator.generate_voxels(CHUNK_SIZE, self.seed, *chunk_id)
 
         self.loaded_chunks[chunk_id] = voxels
 
@@ -283,7 +283,7 @@ class ChunkManager(Entity):
         self.chunks_to_update.put(chunk_id)
 
 
-    def unload_chunk(self, chunk_id: tuple):
+    def unload_chunk(self, chunk_id):
         if not chunk_id in self.loaded_chunks:
             return
 
@@ -300,7 +300,7 @@ class ChunkManager(Entity):
         self.loaded_chunks.pop(chunk_id)
 
 
-    def update_chunk(self, chunk_id: tuple):
+    def update_chunk(self, chunk_id):
         if not chunk_id in self.loaded_chunks:
             return
 
@@ -339,7 +339,7 @@ class ChunkManager(Entity):
         chunk_ids = []
 
         for i in range(self.world_size**3):
-            x = i // self.world_size // self.world_size - self.render_distance
+            x = i // (self.world_size * self.world_size) - self.render_distance
             y = i // self.world_size % self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
 
@@ -358,7 +358,7 @@ class ChunkManager(Entity):
                 self.chunks_to_unload.put(chunk_id)
 
 
-    def update_chunks_slice_x(self, direction: int):
+    def update_chunks_slice_x(self, direction):
         x = self.render_distance * direction
         for i in range(self.world_size**2):
             y = i // self.world_size - self.render_distance
@@ -373,7 +373,7 @@ class ChunkManager(Entity):
                                        int(z * CHUNK_SIZE + self.player_chunk[2])))
 
 
-    def update_chunks_slice_y(self, direction: int):
+    def update_chunks_slice_y(self, direction):
         y = self.render_distance * direction
         for i in range(self.world_size**2):
             x = i // self.world_size - self.render_distance
@@ -388,7 +388,7 @@ class ChunkManager(Entity):
                                        int(z * CHUNK_SIZE + self.player_chunk[2])))
 
 
-    def update_chunks_slice_z(self, direction: int):
+    def update_chunks_slice_z(self, direction):
         z = self.render_distance * direction
         for i in range(self.world_size**2):
             y = i // self.world_size - self.render_distance

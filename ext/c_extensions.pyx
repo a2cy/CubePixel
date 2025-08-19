@@ -51,6 +51,8 @@ cdef int[18] face_5 = [0, 0, 1,
                        1, 0, 1,
                        0, 0, 1,]
 
+cdef int[18] neighbor_offsets = [-1,0,0,  0,-1,0,  0,0,-1,  1,0,0,  0,1,0,  0,0,1]
+
 
 cdef class VoxelType:
     cdef public unsigned int up
@@ -64,6 +66,8 @@ cdef class WorldGenerator:
 
     cdef VoxelType [:] voxel_types
     cdef fnl_state noise2d
+    cdef float amp2d
+    cdef int y_offset
 
     def __init__(self, VoxelType [:] voxel_types):
         self.voxel_types = voxel_types
@@ -75,12 +79,12 @@ cdef class WorldGenerator:
         self.noise2d.gain = 1
         self.noise2d.octaves = 4
 
+        self.amp2d = 32
+        self.y_offset = 12
 
-    def generate_voxels(self, unsigned short chunk_size, int seed, int [:] position):
-        cdef int i, x, y, z, diff, max_y
 
-        cdef float amp2d = 32
-        cdef int y_offset = 12
+    def generate_voxels(self, int chunk_size, int seed, int chunk_x, int chunk_y, int chunk_z):
+        cdef int i, index, x, y, z, world_y, diff, height
 
         self.noise2d.seed = seed
 
@@ -90,29 +94,29 @@ cdef class WorldGenerator:
             x = i // chunk_size
             z = i % chunk_size
 
-            max_y = <int>(fnlGetNoise2D(&self.noise2d, x + position[0], z + position[2]) * amp2d + y_offset)
+            height = <int>(fnlGetNoise2D(&self.noise2d, x + chunk_x, z + chunk_z) * self.amp2d + self.y_offset)
 
             for y in range(chunk_size):
-                i = x * chunk_size * chunk_size + y * chunk_size + z
-                y = y + position[1]
-                diff = max_y - y
+                index = x * chunk_size * chunk_size + y * chunk_size + z
+                world_y = y + chunk_y
+                diff = height - world_y
 
-                if diff == 0 and y >= 0:
-                    voxel_data[i] = 2
+                if diff == 0 and world_y >= 0:
+                    voxel_data[index] = 2 # grass
 
                 elif diff < 5 and diff >= 0:
-                    voxel_data[i] = 1
+                    voxel_data[index] = 1 # dirt
 
                 elif diff >= 5:
-                    voxel_data[i] = 3
+                    voxel_data[index] = 3 # stone
 
-                if y <= 0 and diff < 0:
-                    voxel_data[i] = 5
+                if world_y <= 0 and diff < 0:
+                    voxel_data[index] = 5 # water
 
         return voxel_data
 
 
-    def generate_mesh(self, unsigned short chunk_size, unsigned char [:] voxel_data, long long [:] neighbors):
+    def generate_mesh(self, int chunk_size, unsigned char [:] voxel_data, long long [:] neighbors):
         cdef int i, x, y, z, occlusion
         cdef VoxelType voxel
 
@@ -123,7 +127,7 @@ cdef class WorldGenerator:
             if not voxel_data[i]:
                 continue
 
-            x = i / chunk_size / chunk_size
+            x = i / (chunk_size * chunk_size)
             y = i / chunk_size % chunk_size
             z = i % chunk_size
 
@@ -137,7 +141,7 @@ cdef class WorldGenerator:
             if not occlusion_state[i]:
                 continue
 
-            x = i / chunk_size / chunk_size
+            x = i / (chunk_size * chunk_size)
             y = i / chunk_size % chunk_size
             z = i % chunk_size
 
@@ -193,7 +197,7 @@ cdef class WorldGenerator:
             vertex_data[index * 6 + i] = data
 
 
-    cdef int check_occlusion(self, unsigned short chunk_size, int x, int y, int z, int index, unsigned char* occlusion, unsigned char* voxel_data, long long* neighbor_chunks) noexcept:
+    cdef int check_occlusion(self, int chunk_size, int x, int y, int z, int index, unsigned char* occlusion, unsigned char* voxel_data, long long* neighbor_chunks) noexcept:
         cdef int i, x_position, y_position, z_position, neighbor_id
         cdef unsigned char* neighbor_chunk
 
@@ -201,12 +205,11 @@ cdef class WorldGenerator:
         cdef int face_count = 0
 
         cdef int voxel_id = voxel_data[x * chunk_size * chunk_size + y * chunk_size + z]
-        cdef int[6][3] neighbor_offsets = [[-1, 0, 0], [0, -1, 0], [0, 0, -1], [1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
         for i in range(6):
-            x_position = neighbor_offsets[i][0] + x
-            y_position = neighbor_offsets[i][1] + y
-            z_position = neighbor_offsets[i][2] + z
+            x_position = neighbor_offsets[i * 3 + 0] + x
+            y_position = neighbor_offsets[i * 3 + 1] + y
+            z_position = neighbor_offsets[i * 3 + 2] + z
 
             if x_position < 0:
                 neighbor_chunk = <unsigned char*>neighbor_chunks[0]
