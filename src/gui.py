@@ -255,7 +255,10 @@ class WorldLoading(MenuContent):
                 instance.main_menu.notification.notify("No world selected")
                 return
 
-            chunk_manager.delete_world(self.selection[0])
+            try:
+                chunk_manager.delete_world(self.selection[0])
+            except:
+                instance.main_menu.notification.notify("Failed to delete world")
 
             self.on_enable()
 
