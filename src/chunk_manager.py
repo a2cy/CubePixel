@@ -240,7 +240,7 @@ class ChunkManager(Entity):
 
         voxel_id = self.get_voxel_id(current_position)
 
-        if voxel_id and resource_loader.voxel_types[voxel_id - 1].collision:
+        if voxel_id and resource_loader.collision_types[voxel_id - 1]:
             step_y = 1
         else:
             step_y = -1
@@ -248,7 +248,7 @@ class ChunkManager(Entity):
         for _ in range(50):
             voxel_id = self.get_voxel_id(current_position)
 
-            if voxel_id and resource_loader.voxel_types[voxel_id - 1].collision:
+            if voxel_id and resource_loader.collision_types[voxel_id - 1]:
                 if step_y < 0:
                     return current_position
 
