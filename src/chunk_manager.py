@@ -11,7 +11,7 @@ from src.resource_loader import instance as resource_loader
 from c_extensions import WorldGenerator
 
 
-CHUNK_SIZE = 63
+CHUNK_SIZE = 32
 
 
 class ChunkManager(Entity):
@@ -30,7 +30,7 @@ class ChunkManager(Entity):
         self.chunk_objects = {}
         self.loaded_chunks = {}
 
-        self.world_generator = WorldGenerator(np.asarray(resource_loader.voxel_types))
+        self.world_generator = WorldGenerator(resource_loader.texture_types, resource_loader.occlusion_types)
 
         self.reload()
 
@@ -293,11 +293,7 @@ class ChunkManager(Entity):
 
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
-        voxels = self.loaded_chunks[chunk_id]
-
-        np.save(filename, voxels)
-
-        self.loaded_chunks.pop(chunk_id)
+        np.save(filename, self.loaded_chunks.pop(chunk_id))
 
 
     def update_chunk(self, chunk_id):

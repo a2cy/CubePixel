@@ -145,11 +145,11 @@ class ItemButton(Button):
 
         self.selector = Entity(parent=self, scale=1.25, model="quad", shader=resource_loader.selector_shader)
 
-        voxel_type = resource_loader.voxel_types[self.voxel_id - 1]
+        side_texture_id = resource_loader.texture_types[self.voxel_id * 3 - 1]
 
         self.shader = resource_loader.voxel_display_shader
         self.set_shader_input("texture_array", resource_loader.texture_array)
-        self.set_shader_input("texture_id", voxel_type.side)
+        self.set_shader_input("texture_id", int(side_texture_id))
 
         self.selected = False
 

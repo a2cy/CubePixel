@@ -226,7 +226,7 @@ class Player(Entity):
 
                     voxel_id = chunk_manager.get_voxel_id(self.position + offset)
 
-                    if not voxel_id or not resource_loader.voxel_types[voxel_id - 1].collision:
+                    if not voxel_id or not resource_loader.collision_types[voxel_id - 1]:
                         continue
 
                     self.voxel_collider.position = round(self.position + offset, ndigits=0)
@@ -269,7 +269,7 @@ class Player(Entity):
 
                     voxel_id = chunk_manager.get_voxel_id(self.position + offset)
 
-                    if not voxel_id or not resource_loader.voxel_types[voxel_id - 1].collision:
+                    if not voxel_id or not resource_loader.collision_types[voxel_id - 1]:
                         continue
 
                     self.voxel_collider.position = round(self.position + offset, ndigits=0)

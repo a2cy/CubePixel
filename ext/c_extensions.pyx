@@ -54,23 +54,17 @@ cdef int[18] face_5 = [0, 0, 1,
 cdef int[18] neighbor_offsets = [-1,0,0,  0,-1,0,  0,0,-1,  1,0,0,  0,1,0,  0,0,1]
 
 
-cdef class VoxelType:
-    cdef public unsigned int up
-    cdef public unsigned int down
-    cdef public unsigned int side
-    cdef public bint occlusion
-    cdef public bint collision
-
-
 cdef class WorldGenerator:
 
-    cdef VoxelType [:] voxel_types
+    cdef int [:] texture_types
+    cdef int [:] occlusion_types
     cdef fnl_state noise2d
     cdef float amp2d
     cdef int y_offset
 
-    def __init__(self, VoxelType [:] voxel_types):
-        self.voxel_types = voxel_types
+    def __init__(self, int [:] texture_types, int [:] occlusion_types):
+        self.texture_types = texture_types
+        self.occlusion_types = occlusion_types
 
         self.noise2d = fnlCreateState()
         self.noise2d.noise_type = FNL_NOISE_OPENSIMPLEX2
@@ -117,8 +111,7 @@ cdef class WorldGenerator:
 
 
     def generate_mesh(self, int chunk_size, unsigned char [:] voxel_data, long long [:] neighbors):
-        cdef int i, x, y, z, occlusion
-        cdef VoxelType voxel
+        cdef int i, x, y, z, side, up, down, occlusion
 
         cdef np.ndarray[unsigned char, ndim=1] occlusion_state = np.zeros(chunk_size**3, dtype=np.ubyte)
         cdef int face_count = 0
@@ -145,38 +138,40 @@ cdef class WorldGenerator:
             y = i / chunk_size % chunk_size
             z = i % chunk_size
 
-            voxel = self.voxel_types[voxel_data[i] - 1]
+            side = self.texture_types[voxel_data[i] * 3 - 1]
+            up = self.texture_types[voxel_data[i] * 3 - 3]
+            down = self.texture_types[voxel_data[i] * 3 - 2]
 
             occlusion = occlusion_state[i]
 
             if occlusion >= 32:
                 occlusion -= 32
-                self.copy_face(index, x, y, z, voxel.side, 5, face_5, &vertex_data[0])
+                self.copy_face(index, x, y, z, side, 5, face_5, &vertex_data[0])
                 index += 1
 
             if occlusion >= 16:
                 occlusion -= 16
-                self.copy_face(index, x, y, z, voxel.up, 4, face_4, &vertex_data[0])
+                self.copy_face(index, x, y, z, up, 4, face_4, &vertex_data[0])
                 index += 1
 
             if occlusion >= 8:
                 occlusion -= 8
-                self.copy_face(index, x, y, z, voxel.side, 3, face_3, &vertex_data[0])
+                self.copy_face(index, x, y, z, side, 3, face_3, &vertex_data[0])
                 index += 1
 
             if occlusion >= 4:
                 occlusion -= 4
-                self.copy_face(index, x, y, z, voxel.side, 2, face_2, &vertex_data[0])
+                self.copy_face(index, x, y, z, side, 2, face_2, &vertex_data[0])
                 index += 1
 
             if occlusion >= 2:
                 occlusion -= 2
-                self.copy_face(index, x, y, z, voxel.down, 1, face_1, &vertex_data[0])
+                self.copy_face(index, x, y, z, down, 1, face_1, &vertex_data[0])
                 index += 1
 
             if occlusion >= 1:
                 occlusion -= 1
-                self.copy_face(index, x, y, z, voxel.side, 0, face_0, &vertex_data[0])
+                self.copy_face(index, x, y, z, side, 0, face_0, &vertex_data[0])
                 index += 1
 
         return vertex_data
@@ -247,7 +242,7 @@ cdef class WorldGenerator:
             if neighbor_id == voxel_id:
                 continue
 
-            if not neighbor_id or self.voxel_types[neighbor_id - 1].occlusion == False:
+            if not neighbor_id or not self.occlusion_types[neighbor_id - 1]:
                 result += 1 << i
                 face_count += 1
 

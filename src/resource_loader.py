@@ -1,11 +1,10 @@
 import os
 import json
+import numpy as np
 
 from ursina import print_warning
 
 from panda3d.core import Texture, PNMImage, SamplerState, Shader
-
-from c_extensions import VoxelType
 
 
 class ResourceLoader:
@@ -19,7 +18,6 @@ class ResourceLoader:
 
         voxels = []
         loaded_textures = []
-        self.voxel_types = []
 
         for file_name in files:
             if not file_name.endswith(".json"):
@@ -39,29 +37,31 @@ class ResourceLoader:
                 voxels.append(data)
 
         voxels.sort(key=lambda value: value["index"])
+        self.type_count = len(voxels)
 
-        for voxel in voxels:
+        self.texture_types = np.zeros(self.type_count * 3, dtype=np.intc)
+        self.collision_types = np.zeros(self.type_count, dtype=np.intc)
+        self.occlusion_types = np.zeros(self.type_count, dtype=np.intc)
+
+        for i, voxel in enumerate(voxels):
             texture_names = voxel["textures"]
-            voxel_type = VoxelType()
 
             for texture_name in texture_names:
                 if not texture_name in loaded_textures:
                     loaded_textures.append(texture_name)
 
             if len(texture_names) == 1:
-                voxel_type.up = loaded_textures.index(texture_names[0])
-                voxel_type.down = loaded_textures.index(texture_names[0])
-                voxel_type.side = loaded_textures.index(texture_names[0])
+                self.texture_types[i * 3 + 0] = loaded_textures.index(texture_names[0])
+                self.texture_types[i * 3 + 1] = loaded_textures.index(texture_names[0])
+                self.texture_types[i * 3 + 2] = loaded_textures.index(texture_names[0])
 
             elif len(texture_names) == 3:
-                voxel_type.up = loaded_textures.index(texture_names[0])
-                voxel_type.down = loaded_textures.index(texture_names[1])
-                voxel_type.side = loaded_textures.index(texture_names[2])
+                self.texture_types[i * 3 + 0] = loaded_textures.index(texture_names[0])
+                self.texture_types[i * 3 + 1] = loaded_textures.index(texture_names[1])
+                self.texture_types[i * 3 + 2] = loaded_textures.index(texture_names[2])
 
-            voxel_type.occlusion = bool(voxel["occlusion"])
-            voxel_type.collision = bool(voxel["collision"])
-
-            self.voxel_types.append(voxel_type)
+            self.collision_types[i] = voxel["collision"]
+            self.occlusion_types[i] = voxel["occlusion"]
 
         self.texture_array = Texture()
         self.texture_array.setup_2d_texture_array(len(loaded_textures))
