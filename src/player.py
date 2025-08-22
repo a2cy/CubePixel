@@ -285,6 +285,7 @@ class Player(Entity):
                     break
 
                 min_dist, normal = min(collisions, key=lambda x: x[0])
+                min_dist = 0 if abs(min_dist) > 0.2 else min_dist
 
                 if normal.x:
                     self.velocity.x = 0
