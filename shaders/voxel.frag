@@ -29,15 +29,15 @@ vec4 triplanar(vec3 point, vec3 normal, float texture_id, sampler2DArray texture
 
 
 void main() {
-    vec4 ambient_color = vec4(0.4, 0.4, 0.4, 1.0);
-    vec4 light_color = vec4(0.8, 0.8, 0.8, 1.0);
+    vec3 ambient_color = vec3(0.4, 0.4, 0.4);
+    vec3 light_color = vec3(0.8, 0.8, 0.8);
 
     vec3 light_direction = normalize(vec3(1.0, 0.8, 0.5));
 
     vec4 color = triplanar(fragcoord, normal, texture_id, texture_array);
 
-    vec4 ambient = ambient_color * color;
-    vec4 diffuse = max(dot(light_direction, normal), 0.0) * light_color * color;
+    vec3 ambient = ambient_color * color.rgb;
+    vec3 diffuse = max(dot(light_direction, normal), 0.0) * light_color * color.rgb;
 
-    p3d_FragColor = ambient + diffuse;
+    p3d_FragColor = vec4(ambient + diffuse, color.a);
 }
