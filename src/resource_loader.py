@@ -1,5 +1,4 @@
-import os
-import json
+import os, json
 import numpy as np
 
 from ursina import print_warning
