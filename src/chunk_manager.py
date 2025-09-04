@@ -49,6 +49,41 @@ class ChunkManager(Entity):
             self.update_chunks_all()
 
 
+    def validate_world(self, world_name):
+        keys = {"seed": int, "player_position": list, "player_rotation": list, "player_noclip": bool}
+        player_position = self.world_data["player_position"]
+        player_rotation = self.world_data["player_rotation"]
+
+        for key, value in keys.items():
+            if not key in self.world_data.keys():
+                print_warning(f"Failed to load world \'{world_name}\' (missing key \'{key}\' in data.json)")
+                return
+
+            if not isinstance(self.world_data[key], value):
+                print_warning(f"Failed to load world \'{world_name}\' (key \'{key}\' has wrong type in data.json)")
+                return
+
+        if not len(player_position) == 3:
+            print_warning(f"Failed to load world \'{world_name}\' (invalid player position in data.json)")
+            return
+
+        for item in player_position:
+            if not (type(item) == int or type(item) == float):
+                print_warning(f"Failed to load world \'{world_name}\' (invalid player position in data.json)")
+                return
+
+        if not len(player_rotation) == 2:
+            print_warning(f"Failed to load world \'{world_name}\' (invalid player rotation in data.json)")
+            return
+
+        for item in player_rotation:
+            if not (type(item) == int or type(item) == float):
+                print_warning(f"Failed to load world \'{world_name}\' (invalid player rotation in data.json)")
+                return
+
+        return True
+
+
     def create_world(self, world_name, seed):
         if os.path.exists(f"./saves/{world_name}/"):
             return
@@ -89,45 +124,22 @@ class ChunkManager(Entity):
         self.world_name = world_name
 
         if not os.path.exists(f"./saves/{world_name}/chunks"):
+            print_warning(f"Failed to load world \'{world_name}\' (missing folder)")
             return
 
         if not os.path.isfile(f"./saves/{world_name}/data.json"):
+            print_warning(f"Failed to load world \'{world_name}\' (missing data.json)")
             return
 
-        with open(f"./saves/{world_name}/data.json") as file:
-            self.world_data = json.load(file)
-
-        # Validate file content
-        keys = {"seed": int, "player_position": list, "player_rotation": list, "player_noclip": bool}
-        player_position = self.world_data["player_position"]
-        player_rotation = self.world_data["player_rotation"]
-
-        for key, value in keys.items():
-            if not key in self.world_data.keys():
-                print_warning(f"Failed to load world \'{world_name}\' (missing key \'{key}\' in data.json)")
-                return
-
-            if not isinstance(self.world_data[key], value):
-                print_warning(f"Failed to load world \'{world_name}\' (key \'{key}\' has wrong type in data.json)")
-                return
-
-        if not len(player_position) == 3:
-            print_warning(f"Failed to load world \'{world_name}\' (wrong player position in data.json)")
+        try:
+            with open(f"./saves/{world_name}/data.json") as file:
+                self.world_data = json.load(file)
+        except Exception as exeption:
+            print_warning(f"Failed to load world \'{world_name}\' (invalid data.json) \n {exeption}")
             return
 
-        for item in player_position:
-            if not type(item) == float:
-                print_warning(f"Failed to load world \'{world_name}\' (wrong player position in data.json)")
-                return
-
-        if not len(player_rotation) == 2:
-            print_warning(f"Failed to load world \'{world_name}\' (wrong player rotation in data.json)")
+        if not self.validate_world(world_name):
             return
-
-        for item in player_rotation:
-            if not type(item) == float:
-                print_warning(f"Failed to load world \'{world_name}\' (wrong player rotation in data.json)")
-                return
 
         player.position = self.world_data["player_position"]
         player.rotation_y = self.world_data["player_rotation"][0]
