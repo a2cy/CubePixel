@@ -5,12 +5,10 @@ from src.resource_loader import instance as resource_loader
 
 
 class AABBCollider:
-
     def __init__(self, position, origin, scale):
         self._half_scale = scale / 2
         self._origin = origin
         self.position = position
-
 
     @property
     def position(self):
@@ -27,7 +25,6 @@ class AABBCollider:
         self.x_2 = value.x + self._origin.x + self._half_scale.x
         self.y_2 = value.y + self._origin.y + self._half_scale.y
         self.z_2 = value.z + self._origin.z + self._half_scale.z
-
 
     def intersect(self, collider):
         x_max = self.x_1 - collider.x_2
@@ -50,9 +47,9 @@ class AABBCollider:
 
         return -min_dist, Vec3(normal_x, normal_y, normal_z)
 
-
     def collide(self, collider, move_delta):
-        get_time = lambda x, y: x / y if y else float("-" * (x > 0) + "inf")
+        def get_time(x, y):
+            return x / y if y else float("-" * (x > 0) + "inf")
 
         x_entry = get_time(collider.x_1 - self.x_2 if move_delta.x > 0 else collider.x_2 - self.x_1, move_delta.x)
         x_exit = get_time(collider.x_2 - self.x_1 if move_delta.x > 0 else collider.x_1 - self.x_2, move_delta.x)
@@ -77,7 +74,6 @@ class AABBCollider:
 
 
 class Player(Entity):
-
     def __init__(self, **kwargs):
         self.cursor = Entity(parent=camera.ui, model="quad", color=color.pink, scale=0.008, rotation_z=45)
         self.selector = Entity(model="cube", shader=resource_loader.selector_shader, scale=1.005)
@@ -110,12 +106,10 @@ class Player(Entity):
 
         self.reload()
 
-
     def reload(self):
         self.mouse_sensitivity = settings.settings["mouse_sensitivity"]
         self.fov = settings.settings["fov"]
         camera.fov = self.fov
-
 
     def update_selector(self, position, direction, max_distance):
         self.selector.enabled = False
@@ -135,11 +129,11 @@ class Player(Entity):
         delta_y = 10 if direction.y == 0 else 1 / direction.y * step_y
         delta_z = 10 if direction.z == 0 else 1 / direction.z * step_z
 
-        x_distance = delta_x * (.5 - (position.x - current_position.x) * step_x)
-        y_distance = delta_y * (.5 - (position.y - current_position.y) * step_y)
-        z_distance = delta_z * (.5 - (position.z - current_position.z) * step_z)
+        x_distance = delta_x * (0.5 - (position.x - current_position.x) * step_x)
+        y_distance = delta_y * (0.5 - (position.y - current_position.y) * step_y)
+        z_distance = delta_z * (0.5 - (position.z - current_position.z) * step_z)
 
-        while (current_distance < max_distance):
+        while current_distance < max_distance:
             if x_distance < y_distance and x_distance < z_distance:
                 current_distance = x_distance
                 x_distance += delta_x
@@ -166,7 +160,6 @@ class Player(Entity):
                 self.selector.enabled = True
                 break
 
-
     def update(self):
         from src.chunk_manager import instance as chunk_manager
 
@@ -185,30 +178,30 @@ class Player(Entity):
         self.camera_pivot.rotation_x = clamp(self.camera_pivot.rotation_x, -89, 89)
 
         if self.noclip_mode:
-            self.direction = Vec3(self.camera_pivot.forward * (held_keys["w"] - held_keys["s"])
-                              + self.right * (held_keys["d"] - held_keys["a"])).normalized()
+            self.direction = Vec3(
+                self.camera_pivot.forward * (held_keys["w"] - held_keys["s"]) + self.right * (held_keys["d"] - held_keys["a"])
+            ).normalized()
 
             self.direction += self.up * (held_keys["e"] - held_keys["q"])
 
-            self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, 0.5**(self.noclip_acceleration * time.dt))
+            self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, 0.5 ** (self.noclip_acceleration * time.dt))
 
             self.position += self.velocity * time.dt
 
         else:
             if self.grounded and held_keys["space"]:
-                self.velocity.y = (self.gravity * self.jump_height * 2)**0.5
+                self.velocity.y = (self.gravity * self.jump_height * 2) ** 0.5
 
-            self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"])
-                                  + self.right * (held_keys["d"] - held_keys["a"])).normalized()
+            self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"]) + self.right * (held_keys["d"] - held_keys["a"])).normalized()
 
             if held_keys["left shift"]:
                 self.direction *= self.sprint_multiplier
-                camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, 0.5**(self.acceleration * time.dt))
+                camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, 0.5 ** (self.acceleration * time.dt))
 
             else:
-                camera.fov = lerp(self.fov, camera.fov, 0.5**(self.acceleration * time.dt))
+                camera.fov = lerp(self.fov, camera.fov, 0.5 ** (self.acceleration * time.dt))
 
-            self.velocity.xz = lerp(self.direction * self.walk_speed, self.velocity, 0.5**(self.acceleration * time.dt)).xz
+            self.velocity.xz = lerp(self.direction * self.walk_speed, self.velocity, 0.5 ** (self.acceleration * time.dt)).xz
             self.velocity.y = self.velocity.y - self.gravity * min(time.dt, 0.5)
             self.velocity.y = max(self.velocity.y, -self.max_fall_speed)
 
@@ -220,9 +213,11 @@ class Player(Entity):
                 collisions = []
 
                 for i in range(3 * 3 * 4):
-                    offset = Vec3(i // 3 // 4 - 1,
-                                  i // 3 % 4 - 2,
-                                  i % 3 % 4 - 1)
+                    offset = Vec3(
+                        i // 3 // 4 - 1,
+                        i // 3 % 4 - 2,
+                        i % 3 % 4 - 1,
+                    )
 
                     voxel_id = chunk_manager.get_voxel_id(self.position + offset)
 
@@ -263,9 +258,11 @@ class Player(Entity):
                 self.player_collider.position = self.position + move_delta
 
                 for i in range(3 * 3 * 4):
-                    offset = Vec3(i // 3 // 4 - 1,
-                                  i // 3 % 4 - 2,
-                                  i % 3 % 4 - 1)
+                    offset = Vec3(
+                        i // 3 // 4 - 1,
+                        i // 3 % 4 - 2,
+                        i % 3 % 4 - 1,
+                    )
 
                     voxel_id = chunk_manager.get_voxel_id(self.position + offset)
 
@@ -303,7 +300,6 @@ class Player(Entity):
 
         self.update_selector(self.camera_pivot.world_position, self.camera_pivot.forward, 5)
 
-
     def input(self, key):
         from src.chunk_manager import instance as chunk_manager
         from src.gui import instance as gui
@@ -324,12 +320,10 @@ class Player(Entity):
             if (not self.player_collider.intersect(self.voxel_collider)[1] or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
-
     def on_enable(self):
         self.cursor.enable()
         mouse.position = Vec3(0)
         mouse.locked = True
-
 
     def on_disable(self):
         self.cursor.disable()

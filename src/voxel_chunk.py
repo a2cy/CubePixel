@@ -3,7 +3,6 @@ from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat
 
 
 class VoxelChunk(NodePath):
-
     v_array = GeomVertexArrayFormat()
     v_array.add_column("vertex_data", 1, Geom.NT_uint32, Geom.C_other)
 
@@ -26,11 +25,10 @@ class VoxelChunk(NodePath):
 
         geom = Geom(v_data)
         geom.add_primitive(prim)
-        geom.set_bounds(BoundingSphere(Vec3(chunk_size/2), chunk_size))
+        geom.set_bounds(BoundingSphere(Vec3(chunk_size / 2), chunk_size))
         self.final = True
 
         self.geom_node.add_geom(geom)
-
 
     def update(self, vertex_data=None):
         if vertex_data is None:

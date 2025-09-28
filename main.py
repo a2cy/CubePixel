@@ -8,6 +8,6 @@ app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel
 
 window.color = color.black
 
-from src.gui import instance # starts game
+from src.gui import instance  # starts game  # noqa: E402, F401
 
 app.run()

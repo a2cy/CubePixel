@@ -1,4 +1,5 @@
-import os, json
+import os
+import json
 import numpy as np
 
 from ursina import print_warning
@@ -7,11 +8,10 @@ from panda3d.core import Texture, PNMImage, SamplerState, Shader
 
 
 class ResourceLoader:
-
     def __init__(self):
-        self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag",)
-        self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel_display.vert", "./shaders/voxel_display.frag",)
-        self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag",)
+        self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag")
+        self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel_display.vert", "./shaders/voxel_display.frag")
+        self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag")
 
         files = os.listdir("./assets/voxel_types/")
 
@@ -27,7 +27,7 @@ class ResourceLoader:
                 result = self.validate_type(data)
 
                 if result:
-                    print_warning(f"failed to load voxel type \'{file_name}\' ({result})")
+                    print_warning(f"failed to load voxel type '{file_name}' ({result})")
                     continue
 
                 if data["index"] == 0:
@@ -46,7 +46,7 @@ class ResourceLoader:
             texture_names = voxel["textures"]
 
             for texture_name in texture_names:
-                if not texture_name in loaded_textures:
+                if texture_name not in loaded_textures:
                     loaded_textures.append(texture_name)
 
             if len(texture_names) == 1:
@@ -73,27 +73,26 @@ class ResourceLoader:
                 texture = PNMImage()
                 texture.read(f"./assets/textures/voxels/{texture_name}.png")
                 self.texture_array.load(texture, z=i, n=0)
-            except:
-                print_warning(f"failed to load texture \'{texture_name}\' (wrong format)")
-
+            except Exception:
+                print_warning(f"failed to load texture '{texture_name}' (wrong format)")
 
     def validate_type(self, type: dict):
         keys = {"index": int, "textures": list, "occlusion": bool, "collision": bool}
         texture_names = type["textures"]
 
         for key, value in keys.items():
-            if not key in type.keys():
-                return f"missing key \'{key}\'"
+            if key not in type.keys():
+                return f"missing key '{key}'"
 
             if not isinstance(type[key], value):
-                return f"key \'{key}\' has wrong type"
+                return f"key '{key}' has wrong type"
 
-        if not len(texture_names) in (1, 3):
+        if len(texture_names) not in (1, 3):
             return "wrong texture definition"
 
         for texture_name in texture_names:
             if not os.path.isfile(f"./assets/textures/voxels/{texture_name}.png"):
-                return f"missing texture \'{texture_name}\'"
+                return f"missing texture '{texture_name}'"
 
 
 instance = ResourceLoader()

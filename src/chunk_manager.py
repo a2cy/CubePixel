@@ -1,4 +1,5 @@
-import os, json
+import os
+import json
 import numpy as np
 
 from queue import Queue
@@ -14,15 +15,14 @@ CHUNK_SIZE = 32
 
 
 class ChunkManager(Entity):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.updating = False
         self.world_loaded = False
-        self.finished_loading = False # Used to disable loading screen
-        self.set_player_position = False # If set to true, the player position is set to (0, terrain height, 0) after loading finished.
-        self.player_chunk = (0, 0, 0) # Used to determine if the player crossed a chunk border
+        self.finished_loading = False  # Used to disable loading screen
+        self.set_player_position = False  # If set to true, the player position is set to (0, terrain height, 0) after loading finished.
+        self.player_chunk = (0, 0, 0)  # Used to determine if the player crossed a chunk border
         self.chunks_to_load = Queue()
         self.chunks_to_unload = Queue()
         self.chunks_to_update = Queue()
@@ -32,7 +32,6 @@ class ChunkManager(Entity):
         self.world_generator = WorldGenerator(resource_loader.texture_types, resource_loader.occlusion_types)
 
         self.reload()
-
 
     def reload(self):
         # Loads settings stored in settings.json
@@ -48,41 +47,39 @@ class ChunkManager(Entity):
             self.player_chunk = self.get_chunk_id(player.position)
             self.update_chunks_all()
 
-
     def validate_world(self, world_name):
         keys = {"seed": int, "player_position": list, "player_rotation": list, "player_noclip": bool}
         player_position = self.world_data["player_position"]
         player_rotation = self.world_data["player_rotation"]
 
         for key, value in keys.items():
-            if not key in self.world_data.keys():
-                print_warning(f"Failed to load world \'{world_name}\' (missing key \'{key}\' in data.json)")
+            if key not in self.world_data.keys():
+                print_warning(f"Failed to load world '{world_name}' (missing key '{key}' in data.json)")
                 return
 
             if not isinstance(self.world_data[key], value):
-                print_warning(f"Failed to load world \'{world_name}\' (key \'{key}\' has wrong type in data.json)")
+                print_warning(f"Failed to load world '{world_name}' (key '{key}' has wrong type in data.json)")
                 return
 
         if not len(player_position) == 3:
-            print_warning(f"Failed to load world \'{world_name}\' (invalid player position in data.json)")
+            print_warning(f"Failed to load world '{world_name}' (invalid player position in data.json)")
             return
 
         for item in player_position:
-            if not (type(item) == int or type(item) == float):
-                print_warning(f"Failed to load world \'{world_name}\' (invalid player position in data.json)")
+            if not (isinstance(item, int) or isinstance(item, float)):
+                print_warning(f"Failed to load world '{world_name}' (invalid player position in data.json)")
                 return
 
         if not len(player_rotation) == 2:
-            print_warning(f"Failed to load world \'{world_name}\' (invalid player rotation in data.json)")
+            print_warning(f"Failed to load world '{world_name}' (invalid player rotation in data.json)")
             return
 
         for item in player_rotation:
-            if not (type(item) == int or type(item) == float):
-                print_warning(f"Failed to load world \'{world_name}\' (invalid player rotation in data.json)")
+            if not (isinstance(item, int) or isinstance(item, float)):
+                print_warning(f"Failed to load world '{world_name}' (invalid player rotation in data.json)")
                 return
 
         return True
-
 
     def create_world(self, world_name, seed):
         if os.path.exists(f"./saves/{world_name}/"):
@@ -97,7 +94,6 @@ class ChunkManager(Entity):
             json.dump(world_data, file, indent=4)
 
         return self.load_world(world_name)
-
 
     def delete_world(self, world_name):
         if os.path.isfile(f"./saves/{world_name}/data.json"):
@@ -114,7 +110,6 @@ class ChunkManager(Entity):
         if os.path.exists(f"./saves/{world_name}"):
             os.removedirs(f"./saves/{world_name}")
 
-
     def load_world(self, world_name):
         from src.player import instance as player
 
@@ -124,18 +119,18 @@ class ChunkManager(Entity):
         self.world_name = world_name
 
         if not os.path.exists(f"./saves/{world_name}/chunks"):
-            print_warning(f"Failed to load world \'{world_name}\' (missing folder)")
+            print_warning(f"Failed to load world '{world_name}' (missing folder)")
             return
 
         if not os.path.isfile(f"./saves/{world_name}/data.json"):
-            print_warning(f"Failed to load world \'{world_name}\' (missing data.json)")
+            print_warning(f"Failed to load world '{world_name}' (missing data.json)")
             return
 
         try:
             with open(f"./saves/{world_name}/data.json") as file:
                 self.world_data = json.load(file)
         except Exception as exeption:
-            print_warning(f"Failed to load world \'{world_name}\' (invalid data.json) \n {exeption}")
+            print_warning(f"Failed to load world '{world_name}' (invalid data.json) \n {exeption}")
             return
 
         if not self.validate_world(world_name):
@@ -157,7 +152,6 @@ class ChunkManager(Entity):
         print_info(f"loaded world {self.world_name} with seed {self.seed}")
 
         return True
-
 
     def unload_world(self):
         from src.player import instance as player
@@ -182,12 +176,12 @@ class ChunkManager(Entity):
 
         print_info(f"unloaded world {self.world_name}")
 
-
     def get_chunk_id(self, position):
-        return (int(((position[0] + 0.5) // CHUNK_SIZE) * CHUNK_SIZE),
-                int(((position[1] + 0.5) // CHUNK_SIZE) * CHUNK_SIZE),
-                int(((position[2] + 0.5) // CHUNK_SIZE) * CHUNK_SIZE))
-
+        return (
+            int(((position[0] + 0.5) // CHUNK_SIZE) * CHUNK_SIZE),
+            int(((position[1] + 0.5) // CHUNK_SIZE) * CHUNK_SIZE),
+            int(((position[2] + 0.5) // CHUNK_SIZE) * CHUNK_SIZE),
+        )
 
     def get_voxel_id(self, position):
         if not self.world_loaded:
@@ -195,7 +189,7 @@ class ChunkManager(Entity):
 
         chunk_id = self.get_chunk_id(position)
 
-        if not chunk_id in self.loaded_chunks:
+        if chunk_id not in self.loaded_chunks:
             return
 
         x_position = round(position[0] - chunk_id[0])
@@ -206,14 +200,13 @@ class ChunkManager(Entity):
 
         return self.loaded_chunks[chunk_id][index]
 
-
     def modify_voxel(self, position, voxel_id):
         if not self.world_loaded:
             return
 
         chunk_id = self.get_chunk_id(position)
 
-        if not chunk_id in self.loaded_chunks:
+        if chunk_id not in self.loaded_chunks:
             return
 
         x_position = round(position[0] - chunk_id[0])
@@ -245,7 +238,6 @@ class ChunkManager(Entity):
         if z_position == CHUNK_SIZE - 1:
             self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] + CHUNK_SIZE))
 
-
     def get_terrain_height(self, position):
         current_position = round(position, ndigits=0)
 
@@ -268,7 +260,6 @@ class ChunkManager(Entity):
 
             current_position.y += step_y
 
-
     def load_chunk(self, chunk_id):
         if chunk_id in self.loaded_chunks:
             return
@@ -284,18 +275,19 @@ class ChunkManager(Entity):
         self.loaded_chunks[chunk_id] = voxels
 
         for id in [(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]:
-            neighbor_id = (id[0] * CHUNK_SIZE + chunk_id[0],
-                           id[1] * CHUNK_SIZE + chunk_id[1],
-                           id[2] * CHUNK_SIZE + chunk_id[2])
+            neighbor_id = (
+                id[0] * CHUNK_SIZE + chunk_id[0],
+                id[1] * CHUNK_SIZE + chunk_id[1],
+                id[2] * CHUNK_SIZE + chunk_id[2],
+            )
 
             if neighbor_id in self.loaded_chunks:
                 self.chunks_to_update.put(neighbor_id)
 
         self.chunks_to_update.put(chunk_id)
 
-
     def unload_chunk(self, chunk_id):
-        if not chunk_id in self.loaded_chunks:
+        if chunk_id not in self.loaded_chunks:
             return
 
         if chunk_id in self.chunk_objects:
@@ -306,17 +298,18 @@ class ChunkManager(Entity):
 
         np.save(filename, self.loaded_chunks.pop(chunk_id))
 
-
     def update_chunk(self, chunk_id):
-        if not chunk_id in self.loaded_chunks:
+        if chunk_id not in self.loaded_chunks:
             return
 
         neighbors = np.zeros(6, dtype=np.longlong)
 
         for i, id in enumerate([(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]):
-            neighbor_id = (id[0] * CHUNK_SIZE + chunk_id[0],
-                           id[1] * CHUNK_SIZE + chunk_id[1],
-                           id[2] * CHUNK_SIZE + chunk_id[2])
+            neighbor_id = (
+                id[0] * CHUNK_SIZE + chunk_id[0],
+                id[1] * CHUNK_SIZE + chunk_id[1],
+                id[2] * CHUNK_SIZE + chunk_id[2],
+            )
 
             if neighbor_id in self.loaded_chunks:
                 neighbors[i] = self.loaded_chunks[neighbor_id].ctypes.data
@@ -330,7 +323,7 @@ class ChunkManager(Entity):
 
             return
 
-        if not chunk_id in self.chunk_objects:
+        if chunk_id not in self.chunk_objects:
             chunk = VoxelChunk(CHUNK_SIZE, shader=resource_loader.voxel_shader)
             chunk.set_shader_input("texture_array", resource_loader.texture_array)
             chunk.set_pos(chunk_id)
@@ -341,7 +334,6 @@ class ChunkManager(Entity):
 
         chunk.update(vertex_data)
 
-
     def update_chunks_all(self):
         chunk_ids = []
 
@@ -350,20 +342,21 @@ class ChunkManager(Entity):
             y = i // self.world_size % self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
 
-            chunk_id = (int(x * CHUNK_SIZE + self.player_chunk[0]),
-                        int(y * CHUNK_SIZE + self.player_chunk[1]),
-                        int(z * CHUNK_SIZE + self.player_chunk[2]))
+            chunk_id = (
+                int(x * CHUNK_SIZE + self.player_chunk[0]),
+                int(y * CHUNK_SIZE + self.player_chunk[1]),
+                int(z * CHUNK_SIZE + self.player_chunk[2]),
+            )
 
             chunk_ids.append(chunk_id)
 
         for chunk_id in chunk_ids:
-            if not chunk_id in self.loaded_chunks:
+            if chunk_id not in self.loaded_chunks:
                 self.chunks_to_load.put(chunk_id)
 
         for chunk_id in self.loaded_chunks.copy():
-            if not chunk_id in chunk_ids:
+            if chunk_id not in chunk_ids:
                 self.chunks_to_unload.put(chunk_id)
-
 
     def update_chunks_slice_x(self, direction):
         x = self.render_distance * direction
@@ -371,14 +364,21 @@ class ChunkManager(Entity):
             y = i // self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
 
-            self.chunks_to_load.put((int((x + direction) * CHUNK_SIZE + self.player_chunk[0]),
-                                     int(y * CHUNK_SIZE + self.player_chunk[1]),
-                                     int(z * CHUNK_SIZE + self.player_chunk[2])))
+            self.chunks_to_load.put(
+                (
+                    int((x + direction) * CHUNK_SIZE + self.player_chunk[0]),
+                    int(y * CHUNK_SIZE + self.player_chunk[1]),
+                    int(z * CHUNK_SIZE + self.player_chunk[2]),
+                )
+            )
 
-            self.chunks_to_unload.put((int(-x * CHUNK_SIZE + self.player_chunk[0]),
-                                       int(y * CHUNK_SIZE + self.player_chunk[1]),
-                                       int(z * CHUNK_SIZE + self.player_chunk[2])))
-
+            self.chunks_to_unload.put(
+                (
+                    int(-x * CHUNK_SIZE + self.player_chunk[0]),
+                    int(y * CHUNK_SIZE + self.player_chunk[1]),
+                    int(z * CHUNK_SIZE + self.player_chunk[2]),
+                )
+            )
 
     def update_chunks_slice_y(self, direction):
         y = self.render_distance * direction
@@ -386,14 +386,21 @@ class ChunkManager(Entity):
             x = i // self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
 
-            self.chunks_to_load.put((int(x * CHUNK_SIZE + self.player_chunk[0]),
-                                     int((y + direction) * CHUNK_SIZE + self.player_chunk[1]),
-                                     int(z * CHUNK_SIZE + self.player_chunk[2])))
+            self.chunks_to_load.put(
+                (
+                    int(x * CHUNK_SIZE + self.player_chunk[0]),
+                    int((y + direction) * CHUNK_SIZE + self.player_chunk[1]),
+                    int(z * CHUNK_SIZE + self.player_chunk[2]),
+                )
+            )
 
-            self.chunks_to_unload.put((int(x * CHUNK_SIZE + self.player_chunk[0]),
-                                       int(-y * CHUNK_SIZE + self.player_chunk[1]),
-                                       int(z * CHUNK_SIZE + self.player_chunk[2])))
-
+            self.chunks_to_unload.put(
+                (
+                    int(x * CHUNK_SIZE + self.player_chunk[0]),
+                    int(-y * CHUNK_SIZE + self.player_chunk[1]),
+                    int(z * CHUNK_SIZE + self.player_chunk[2]),
+                )
+            )
 
     def update_chunks_slice_z(self, direction):
         z = self.render_distance * direction
@@ -401,14 +408,21 @@ class ChunkManager(Entity):
             y = i // self.world_size - self.render_distance
             x = i % self.world_size - self.render_distance
 
-            self.chunks_to_load.put((int(x * CHUNK_SIZE + self.player_chunk[0]),
-                                     int(y * CHUNK_SIZE + self.player_chunk[1]),
-                                     int((z + direction) * CHUNK_SIZE + self.player_chunk[2])))
+            self.chunks_to_load.put(
+                (
+                    int(x * CHUNK_SIZE + self.player_chunk[0]),
+                    int(y * CHUNK_SIZE + self.player_chunk[1]),
+                    int((z + direction) * CHUNK_SIZE + self.player_chunk[2]),
+                )
+            )
 
-            self.chunks_to_unload.put((int(x * CHUNK_SIZE + self.player_chunk[0]),
-                                       int(y * CHUNK_SIZE + self.player_chunk[1]),
-                                       int(-z * CHUNK_SIZE + self.player_chunk[2])))
-
+            self.chunks_to_unload.put(
+                (
+                    int(x * CHUNK_SIZE + self.player_chunk[0]),
+                    int(y * CHUNK_SIZE + self.player_chunk[1]),
+                    int(-z * CHUNK_SIZE + self.player_chunk[2]),
+                )
+            )
 
     def update(self):
         from src.player import instance as player
