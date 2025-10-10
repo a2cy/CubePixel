@@ -8,7 +8,7 @@ from panda3d.core import Texture, PNMImage, SamplerState, Shader
 
 
 class ResourceLoader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag")
         self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel_display.vert", "./shaders/voxel_display.frag")
         self.selector_shader = Shader.load(Shader.SL_GLSL, "./shaders/selector.vert", "./shaders/selector.frag")
@@ -76,7 +76,7 @@ class ResourceLoader:
             except Exception:
                 print_warning(f"failed to load texture '{texture_name}' (wrong format)")
 
-    def validate_type(self, type: dict):
+    def validate_type(self, type: dict) -> str:
         keys = {"index": int, "textures": list, "occlusion": bool, "collision": bool}
         texture_names = type["textures"]
 

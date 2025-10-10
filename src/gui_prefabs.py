@@ -3,7 +3,7 @@ from ursina import InputField as uInputField
 
 
 class MenuButton(Entity):
-    def __init__(self, text="", default_color=color.black, **kwargs):
+    def __init__(self, text: str, default_color=color.black, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.model = "quad"
@@ -23,7 +23,7 @@ class MenuButton(Entity):
             parent=self, text=text, scale=(self.scale * 50).yx, origin=Vec2(0, 0), color=self.default_color, add_to_scene_entities=False
         )
 
-    def input(self, key):
+    def input(self, key: str) -> None:
         if key == "left mouse down":
             if self.hovered:
                 self.background.color = self.pressed_color
@@ -38,17 +38,17 @@ class MenuButton(Entity):
                 self.background.color = self.default_color
                 self.text_entity.color = self.default_color
 
-    def on_mouse_enter(self):
+    def on_mouse_enter(self) -> None:
         self.background.color = self.highlight_color
         self.text_entity.color = self.highlight_color
 
-    def on_mouse_exit(self):
+    def on_mouse_exit(self) -> None:
         self.background.color = self.default_color
         self.text_entity.color = self.default_color
 
 
 class MenuContent(Entity):
-    def __init__(self, text="", **kwargs):
+    def __init__(self, text: str, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.background_panel = Entity(
@@ -68,7 +68,7 @@ class MenuContent(Entity):
 
 
 class InputField(uInputField):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.color = color.black50
@@ -80,7 +80,7 @@ class InputField(uInputField):
 
 
 class ButtonPrefab(Button):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(scale=Vec2(0.2, 0.08), **kwargs)
 
         self.color = color.black50
@@ -89,7 +89,7 @@ class ButtonPrefab(Button):
 
 
 class FileButton(Button):
-    def __init__(self, path, **kwargs):
+    def __init__(self, path: str, **kwargs) -> None:
         super().__init__(scale=(0.5, 0.05), color=color.black50, text_size=1.2, pressed_scale=1, **kwargs)
 
         self.path = path
@@ -99,7 +99,7 @@ class FileButton(Button):
         self.pressed_color = color.black90
         self.selected = False
 
-    def on_click(self):
+    def on_click(self) -> None:
         if not self.selected:
             for e in self.parent.children:
                 e.selected = False
@@ -107,11 +107,11 @@ class FileButton(Button):
         self.selected = True
 
     @property
-    def selected(self):
+    def selected(self) -> bool:
         return self._selected
 
     @selected.setter
-    def selected(self, value):
+    def selected(self, value: bool) -> None:
         self._selected = value
 
         if value:
@@ -122,7 +122,7 @@ class FileButton(Button):
 
 
 class ItemButton(Button):
-    def __init__(self, voxel_id, **kwargs):
+    def __init__(self, voxel_id: int, **kwargs) -> None:
         super().__init__(model="quad", **kwargs)
 
         from src.resource_loader import instance as resource_loader
@@ -140,7 +140,7 @@ class ItemButton(Button):
 
         self.selected = False
 
-    def on_click(self):
+    def on_click(self) -> None:
         if not self.selected:
             for e in self.parent.children:
                 e.selected = False
@@ -148,11 +148,11 @@ class ItemButton(Button):
         self.selected = True
 
     @property
-    def selected(self):
+    def selected(self) -> bool:
         return self._selected
 
     @selected.setter
-    def selected(self, value):
+    def selected(self, value: bool) -> None:
         self._selected = value
 
         if value:
@@ -165,7 +165,7 @@ class ItemButton(Button):
 
 
 class ThinSlider(Slider):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         kwargs["height"] = Text.size
         super().__init__(**kwargs)
 

@@ -8,7 +8,7 @@ from src.settings import instance as settings
 
 
 class Gui(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
         from ursina import Sky, scene
@@ -37,7 +37,7 @@ class Gui(Entity):
             "main_menu",
         )
 
-    def input(self, key):
+    def input(self, key: str) -> None:
         if self.ui_state.state == "" and key == "escape":
             self.ui_state.state = "pause_menu"
             player.disable()
@@ -54,12 +54,12 @@ class Gui(Entity):
             self.ui_state.state = ""
             player.enable()
 
-    def update(self):
+    def update(self) -> None:
         self.sky.position = camera.world_position
 
 
 class MainMenu(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
         from ursina import application
@@ -119,7 +119,7 @@ class MainMenu(Entity):
             parent=self, text="Exit", default_color=color.rgb(0.7, 0, 0), position=window.left + Vec2(0.25, 0.05), on_click=Func(application.quit)
         )
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         for child in self.children:
             if hasattr(child, "on_enable"):
                 child.on_enable()
@@ -128,7 +128,7 @@ class MainMenu(Entity):
 
 
 class PauseMenu(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
         self.background_panel = Entity(parent=self, model="quad", color=color.black50, position=window.left + Vec2(0.25, 0), scale=Vec2(0.4, 1), z=1)
@@ -146,13 +146,13 @@ class PauseMenu(Entity):
 
         self.options = Options(parent=self)
 
-        def _continue():
+        def _continue() -> None:
             instance.ui_state.state = ""
             player.enable()
 
         self.continue_button = MenuButton(parent=self, text="Continue Playing", position=window.left + Vec2(0.25, 0.35), on_click=_continue)
 
-        def _return():
+        def _return() -> None:
             instance.ui_state.state = "main_menu"
             chunk_manager.unload_world()
             instance.sky.disable()
@@ -161,14 +161,14 @@ class PauseMenu(Entity):
             parent=self, text="Return To Menu", default_color=color.rgb(0.7, 0, 0), position=window.left + Vec2(0.25, 0.25), on_click=_return
         )
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         for child in self.children:
             if hasattr(child, "on_enable"):
                 child.on_enable()
 
 
 class WorldCreation(MenuContent):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__("Create World", **kwargs)
 
         self.world_name = InputField(parent=self, position=window.right + Vec2(-0.65, 0.3))
@@ -183,7 +183,7 @@ class WorldCreation(MenuContent):
             parent=self, text="World Seed", scale=1.2, position=self.world_seed.position + Vec2(-0.5, 0), origin=Vec2(-0.5, 0)
         )
 
-        def create_world():
+        def create_world() -> None:
             if not self.world_name.text:
                 instance.main_menu.notification.notify("Missing world name")
                 return
@@ -202,13 +202,13 @@ class WorldCreation(MenuContent):
 
         self.world_name.next_field = self.world_seed
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         self.world_name.text = ""
         self.world_seed.text = ""
 
 
 class WorldLoading(MenuContent):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__("Load World", **kwargs)
 
         self.max_buttons = 11
@@ -219,7 +219,7 @@ class WorldLoading(MenuContent):
             parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right + Vec2(-0.35, -0.3), enabled=False
         )
 
-        def load_world():
+        def load_world() -> None:
             if not self.selection:
                 instance.main_menu.notification.notify("No world selected")
                 return
@@ -232,7 +232,7 @@ class WorldLoading(MenuContent):
 
         self.load_button = ButtonPrefab(parent=self, text="Load World", position=window.right + Vec2(-0.9, -0.4), on_click=load_world)
 
-        def delete_world():
+        def delete_world() -> None:
             if not self.selection:
                 instance.main_menu.notification.notify("No world selected")
                 return
@@ -247,11 +247,11 @@ class WorldLoading(MenuContent):
         self.delete_button = ButtonPrefab(parent=self, text="Delete World", position=window.right + Vec2(-0.4, -0.4), on_click=delete_world)
 
     @property
-    def scroll(self):
+    def scroll(self) -> int:
         return self._scroll
 
     @scroll.setter
-    def scroll(self, value):
+    def scroll(self, value: int) -> None:
         self._scroll = value
 
         for i, button in enumerate(self.button_parent.children):
@@ -266,10 +266,10 @@ class WorldLoading(MenuContent):
         self.button_parent.y = value * 0.055
 
     @property
-    def selection(self):
+    def selection(self) -> str:
         return [c.path for c in self.button_parent.children if c.selected]
 
-    def input(self, key):
+    def input(self, key: str) -> None:
         if key == "scroll down":
             if self.scroll + self.max_buttons < len(self.button_parent.children):
                 self.scroll += 1
@@ -278,7 +278,7 @@ class WorldLoading(MenuContent):
             if self.scroll > 0:
                 self.scroll -= 1
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         import os
         from ursina import destroy
 
@@ -298,7 +298,7 @@ class WorldLoading(MenuContent):
 
 
 class Options(MenuContent):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__("Options", **kwargs)
 
         self.render_distance_label = Text(parent=self, text="Render Distance", scale=1.2, position=Vec2(-0.28, 0.3), origin=Vec2(-0.5, 0))
@@ -313,7 +313,7 @@ class Options(MenuContent):
             step=1,
         )
 
-        def render_distance_setter():
+        def render_distance_setter() -> None:
             settings.settings["render_distance"] = self.render_distance.value
             settings.save_settings()
 
@@ -325,7 +325,7 @@ class Options(MenuContent):
 
         self.chunk_updates = ThinSlider(parent=self, position=self.chunk_updates_label.position + Vec2(0.28, 0), min=1, max=40, step=1)
 
-        def chunk_updates_setter():
+        def chunk_updates_setter() -> None:
             settings.settings["chunk_updates"] = self.chunk_updates.value
             settings.save_settings()
 
@@ -337,7 +337,7 @@ class Options(MenuContent):
 
         self.mouse_sensitivity = ThinSlider(parent=self, position=self.mouse_sensitivity_label.position + Vec2(0.28, 0), min=60, max=120, step=1)
 
-        def mouse_sensitivity_setter():
+        def mouse_sensitivity_setter() -> None:
             settings.settings["mouse_sensitivity"] = self.mouse_sensitivity.value
             settings.save_settings()
 
@@ -349,7 +349,7 @@ class Options(MenuContent):
 
         self.fov = ThinSlider(parent=self, position=self.fov_label.position + Vec2(0.28, 0), min=60, max=120, dynamic=True, step=1)
 
-        def fov_setter():
+        def fov_setter() -> None:
             settings.settings["fov"] = self.fov.value
             settings.save_settings()
 
@@ -361,7 +361,7 @@ class Options(MenuContent):
 
         self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position + Vec2(0.28, 0), start_value=False)
 
-        def toggle_debug():
+        def toggle_debug() -> None:
             self.debug_toggle.value = not self.debug_toggle.value
 
             instance.debug_overlay.enabled = self.debug_toggle.value
@@ -395,7 +395,7 @@ class Options(MenuContent):
             tooltip=Tooltip(info_text, scale=0.75),
         )
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         self.render_distance.value = settings.settings["render_distance"]
         self.chunk_updates.value = settings.settings["chunk_updates"]
         self.mouse_sensitivity.value = settings.settings["mouse_sensitivity"]
@@ -403,7 +403,7 @@ class Options(MenuContent):
 
 
 class Inventory(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
         self.max_buttons_x = 10
@@ -427,11 +427,11 @@ class Inventory(Entity):
             button_count += 1
 
     @property
-    def scroll(self):
+    def scroll(self) -> int:
         return self._scroll
 
     @scroll.setter
-    def scroll(self, value):
+    def scroll(self, value: int) -> None:
         self._scroll = value
 
         for i, button in enumerate(self.button_parent.children):
@@ -449,10 +449,10 @@ class Inventory(Entity):
         self.button_parent.y = value * 0.1
 
     @property
-    def selection(self):
+    def selection(self) -> str:
         return [c.voxel_id for c in self.button_parent.children if c.selected]
 
-    def input(self, key):
+    def input(self, key: str) -> None:
         if key == "scroll down":
             if self.scroll + self.max_buttons_y < len(self.button_parent.children) / self.max_buttons_x:
                 self.scroll += 1
@@ -461,12 +461,12 @@ class Inventory(Entity):
             if self.scroll > 0:
                 self.scroll -= 1
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         self.scroll = 0
 
 
 class LoadingMenu(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
         self.background = Entity(parent=self, model="quad", texture="shore", scale=window.aspect_ratio, z=2)
@@ -477,20 +477,20 @@ class LoadingMenu(Entity):
 
         self.indicator = Entity(parent=self, model="quad", texture="cog", scale=0.05, position=Vec2(0, -0.04))
 
-    def update(self):
+    def update(self) -> None:
         if chunk_manager.finished_loading:
             instance.ui_state.state = ""
 
         self.indicator.rotation_z += 150 * time.dt
 
-    def on_disable(self):
+    def on_disable(self) -> None:
         if chunk_manager.world_loaded:
             player.enable()
             instance.sky.enable()
 
 
 class Notification(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
         self.model = Quad(aspect=0.35 / 0.1)
@@ -503,7 +503,7 @@ class Notification(Entity):
         self.cooldown = 0
         self.active = False
 
-    def update(self):
+    def update(self) -> None:
         if self.cooldown > 0:
             self.cooldown -= time.dt
             return
@@ -513,7 +513,7 @@ class Notification(Entity):
             self.text.animate_color(color.clear, duration=0.15)
             self.active = False
 
-    def notify(self, text):
+    def notify(self, text: str) -> None:
         self.animate_color(color.black50, duration=0.15)
         self.text.animate_color(color.yellow, duration=0.15)
         self.text.text = text
@@ -522,14 +522,14 @@ class Notification(Entity):
 
 
 class DebugOverlay(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, z=2, **kwargs)
 
         self.coordinates = Text(parent=self, position=window.top_left)
         self.direction = Text(parent=self, position=window.top_left + Vec2(0, -0.03))
         self.updating = Text(parent=self, position=window.top_left + Vec2(0, -0.06))
 
-    def update(self):
+    def update(self) -> None:
         rotation = player.rotation_y
         heading = "None"
 

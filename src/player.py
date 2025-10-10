@@ -5,17 +5,17 @@ from src.resource_loader import instance as resource_loader
 
 
 class AABBCollider:
-    def __init__(self, position, origin, scale):
+    def __init__(self, position: Vec3, origin: Vec3, scale: Vec3) -> None:
         self._half_scale = scale / 2
         self._origin = origin
         self.position = position
 
     @property
-    def position(self):
+    def position(self) -> Vec3:
         return self._position
 
     @position.setter
-    def position(self, value):
+    def position(self, value: Vec3) -> None:
         self._position = value
 
         self.x_1 = value.x + self._origin.x - self._half_scale.x
@@ -26,7 +26,7 @@ class AABBCollider:
         self.y_2 = value.y + self._origin.y + self._half_scale.y
         self.z_2 = value.z + self._origin.z + self._half_scale.z
 
-    def intersect(self, collider):
+    def intersect(self, collider) -> tuple:
         x_max = self.x_1 - collider.x_2
         x_min = collider.x_1 - self.x_2
 
@@ -47,8 +47,8 @@ class AABBCollider:
 
         return -min_dist, Vec3(normal_x, normal_y, normal_z)
 
-    def collide(self, collider, move_delta):
-        def get_time(x, y):
+    def collide(self, collider, move_delta: Vec3) -> tuple:
+        def get_time(x: float, y: float) -> float:
             return x / y if y else float("-" * (x > 0) + "inf")
 
         x_entry = get_time(collider.x_1 - self.x_2 if move_delta.x > 0 else collider.x_2 - self.x_1, move_delta.x)
@@ -74,7 +74,7 @@ class AABBCollider:
 
 
 class Player(Entity):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.cursor = Entity(parent=camera.ui, model="quad", color=color.pink, scale=0.008, rotation_z=45)
         self.selector = Entity(model="cube", shader=resource_loader.selector_shader, scale=1.005)
 
@@ -106,12 +106,12 @@ class Player(Entity):
 
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         self.mouse_sensitivity = settings.settings["mouse_sensitivity"]
         self.fov = settings.settings["fov"]
         camera.fov = self.fov
 
-    def update_selector(self, position, direction, max_distance):
+    def update_selector(self, position: Vec3, direction: Vec3, max_distance: int) -> None:
         self.selector.enabled = False
 
         from src.chunk_manager import instance as chunk_manager
@@ -160,7 +160,7 @@ class Player(Entity):
                 self.selector.enabled = True
                 break
 
-    def update(self):
+    def update(self) -> None:
         from src.chunk_manager import instance as chunk_manager
 
         if not chunk_manager.finished_loading:
@@ -300,7 +300,7 @@ class Player(Entity):
 
         self.update_selector(self.camera_pivot.world_position, self.camera_pivot.forward, 5)
 
-    def input(self, key):
+    def input(self, key: str) -> None:
         from src.chunk_manager import instance as chunk_manager
         from src.gui import instance as gui
 
@@ -320,12 +320,12 @@ class Player(Entity):
             if (not self.player_collider.intersect(self.voxel_collider)[1] or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         self.cursor.enable()
         mouse.position = Vec3(0)
         mouse.locked = True
 
-    def on_disable(self):
+    def on_disable(self) -> None:
         self.cursor.disable()
         mouse.locked = False
 
