@@ -1,10 +1,10 @@
 from ursina import Entity, Text, CheckBox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
-from src.gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
-from src.resource_loader import instance as resource_loader
-from src.chunk_manager import instance as chunk_manager
-from src.player import instance as player
-from src.settings import instance as settings
+from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
+from .resource_loader import instance as resource_loader
+from .chunk_manager import instance as chunk_manager
+from .player import instance as player
+from .settings import instance as settings
 
 
 class Gui(Entity):

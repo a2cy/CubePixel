@@ -5,9 +5,9 @@ import numpy as np
 from queue import Queue
 from ursina import Entity, Vec3, print_info, print_warning
 
-from src.voxel_chunk import VoxelChunk
-from src.settings import instance as settings
-from src.resource_loader import instance as resource_loader
+from .voxel_chunk import VoxelChunk
+from .settings import instance as settings
+from .resource_loader import instance as resource_loader
 from c_extensions import WorldGenerator
 
 

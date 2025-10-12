@@ -1,7 +1,7 @@
 from ursina import Entity, Vec3, held_keys, time, color, clamp, lerp, camera, mouse
 
-from src.settings import instance as settings
-from src.resource_loader import instance as resource_loader
+from .settings import instance as settings
+from .resource_loader import instance as resource_loader
 
 
 class AABBCollider:
