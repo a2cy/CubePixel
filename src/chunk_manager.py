@@ -281,7 +281,7 @@ class ChunkManager(Entity):
                 id[2] * CHUNK_SIZE + chunk_id[2],
             )
 
-            if neighbor_id in self.loaded_chunks:
+            if neighbor_id in self.chunk_objects:
                 self.chunks_to_update.put(neighbor_id)
 
         self.chunks_to_update.put(chunk_id)
