@@ -527,7 +527,9 @@ class DebugOverlay(Entity):
 
         self.coordinates = Text(parent=self, position=window.top_left)
         self.direction = Text(parent=self, position=window.top_left + Vec2(0, -0.03))
-        self.updating = Text(parent=self, position=window.top_left + Vec2(0, -0.06))
+        self.chunks_to_load = Text(parent=self, position=window.top_left + Vec2(0, -0.06))
+        self.chunks_to_unload = Text(parent=self, position=window.top_left + Vec2(0, -0.09))
+        self.chunks_to_update = Text(parent=self, position=window.top_left + Vec2(0, -0.12))
 
     def update(self) -> None:
         rotation = player.rotation_y
@@ -550,7 +552,8 @@ class DebugOverlay(Entity):
 
         self.coordinates.text = f"Position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
         self.direction.text = f"Facing : {heading}"
-        self.updating.text = f"Updating : {chunk_manager.updating}"
-
+        self.chunks_to_load.text = f"Chunks to load : {chunk_manager.chunks_to_load.unfinished_tasks}"
+        self.chunks_to_unload.text = f"Chunks to unload : {chunk_manager.chunks_to_unload.unfinished_tasks}"
+        self.chunks_to_update.text = f"Chunks to update : {chunk_manager.chunks_to_update.unfinished_tasks}"
 
 instance = Gui()

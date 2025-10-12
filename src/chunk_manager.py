@@ -459,16 +459,19 @@ class ChunkManager(Entity):
             for _ in range(min(self.chunk_updates, self.chunks_to_load.qsize())):
                 chunk_id = self.chunks_to_load.get()
                 self.load_chunk(chunk_id)
+                self.chunks_to_load.task_done()
 
         elif not self.chunks_to_unload.empty():
             for _ in range(min(self.chunk_updates, self.chunks_to_unload.qsize())):
                 chunk_id = self.chunks_to_unload.get()
                 self.unload_chunk(chunk_id)
+                self.chunks_to_unload.task_done()
 
         elif not self.chunks_to_update.empty():
             for _ in range(min(self.chunk_updates, self.chunks_to_update.qsize())):
                 chunk_id = self.chunks_to_update.get()
                 self.update_chunk(chunk_id)
+                self.chunks_to_update.task_done()
 
         else:
             self.updating = False
