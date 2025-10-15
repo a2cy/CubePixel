@@ -44,9 +44,14 @@ class ChunkManager(Entity):
 
         self.chunk_updates = settings.settings["chunk_updates"]
 
-        if self.world_loaded:
-            self.player_chunk = self.get_chunk_id(player.position)
-            self.update_chunks_all()
+        if not self.world_loaded:
+            return
+
+        for chunk in self.chunk_objects.values():
+            chunk.set_shader_input("u_fog_distance", self.render_distance * CHUNK_SIZE * 2)
+
+        self.player_chunk = self.get_chunk_id(player.position)
+        self.update_chunks_all()
 
     def validate_world(self, world_name: str) -> bool:
         keys = {"seed": int, "player_position": list, "player_rotation": list, "player_noclip": bool}
@@ -325,7 +330,8 @@ class ChunkManager(Entity):
 
         if chunk_id not in self.chunk_objects:
             chunk = VoxelChunk(CHUNK_SIZE, shader=resource_loader.voxel_shader)
-            chunk.set_shader_input("texture_array", resource_loader.texture_array)
+            chunk.set_shader_input("u_fog_distance", self.render_distance * CHUNK_SIZE * 2)
+            chunk.set_shader_input("u_texture_array", resource_loader.texture_array)
             chunk.set_pos(chunk_id)
             chunk.reparent_to(self)
             self.chunk_objects[chunk_id] = chunk
