@@ -556,4 +556,5 @@ class DebugOverlay(Entity):
         self.chunks_to_unload.text = f"Chunks to unload : {chunk_manager.chunks_to_unload.unfinished_tasks}"
         self.chunks_to_update.text = f"Chunks to update : {chunk_manager.chunks_to_update.unfinished_tasks}"
 
+
 instance = Gui()

@@ -30,9 +30,6 @@ class ResourceLoader:
                     print_warning(f"failed to load voxel type '{file_name}' ({result})")
                     continue
 
-                if data["index"] == 0:
-                    continue
-
                 voxels.append(data)
 
         voxels.sort(key=lambda value: value["index"])

@@ -92,8 +92,8 @@ class Player(Entity):
         self.noclip_acceleration = 6
         self.noclip_mode = False
 
-        self.player_collider = AABBCollider(Vec3(0), Vec3(0, -0.6, 0), Vec3(0.8, 1.8, 0.8))
-        self.voxel_collider = AABBCollider(Vec3(0), Vec3(0), Vec3(1))
+        self.player_collider = AABBCollider(position=Vec3(0), origin=Vec3(0, -0.6, 0), scale=Vec3(0.8, 1.8, 0.8))
+        self.voxel_collider = AABBCollider(position=Vec3(0), origin=Vec3(0), scale=Vec3(1))
 
         self.fov_multiplier = 1.12
         self.camera_pivot = Entity(parent=self)
@@ -298,7 +298,7 @@ class Player(Entity):
 
             self.position += move_delta
 
-        self.update_selector(self.camera_pivot.world_position, self.camera_pivot.forward, 5)
+        self.update_selector(position=self.camera_pivot.world_position, direction=self.camera_pivot.forward, max_distance=5)
 
     def input(self, key: str) -> None:
         from src.chunk_manager import instance as chunk_manager
@@ -316,8 +316,9 @@ class Player(Entity):
 
             point = self.selector.position + self.selector.hit_normal
             self.voxel_collider.position = point
+            hit = self.player_collider.intersect(self.voxel_collider)
 
-            if (not self.player_collider.intersect(self.voxel_collider)[1] or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
+            if (not hit[1] or self.noclip_mode) and not chunk_manager.get_voxel_id(point):
                 chunk_manager.modify_voxel(point, gui.inventory.selection[0])
 
     def on_enable(self) -> None:

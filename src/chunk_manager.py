@@ -22,7 +22,7 @@ class ChunkManager(Entity):
         self.world_loaded = False
         self.world_name = None
         self.finished_loading = False  # Used to disable loading screen
-        self.set_player_position = False  # If set to true, the player position is set to (0, terrain height, 0) after loading finished.
+        self.player_to_terrain = False  # If set to true, the player position is set to (0, terrain height, 0) after loading finished.
         self.player_chunk = (0, 0, 0)  # Used to determine if the player crossed a chunk border
         self.chunks_to_load = Queue()
         self.chunks_to_unload = Queue()
@@ -94,7 +94,7 @@ class ChunkManager(Entity):
         os.makedirs(f"./saves/{world_name}/chunks/", exist_ok=True)
         world_data = {"seed": seed, "player_position": [0.0, 0.0, 0.0], "player_rotation": [0.0, 0.0], "player_noclip": False}
 
-        self.set_player_position = True
+        self.player_to_terrain = True
 
         with open(f"./saves/{world_name}/data.json", "w+") as file:
             json.dump(world_data, file, indent=4)
@@ -222,26 +222,26 @@ class ChunkManager(Entity):
 
         self.loaded_chunks[chunk_id][index] = voxel_id
 
-        self.update_chunk(chunk_id)
+        self.update_mesh(chunk_id)
 
         # Check if neighboring chunks need to be updated
         if x_position == 0:
-            self.update_chunk((chunk_id[0] - CHUNK_SIZE, chunk_id[1], chunk_id[2]))
+            self.update_mesh((chunk_id[0] - CHUNK_SIZE, chunk_id[1], chunk_id[2]))
 
         if x_position == CHUNK_SIZE - 1:
-            self.update_chunk((chunk_id[0] + CHUNK_SIZE, chunk_id[1], chunk_id[2]))
+            self.update_mesh((chunk_id[0] + CHUNK_SIZE, chunk_id[1], chunk_id[2]))
 
         if y_position == 0:
-            self.update_chunk((chunk_id[0], chunk_id[1] - CHUNK_SIZE, chunk_id[2]))
+            self.update_mesh((chunk_id[0], chunk_id[1] - CHUNK_SIZE, chunk_id[2]))
 
         if y_position == CHUNK_SIZE - 1:
-            self.update_chunk((chunk_id[0], chunk_id[1] + CHUNK_SIZE, chunk_id[2]))
+            self.update_mesh((chunk_id[0], chunk_id[1] + CHUNK_SIZE, chunk_id[2]))
 
         if z_position == 0:
-            self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] - CHUNK_SIZE))
+            self.update_mesh((chunk_id[0], chunk_id[1], chunk_id[2] - CHUNK_SIZE))
 
         if z_position == CHUNK_SIZE - 1:
-            self.update_chunk((chunk_id[0], chunk_id[1], chunk_id[2] + CHUNK_SIZE))
+            self.update_mesh((chunk_id[0], chunk_id[1], chunk_id[2] + CHUNK_SIZE))
 
     def get_terrain_height(self, position: Vec3) -> Vec3:
         current_position = round(position, ndigits=0)
@@ -303,7 +303,7 @@ class ChunkManager(Entity):
 
         np.save(filename, self.loaded_chunks.pop(chunk_id))
 
-    def update_chunk(self, chunk_id: tuple) -> None:
+    def update_mesh(self, chunk_id: tuple) -> None:
         if chunk_id not in self.loaded_chunks:
             return
 
@@ -341,20 +341,20 @@ class ChunkManager(Entity):
         chunk.update(vertex_data)
 
     def update_chunks_all(self) -> None:
-        chunk_ids = []
+        chunk_ids = set()
 
         for i in range(self.world_size**3):
             x = i // (self.world_size * self.world_size) - self.render_distance
             y = i // self.world_size % self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
 
-            chunk_id = (
-                int(x * CHUNK_SIZE + self.player_chunk[0]),
-                int(y * CHUNK_SIZE + self.player_chunk[1]),
-                int(z * CHUNK_SIZE + self.player_chunk[2]),
+            chunk_ids.add(
+                (
+                    int(x * CHUNK_SIZE + self.player_chunk[0]),
+                    int(y * CHUNK_SIZE + self.player_chunk[1]),
+                    int(z * CHUNK_SIZE + self.player_chunk[2]),
+                )
             )
-
-            chunk_ids.append(chunk_id)
 
         for chunk_id in chunk_ids:
             if chunk_id not in self.loaded_chunks:
@@ -366,6 +366,7 @@ class ChunkManager(Entity):
 
     def update_chunks_slice_x(self, direction: int) -> None:
         x = self.render_distance * direction
+
         for i in range(self.world_size**2):
             y = i // self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
@@ -388,6 +389,7 @@ class ChunkManager(Entity):
 
     def update_chunks_slice_y(self, direction: int) -> None:
         y = self.render_distance * direction
+
         for i in range(self.world_size**2):
             x = i // self.world_size - self.render_distance
             z = i % self.world_size - self.render_distance
@@ -410,6 +412,7 @@ class ChunkManager(Entity):
 
     def update_chunks_slice_z(self, direction: int) -> None:
         z = self.render_distance * direction
+
         for i in range(self.world_size**2):
             y = i // self.world_size - self.render_distance
             x = i % self.world_size - self.render_distance
@@ -448,48 +451,48 @@ class ChunkManager(Entity):
             if x_diff > 1 or y_diff > 1 or z_diff > 1:
                 self.player_chunk = new_player_chunk
                 self.update_chunks_all()
-                return
 
-            if abs(x_diff) == 1:
-                self.update_chunks_slice_x(x_diff)
+            else:
+                if x_diff:
+                    self.update_chunks_slice_x(x_diff)
 
-            if abs(y_diff) == 1:
-                self.update_chunks_slice_y(y_diff)
+                if y_diff:
+                    self.update_chunks_slice_y(y_diff)
 
-            if abs(z_diff) == 1:
-                self.update_chunks_slice_z(z_diff)
+                if z_diff:
+                    self.update_chunks_slice_z(z_diff)
 
-            self.player_chunk = new_player_chunk
+                self.player_chunk = new_player_chunk
 
         if not self.chunks_to_load.empty():
-            for _ in range(min(self.chunk_updates, self.chunks_to_load.qsize())):
+            for _ in range(min(self.chunk_updates, self.chunks_to_load.unfinished_tasks)):
                 chunk_id = self.chunks_to_load.get()
                 self.load_chunk(chunk_id)
                 self.chunks_to_load.task_done()
 
         elif not self.chunks_to_unload.empty():
-            for _ in range(min(self.chunk_updates, self.chunks_to_unload.qsize())):
+            for _ in range(min(self.chunk_updates, self.chunks_to_unload.unfinished_tasks)):
                 chunk_id = self.chunks_to_unload.get()
                 self.unload_chunk(chunk_id)
                 self.chunks_to_unload.task_done()
 
         elif not self.chunks_to_update.empty():
-            for _ in range(min(self.chunk_updates, self.chunks_to_update.qsize())):
+            for _ in range(min(self.chunk_updates, self.chunks_to_update.unfinished_tasks)):
                 chunk_id = self.chunks_to_update.get()
-                self.update_chunk(chunk_id)
+                self.update_mesh(chunk_id)
                 self.chunks_to_update.task_done()
 
         else:
             self.updating = False
             self.finished_loading = True
 
-            if self.set_player_position:
-                player_position = self.get_terrain_height(Vec3(0))
+            if self.player_to_terrain:
+                terrain_height = self.get_terrain_height(Vec3(0))
 
-                if player_position:
-                    player.position = player_position + Vec3(0, 2, 0)
+                if terrain_height:
+                    player.position = terrain_height + Vec3(0, 2, 0)
 
-                self.set_player_position = False
+                self.player_to_terrain = False
 
 
 instance = ChunkManager()
