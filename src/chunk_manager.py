@@ -8,7 +8,7 @@ from ursina import Entity, Vec3, print_info, print_warning
 from .voxel_chunk import VoxelChunk
 from .settings import instance as settings
 from .resource_loader import instance as resource_loader
-from c_extensions import WorldGenerator
+from world_tools import WorldGenerator
 
 
 CHUNK_SIZE = 32
