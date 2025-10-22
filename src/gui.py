@@ -1,4 +1,4 @@
-from ursina import Entity, Text, CheckBox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
+from ursina import Entity, Text, Checkbox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
 from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
 from .resource_loader import instance as resource_loader
@@ -359,7 +359,7 @@ class Options(MenuContent):
 
         self.debug_label = Text(parent=self, text="Debug Overlay", scale=1.2, position=Vec2(-0.28, -0.02), origin=Vec2(-0.5, 0))
 
-        self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position + Vec2(0.28, 0), start_value=False)
+        self.debug_toggle = Checkbox(parent=self, position=self.debug_label.position + Vec2(0.28, 0), start_value=False)
 
         def toggle_debug() -> None:
             self.debug_toggle.value = not self.debug_toggle.value

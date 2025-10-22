@@ -72,7 +72,7 @@ class ChunkManager(Entity):
             return
 
         for item in player_position:
-            if not (isinstance(item, int) or isinstance(item, float)):
+            if not (isinstance(item, (int, float))):
                 print_warning(f"Failed to load world '{world_name}' (invalid player position in data.json)")
                 return
 
@@ -81,7 +81,7 @@ class ChunkManager(Entity):
             return
 
         for item in player_rotation:
-            if not (isinstance(item, int) or isinstance(item, float)):
+            if not (isinstance(item, (int, float))):
                 print_warning(f"Failed to load world '{world_name}' (invalid player rotation in data.json)")
                 return
 
