@@ -356,13 +356,11 @@ class ChunkManager(Entity):
                 )
             )
 
-        for chunk_id in chunk_ids:
-            if chunk_id not in self.loaded_chunks:
-                self.chunks_to_load.put(chunk_id)
+        for chunk_id in chunk_ids - self.loaded_chunks.keys():
+            self.chunks_to_load.put(chunk_id)
 
-        for chunk_id in self.loaded_chunks.copy():
-            if chunk_id not in chunk_ids:
-                self.chunks_to_unload.put(chunk_id)
+        for chunk_id in self.loaded_chunks.keys() - chunk_ids:
+            self.chunks_to_unload.put(chunk_id)
 
     def update(self) -> None:
         from src.player import instance as player
