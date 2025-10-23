@@ -2,7 +2,7 @@ import timeit
 import numpy as np
 
 from src.resource_loader import instance as resource_loader
-from c_extensions import WorldGenerator
+from world_tools import WorldGenerator
 
 CHUNK_SIZE = 32
 RUN_NUM = 10000
