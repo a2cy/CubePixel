@@ -364,75 +364,6 @@ class ChunkManager(Entity):
             if chunk_id not in chunk_ids:
                 self.chunks_to_unload.put(chunk_id)
 
-    def update_chunks_slice_x(self, direction: int) -> None:
-        x = self.render_distance * direction
-
-        for i in range(self.world_size**2):
-            y = i // self.world_size - self.render_distance
-            z = i % self.world_size - self.render_distance
-
-            self.chunks_to_load.put(
-                (
-                    int((x + direction) * CHUNK_SIZE + self.player_chunk[0]),
-                    int(y * CHUNK_SIZE + self.player_chunk[1]),
-                    int(z * CHUNK_SIZE + self.player_chunk[2]),
-                )
-            )
-
-            self.chunks_to_unload.put(
-                (
-                    int(-x * CHUNK_SIZE + self.player_chunk[0]),
-                    int(y * CHUNK_SIZE + self.player_chunk[1]),
-                    int(z * CHUNK_SIZE + self.player_chunk[2]),
-                )
-            )
-
-    def update_chunks_slice_y(self, direction: int) -> None:
-        y = self.render_distance * direction
-
-        for i in range(self.world_size**2):
-            x = i // self.world_size - self.render_distance
-            z = i % self.world_size - self.render_distance
-
-            self.chunks_to_load.put(
-                (
-                    int(x * CHUNK_SIZE + self.player_chunk[0]),
-                    int((y + direction) * CHUNK_SIZE + self.player_chunk[1]),
-                    int(z * CHUNK_SIZE + self.player_chunk[2]),
-                )
-            )
-
-            self.chunks_to_unload.put(
-                (
-                    int(x * CHUNK_SIZE + self.player_chunk[0]),
-                    int(-y * CHUNK_SIZE + self.player_chunk[1]),
-                    int(z * CHUNK_SIZE + self.player_chunk[2]),
-                )
-            )
-
-    def update_chunks_slice_z(self, direction: int) -> None:
-        z = self.render_distance * direction
-
-        for i in range(self.world_size**2):
-            y = i // self.world_size - self.render_distance
-            x = i % self.world_size - self.render_distance
-
-            self.chunks_to_load.put(
-                (
-                    int(x * CHUNK_SIZE + self.player_chunk[0]),
-                    int(y * CHUNK_SIZE + self.player_chunk[1]),
-                    int((z + direction) * CHUNK_SIZE + self.player_chunk[2]),
-                )
-            )
-
-            self.chunks_to_unload.put(
-                (
-                    int(x * CHUNK_SIZE + self.player_chunk[0]),
-                    int(y * CHUNK_SIZE + self.player_chunk[1]),
-                    int(-z * CHUNK_SIZE + self.player_chunk[2]),
-                )
-            )
-
     def update(self) -> None:
         from src.player import instance as player
 
@@ -442,27 +373,6 @@ class ChunkManager(Entity):
         self.updating = True
 
         new_player_chunk = self.get_chunk_id(player.position)
-
-        if not self.player_chunk == new_player_chunk:
-            x_diff = (new_player_chunk[0] - self.player_chunk[0]) / CHUNK_SIZE
-            y_diff = (new_player_chunk[1] - self.player_chunk[1]) / CHUNK_SIZE
-            z_diff = (new_player_chunk[2] - self.player_chunk[2]) / CHUNK_SIZE
-
-            if x_diff > 1 or y_diff > 1 or z_diff > 1:
-                self.player_chunk = new_player_chunk
-                self.update_chunks_all()
-
-            else:
-                if x_diff:
-                    self.update_chunks_slice_x(x_diff)
-
-                if y_diff:
-                    self.update_chunks_slice_y(y_diff)
-
-                if z_diff:
-                    self.update_chunks_slice_z(z_diff)
-
-                self.player_chunk = new_player_chunk
 
         if not self.chunks_to_load.empty():
             for _ in range(min(self.chunk_updates, self.chunks_to_load.unfinished_tasks)):
@@ -481,6 +391,10 @@ class ChunkManager(Entity):
                 chunk_id = self.chunks_to_update.get()
                 self.update_mesh(chunk_id)
                 self.chunks_to_update.task_done()
+
+        elif not self.player_chunk == new_player_chunk:
+            self.player_chunk = new_player_chunk
+            self.update_chunks_all()
 
         else:
             self.updating = False
