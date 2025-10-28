@@ -64,7 +64,7 @@ class MainMenu(Entity):
 
         from ursina import application
 
-        self.background = Entity(parent=self, model="quad", texture="shore", scale=window.aspect_ratio, z=2)
+        self.background = Entity(parent=self, model="quad", texture="shore", scale_x=window.aspect_ratio, z=2)
 
         self.background_panel = Entity(parent=self, model="quad", color=color.black50, position=window.left + Vec2(0.25, 0), scale=Vec2(0.4, 1), z=1)
 
@@ -469,7 +469,7 @@ class LoadingMenu(Entity):
     def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
-        self.background = Entity(parent=self, model="quad", texture="shore", scale=window.aspect_ratio, z=2)
+        self.background = Entity(parent=self, model="quad", texture="shore", scale_x=window.aspect_ratio, z=2)
 
         self.background_panel = Entity(parent=self, model=Quad(aspect=0.25 / 0.2, radius=0.1), color=color.black50, scale=Vec2(0.25, 0.2), z=1)
 
