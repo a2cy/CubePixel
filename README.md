@@ -50,5 +50,6 @@ python main.py
 
 ## Credits
 
-- [Ursina Engine](https://github.com/pokepetter/ursina) (MIT License)
+- [ursina engine](https://www.ursinaengine.org/) (MIT License)
 - [FastNoiseLite](https://github.com/Auburn/FastNoiseLite) (MIT License)
+- [phosphor-icons](https://phosphoricons.com/) (MIT License)

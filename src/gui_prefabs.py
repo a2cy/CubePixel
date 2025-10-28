@@ -51,11 +51,11 @@ class MenuContent(Entity):
     def __init__(self, text: str, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.background_panel = Entity(
+        self._background_panel = Entity(
             parent=self, model="quad", color=color.black50, position=window.right + Vec2(-0.65, 0), scale=Vec2(1.2, 1), z=1
         )
 
-        self.panel_overlay = Entity(
+        self._panel_overlay = Entity(
             parent=self,
             model=Mesh(vertices=[(0.5, -0.5, 0), (0.5, 0.5, 0), (-0.5, 0.5, 0), (-0.5, -0.5, 0)], mode="line", thickness=2),
             color=color.black90,
@@ -64,7 +64,7 @@ class MenuContent(Entity):
             z=1,
         )
 
-        self.label = Text(parent=self, text=text, scale=1.5, position=window.right + Vec2(-0.65, 0.42), origin=Vec2(0, 0))
+        self._label = Text(parent=self, text=text, scale=1.5, position=window.right + Vec2(-0.65, 0.42), origin=Vec2(0, 0))
 
 
 class InputField(uInputField):
@@ -73,10 +73,7 @@ class InputField(uInputField):
 
         self.color = color.black50
         self.highlight_color = color.black66
-
-        self.background = Entity(
-            parent=self, model=Mesh(vertices=[(-0.46, -0.4, 0), (0.46, -0.4, 0)], mode="line", thickness=2), color=self.default_color
-        )
+        self.text_field.cursor.origin_y = -0.4
 
 
 class ButtonPrefab(Button):
@@ -171,3 +168,64 @@ class ThinSlider(Slider):
 
         self.bg.model = Quad(scale=(0.525, Text.size / 2), radius=Text.size / 4, segments=3)
         self.bg.origin = self.bg.origin
+
+
+class Scrollbar(Entity):
+    def __init__(self, max_buttons: int, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+        self.max_buttons = max_buttons
+        self.button_count = 1
+        self.on_scroll = None
+        self._scroll = 0
+
+        self._bg = Entity(parent=self, model=Quad(scale=(0.01, 0.6), radius=0.005, segments=3), color=color.black66)
+        self._scroll_indicator = Entity(parent=self, model="quad", texture="caret-circle-up-down", color=color.white, scale=0.04)
+        self._up_indicator = Button(
+            parent=self,
+            model="quad",
+            texture="caret-circle-up",
+            color=color.white,
+            scale=0.04,
+            position=Vec2(0, 0.35),
+            highlight_scale=1.2,
+            on_click=self.scroll_up,
+        )
+        self._down_indicator = Button(
+            parent=self,
+            model="quad",
+            texture="caret-circle-down",
+            color=color.white,
+            scale=0.04,
+            position=Vec2(0, -0.35),
+            highlight_scale=1.2,
+            on_click=self.scroll_down,
+        )
+
+    def scroll_up(self) -> None:
+        if self._scroll > 0:
+            self._scroll -= 1
+            self.update_indicator()
+
+    def scroll_down(self) -> None:
+        if self._scroll + self.max_buttons < self.button_count:
+            self._scroll += 1
+            self.update_indicator()
+
+    def update_indicator(self) -> None:
+        scroll_percent = self._scroll / (self.button_count - self.max_buttons) if self.button_count > self.max_buttons else 0
+        self._scroll_indicator.y = 0.3 - scroll_percent * 0.6
+
+        if callable(self.on_scroll):
+            self.on_scroll(self._scroll)
+
+    def reset(self) -> None:
+        self._scroll = 0
+        self.update_indicator()
+
+    def input(self, key: str) -> None:
+        if key == "scroll down":
+            self.scroll_down()
+
+        if key == "scroll up":
+            self.scroll_up()

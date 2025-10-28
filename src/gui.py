@@ -1,6 +1,6 @@
-from ursina import Entity, Text, Checkbox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
+from ursina import Entity, Text, Button, Checkbox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
-from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider
+from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider, Scrollbar
 from .resource_loader import instance as resource_loader
 from .chunk_manager import instance as chunk_manager
 from .player import instance as player
@@ -214,10 +214,17 @@ class WorldLoading(MenuContent):
         self.max_buttons = 11
         self.button_parent = Entity(parent=self, position=window.right + Vec2(-0.65, 0))
 
-        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_up", scale=0.08, position=window.right + Vec2(-0.35, 0.35), enabled=False)
-        self.scroll_down = Entity(
-            parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right + Vec2(-0.35, -0.3), enabled=False
-        )
+        def on_scroll(value):
+            for i, button in enumerate(self.button_parent.children):
+                if i < value or i >= value + self.max_buttons:
+                    button.enabled = False
+                else:
+                    button.enabled = True
+
+            self.button_parent.y = value * 0.055
+
+        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons, scale=0.9, position=window.right + Vec2(-1.0, 0.025))
+        self.scrollbar.on_scroll = on_scroll
 
         def load_world() -> None:
             if not self.selection:
@@ -247,36 +254,8 @@ class WorldLoading(MenuContent):
         self.delete_button = ButtonPrefab(parent=self, text="Delete World", position=window.right + Vec2(-0.4, -0.4), on_click=delete_world)
 
     @property
-    def scroll(self) -> int:
-        return self._scroll
-
-    @scroll.setter
-    def scroll(self, value: int) -> None:
-        self._scroll = value
-
-        for i, button in enumerate(self.button_parent.children):
-            if i < value or i >= value + self.max_buttons:
-                button.enabled = False
-            else:
-                button.enabled = True
-
-        self.scroll_up.enabled = value > 0
-        self.scroll_down.enabled = self.max_buttons < len(self.button_parent.children) and value < len(self.button_parent.children) - self.max_buttons
-
-        self.button_parent.y = value * 0.055
-
-    @property
     def selection(self) -> str:
         return [c.path for c in self.button_parent.children if c.selected]
-
-    def input(self, key: str) -> None:
-        if key == "scroll down":
-            if self.scroll + self.max_buttons < len(self.button_parent.children):
-                self.scroll += 1
-
-        if key == "scroll up":
-            if self.scroll > 0:
-                self.scroll -= 1
 
     def on_enable(self) -> None:
         import os
@@ -292,9 +271,10 @@ class WorldLoading(MenuContent):
         files.sort()
 
         for i, file in enumerate(files):
-            FileButton(parent=self.button_parent, path=file, text=file, y=-i * 0.055 + 0.3)
+            FileButton(parent=self.button_parent, path=file, text=file, y=0.3 - i * 0.055)
 
-        self.scroll = 0
+        self.scrollbar.button_count = len(self.button_parent.children)
+        self.scrollbar.reset()
 
 
 class Options(MenuContent):
@@ -368,7 +348,7 @@ class Options(MenuContent):
 
         self.debug_toggle.on_click = toggle_debug
 
-        from ursina import Button, Tooltip
+        from ursina import Tooltip
 
         info_text = """  w,a,s,d - movement
 
@@ -409,11 +389,7 @@ class Inventory(Entity):
         self.max_buttons_x = 10
         self.max_buttons_y = 8
         self.button_parent = Entity(parent=self, z=-1)
-
-        self.scroll_up = Entity(parent=self, model="quad", texture="arrow_up", scale=0.08, position=window.right + Vec2(-0.36, 0.35))
-        self.scroll_down = Entity(parent=self, model="quad", texture="arrow_down", scale=0.08, position=window.right + Vec2(-0.36, -0.35))
-
-        self.background_panel = Entity(parent=self, model=Quad(aspect=1 / 0.8, radius=0.02), color=color.black50, scale=Vec2(1, 0.8), z=1)
+        self._background_panel = Entity(parent=self, model=Quad(aspect=1 / 0.8, radius=0.02), color=color.black50, scale=Vec2(1, 0.8), z=1)
 
         button_count = 0
         for i in range(resource_loader.type_count):
@@ -426,43 +402,25 @@ class Inventory(Entity):
 
             button_count += 1
 
-    @property
-    def scroll(self) -> int:
-        return self._scroll
+        def on_scroll(value):
+            for i, button in enumerate(self.button_parent.children):
+                if i / self.max_buttons_x < value or i / self.max_buttons_x >= value + self.max_buttons_y:
+                    button.enabled = False
+                else:
+                    button.enabled = True
 
-    @scroll.setter
-    def scroll(self, value: int) -> None:
-        self._scroll = value
+            self.button_parent.y = value * 0.1
 
-        for i, button in enumerate(self.button_parent.children):
-            if i / self.max_buttons_x < value or i / self.max_buttons_x >= value + self.max_buttons_y:
-                button.enabled = False
-            else:
-                button.enabled = True
-
-        self.scroll_up.enabled = value > 0
-        self.scroll_down.enabled = (
-            self.max_buttons_y < len(self.button_parent.children) / self.max_buttons_x
-            and value < len(self.button_parent.children) / self.max_buttons_x - self.max_buttons_y
-        )
-
-        self.button_parent.y = value * 0.1
+        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons_y, scale=1, position=Vec2(-0.54, 0.0))
+        self.scrollbar.on_scroll = on_scroll
+        self.scrollbar.button_count = len(self.button_parent.children) / self.max_buttons_x
 
     @property
     def selection(self) -> str:
         return [c.voxel_id for c in self.button_parent.children if c.selected]
 
-    def input(self, key: str) -> None:
-        if key == "scroll down":
-            if self.scroll + self.max_buttons_y < len(self.button_parent.children) / self.max_buttons_x:
-                self.scroll += 1
-
-        if key == "scroll up":
-            if self.scroll > 0:
-                self.scroll -= 1
-
     def on_enable(self) -> None:
-        self.scroll = 0
+        self.scrollbar.reset()
 
 
 class LoadingMenu(Entity):
@@ -475,7 +433,7 @@ class LoadingMenu(Entity):
 
         self.title = Text(parent=self, text="Loading ...", scale=1.8, position=Vec2(0, 0.03), origin=Vec2(0, 0))
 
-        self.indicator = Entity(parent=self, model="quad", texture="cog", scale=0.05, position=Vec2(0, -0.04))
+        self.indicator = Entity(parent=self, model="quad", texture="spinner", scale=0.06, position=Vec2(0, -0.04))
 
     def update(self) -> None:
         if chunk_manager.finished_loading:
