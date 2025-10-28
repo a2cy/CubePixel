@@ -1,10 +1,10 @@
 from ursina import Entity, Text, Button, Checkbox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
 
 from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider, Scrollbar
-from .resource_loader import instance as resource_loader
-from .chunk_manager import instance as chunk_manager
-from .player import instance as player
-from .settings import instance as settings
+from .resource_loader import resource_loader
+from .chunk_manager import chunk_manager
+from .player import player
+from .settings import settings
 
 
 class Gui(Entity):
@@ -147,15 +147,15 @@ class PauseMenu(Entity):
         self.options = Options(parent=self)
 
         def _continue() -> None:
-            instance.ui_state.state = ""
+            gui.ui_state.state = ""
             player.enable()
 
         self.continue_button = MenuButton(parent=self, text="Continue Playing", position=window.left + Vec2(0.25, 0.35), on_click=_continue)
 
         def _return() -> None:
-            instance.ui_state.state = "main_menu"
+            gui.ui_state.state = "main_menu"
             chunk_manager.unload_world()
-            instance.sky.disable()
+            gui.sky.disable()
 
         self.return_button = MenuButton(
             parent=self, text="Return To Menu", default_color=color.rgb(0.7, 0, 0), position=window.left + Vec2(0.25, 0.25), on_click=_return
@@ -185,18 +185,18 @@ class WorldCreation(MenuContent):
 
         def create_world() -> None:
             if not self.world_name.text:
-                instance.main_menu.notification.notify("Missing world name")
+                gui.main_menu.notification.notify("Missing world name")
                 return
 
             if not self.world_seed.text:
-                instance.main_menu.notification.notify("Missing world seed")
+                gui.main_menu.notification.notify("Missing world seed")
                 return
 
             if not chunk_manager.create_world(self.world_name.text, int(self.world_seed.text)):
-                instance.main_menu.notification.notify("World name already used")
+                gui.main_menu.notification.notify("World name already used")
                 return
 
-            instance.ui_state.state = "loading_menu"
+            gui.ui_state.state = "loading_menu"
 
         self.create_button = ButtonPrefab(parent=self, text="Create World", position=window.right + Vec2(-0.65, 0), on_click=create_world)
 
@@ -228,26 +228,26 @@ class WorldLoading(MenuContent):
 
         def load_world() -> None:
             if not self.selection:
-                instance.main_menu.notification.notify("No world selected")
+                gui.main_menu.notification.notify("No world selected")
                 return
 
             if not chunk_manager.load_world(self.selection[0]):
-                instance.main_menu.notification.notify("Failed to load world")
+                gui.main_menu.notification.notify("Failed to load world")
                 return
 
-            instance.ui_state.state = "loading_menu"
+            gui.ui_state.state = "loading_menu"
 
         self.load_button = ButtonPrefab(parent=self, text="Load World", position=window.right + Vec2(-0.9, -0.4), on_click=load_world)
 
         def delete_world() -> None:
             if not self.selection:
-                instance.main_menu.notification.notify("No world selected")
+                gui.main_menu.notification.notify("No world selected")
                 return
 
             try:
                 chunk_manager.delete_world(self.selection[0])
             except Exception:
-                instance.main_menu.notification.notify("Failed to delete world")
+                gui.main_menu.notification.notify("Failed to delete world")
 
             self.on_enable()
 
@@ -344,7 +344,7 @@ class Options(MenuContent):
         def toggle_debug() -> None:
             self.debug_toggle.value = not self.debug_toggle.value
 
-            instance.debug_overlay.enabled = self.debug_toggle.value
+            gui.debug_overlay.enabled = self.debug_toggle.value
 
         self.debug_toggle.on_click = toggle_debug
 
@@ -437,14 +437,14 @@ class LoadingMenu(Entity):
 
     def update(self) -> None:
         if chunk_manager.finished_loading:
-            instance.ui_state.state = ""
+            gui.ui_state.state = ""
 
         self.indicator.rotation_z += 150 * time.dt
 
     def on_disable(self) -> None:
         if chunk_manager.world_loaded:
             player.enable()
-            instance.sky.enable()
+            gui.sky.enable()
 
 
 class Notification(Entity):
@@ -515,4 +515,4 @@ class DebugOverlay(Entity):
         self.chunks_to_update.text = f"Chunks to update : {chunk_manager.chunks_to_update.unfinished_tasks}"
 
 
-instance = Gui()
+gui = Gui()

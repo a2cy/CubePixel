@@ -1,7 +1,7 @@
 import timeit
 import numpy as np
 
-from src.resource_loader import instance as resource_loader
+from src.resource_loader import resource_loader
 from world_tools import WorldGenerator
 
 CHUNK_SIZE = 32

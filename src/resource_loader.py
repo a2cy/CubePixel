@@ -92,4 +92,4 @@ class ResourceLoader:
                 return f"missing texture '{texture_name}'"
 
 
-instance = ResourceLoader()
+resource_loader = ResourceLoader()

@@ -122,7 +122,7 @@ class ItemButton(Button):
     def __init__(self, voxel_id: int, **kwargs) -> None:
         super().__init__(model="quad", **kwargs)
 
-        from src.resource_loader import instance as resource_loader
+        from src.resource_loader import resource_loader
 
         self.voxel_id = voxel_id
         self.scale = 0.05

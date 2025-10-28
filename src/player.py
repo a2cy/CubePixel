@@ -1,7 +1,7 @@
 from ursina import Entity, Vec3, held_keys, time, color, clamp, lerp, camera, mouse
 
-from .settings import instance as settings
-from .resource_loader import instance as resource_loader
+from .settings import settings
+from .resource_loader import resource_loader
 
 
 class AABBCollider:
@@ -114,7 +114,7 @@ class Player(Entity):
     def update_selector(self, position: Vec3, direction: Vec3, max_distance: int) -> None:
         self.selector.enabled = False
 
-        from src.chunk_manager import instance as chunk_manager
+        from src.chunk_manager import chunk_manager
 
         current_position = round(position, ndigits=0)
         current_distance = 0
@@ -161,7 +161,7 @@ class Player(Entity):
                 break
 
     def update(self) -> None:
-        from src.chunk_manager import instance as chunk_manager
+        from src.chunk_manager import chunk_manager
 
         if not chunk_manager.finished_loading:
             return
@@ -301,8 +301,8 @@ class Player(Entity):
         self.update_selector(position=self.camera_pivot.world_position, direction=self.camera_pivot.forward, max_distance=5)
 
     def input(self, key: str) -> None:
-        from src.chunk_manager import instance as chunk_manager
-        from src.gui import instance as gui
+        from src.chunk_manager import chunk_manager
+        from src.gui import gui
 
         if key == "n":
             self.noclip_mode = not self.noclip_mode
@@ -331,4 +331,4 @@ class Player(Entity):
         mouse.locked = False
 
 
-instance = Player(enabled=False)
+player = Player(enabled=False)

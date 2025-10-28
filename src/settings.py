@@ -26,4 +26,4 @@ class Settings:
             json.dump(self.settings, file, indent=4)
 
 
-instance = Settings()
+settings = Settings()

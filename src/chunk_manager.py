@@ -6,8 +6,8 @@ from queue import Queue
 from ursina import Entity, Vec3, print_info, print_warning
 
 from .voxel_chunk import VoxelChunk
-from .settings import instance as settings
-from .resource_loader import instance as resource_loader
+from .settings import settings
+from .resource_loader import resource_loader
 from world_tools import WorldGenerator
 
 
@@ -37,8 +37,6 @@ class ChunkManager(Entity):
     def reload(self) -> None:
         # Loads settings stored in settings.json
 
-        from src.player import instance as player
-
         self.render_distance = settings.settings["render_distance"]
         self.world_size = self.render_distance * 2 + 1
 
@@ -50,6 +48,7 @@ class ChunkManager(Entity):
         for chunk in self.chunk_objects.values():
             chunk.set_shader_input("u_fog_distance", self.render_distance * CHUNK_SIZE * 2)
 
+        from src.player import player
         self.player_chunk = self.get_chunk_id(player.position)
         self.update_chunks_all()
 
@@ -117,7 +116,7 @@ class ChunkManager(Entity):
             os.removedirs(f"./saves/{world_name}")
 
     def load_world(self, world_name: str) -> bool:
-        from src.player import instance as player
+        from src.player import player
 
         if self.world_loaded:
             return
@@ -159,7 +158,7 @@ class ChunkManager(Entity):
         return True
 
     def unload_world(self) -> None:
-        from src.player import instance as player
+        from src.player import player
 
         if not self.world_loaded:
             return
@@ -363,7 +362,7 @@ class ChunkManager(Entity):
             self.chunks_to_unload.put(chunk_id)
 
     def update(self) -> None:
-        from src.player import instance as player
+        from src.player import player
 
         if not self.world_loaded:
             return
@@ -407,4 +406,4 @@ class ChunkManager(Entity):
                 self.player_to_terrain = False
 
 
-instance = ChunkManager()
+chunk_manager = ChunkManager()
