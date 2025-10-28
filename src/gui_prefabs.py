@@ -175,12 +175,12 @@ class Scrollbar(Entity):
         super().__init__(**kwargs)
 
         self.max_buttons = max_buttons
-        self.button_count = 1
+        self.button_count = 0
         self.on_scroll = None
         self._scroll = 0
 
         self._bg = Entity(parent=self, model=Quad(scale=(0.01, 0.6), radius=0.005, segments=3), color=color.black66)
-        self._scroll_indicator = Entity(parent=self, model="quad", texture="caret-circle-up-down", color=color.white, scale=0.04)
+        self._scroll_indicator = Entity(parent=self, model="quad", texture="caret-circle-up-down", y=0.3, color=color.white, scale=0.04)
         self._up_indicator = Button(
             parent=self,
             model="quad",

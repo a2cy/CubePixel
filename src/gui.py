@@ -223,7 +223,7 @@ class WorldLoading(MenuContent):
 
             self.button_parent.y = value * 0.055
 
-        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons, scale=0.9, position=window.right + Vec2(-1.0, 0.025))
+        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons, position=window.right + Vec2(-1.0, 0.025))
         self.scrollbar.on_scroll = on_scroll
 
         def load_world() -> None:
@@ -411,7 +411,7 @@ class Inventory(Entity):
 
             self.button_parent.y = value * 0.1
 
-        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons_y, scale=1, position=Vec2(-0.54, 0.0))
+        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons_y, position=Vec2(-0.54, 0.0))
         self.scrollbar.on_scroll = on_scroll
         self.scrollbar.button_count = len(self.button_parent.children) / self.max_buttons_x
 
