@@ -1,6 +1,4 @@
-import numpy as np
-
-from panda3d.core import NodePath, BoundingSphere, TransparencyAttrib, Vec3, Shader
+from panda3d.core import NodePath, BoundingSphere, TransparencyAttrib, Vec3
 from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles
 
 
@@ -12,7 +10,7 @@ class VoxelChunk(NodePath):
     vertex_format.add_array(v_array)
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
-    def __init__(self, chunk_size: int | float, shader: Shader = None, **kwargs) -> None:
+    def __init__(self, chunk_size: int, shader=None, **kwargs) -> None:
         super().__init__("voxel_chunk", **kwargs)
 
         if shader:
@@ -32,7 +30,7 @@ class VoxelChunk(NodePath):
 
         self.geom_node.add_geom(geom)
 
-    def update(self, vertex_data: np.ndarray) -> None:
+    def update(self, vertex_data: bytearray) -> None:
         geom = self.geom_node.modify_geom(0)
 
         v_data = geom.modify_vertex_data()

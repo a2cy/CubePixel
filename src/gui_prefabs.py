@@ -1,5 +1,4 @@
-from ursina import Entity, Button, Slider, Text, Mesh, Vec2, color, Quad, window
-from ursina import InputField as uInputField
+from ursina import Entity, Button, Slider, Text, InputField, Mesh, Vec2, color, Quad, window
 
 from .resource_loader import resource_loader
 
@@ -67,7 +66,7 @@ class MenuContent(Entity):
         self._label = Text(parent=self, text=text, scale=1.5, position=window.right + Vec2(-0.65, 0.42), origin=Vec2(0, 0))
 
 
-class InputField(uInputField):
+class InputFieldPrefab(InputField):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 

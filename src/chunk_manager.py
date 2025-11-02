@@ -26,7 +26,7 @@ class ChunkManager(Entity):
         self.player_chunk = (0, 0, 0)  # Used to determine if the player crossed a chunk border
         self.chunks_to_load = Queue()
         self.chunks_to_unload = Queue()
-        self.chunks_to_update = Queue()
+        self.meshes_to_update = Queue()
         self.chunk_objects = {}
         self.loaded_chunks = {}
 
@@ -46,9 +46,10 @@ class ChunkManager(Entity):
             return
 
         for chunk in self.chunk_objects.values():
-            chunk.set_shader_input("u_fog_distance", self.render_distance * CHUNK_SIZE * 2)
+            chunk.set_shader_inputs(u_fog_distance=self.render_distance * CHUNK_SIZE * 2)
 
         from src.player import player
+
         self.player_chunk = self.get_chunk_id(player.position)
         self.update_chunks_all()
 
@@ -166,7 +167,7 @@ class ChunkManager(Entity):
         self.world_loaded = False
         self.chunks_to_load = Queue()
         self.chunks_to_unload = Queue()
-        self.chunks_to_update = Queue()
+        self.meshes_to_update = Queue()
 
         for chunk_id in self.loaded_chunks.copy():
             self.unload_chunk(chunk_id)
@@ -244,13 +245,8 @@ class ChunkManager(Entity):
 
     def get_terrain_height(self, position: Vec3) -> Vec3:
         current_position = round(position, ndigits=0)
-
         voxel_id = self.get_voxel_id(current_position)
-
-        if voxel_id and resource_loader.collision_types[voxel_id - 1]:
-            step_y = 1
-        else:
-            step_y = -1
+        step_y = 1 if voxel_id and resource_loader.collision_types[voxel_id - 1] else -1
 
         for _ in range(50):
             voxel_id = self.get_voxel_id(current_position)
@@ -286,9 +282,9 @@ class ChunkManager(Entity):
             )
 
             if neighbor_id in self.chunk_objects:
-                self.chunks_to_update.put(neighbor_id)
+                self.meshes_to_update.put(neighbor_id)
 
-        self.chunks_to_update.put(chunk_id)
+        self.meshes_to_update.put(chunk_id)
 
     def unload_chunk(self, chunk_id: tuple) -> None:
         if chunk_id not in self.loaded_chunks:
@@ -329,8 +325,7 @@ class ChunkManager(Entity):
 
         if chunk_id not in self.chunk_objects:
             chunk = VoxelChunk(CHUNK_SIZE, shader=resource_loader.voxel_shader)
-            chunk.set_shader_input("u_fog_distance", self.render_distance * CHUNK_SIZE * 2)
-            chunk.set_shader_input("u_texture_array", resource_loader.texture_array)
+            chunk.set_shader_inputs(u_fog_distance=self.render_distance * CHUNK_SIZE * 2, u_texture_array=resource_loader.texture_array)
             chunk.set_pos(chunk_id)
             chunk.reparent_to(self)
             self.chunk_objects[chunk_id] = chunk
@@ -383,11 +378,11 @@ class ChunkManager(Entity):
                 self.unload_chunk(chunk_id)
                 self.chunks_to_unload.task_done()
 
-        elif not self.chunks_to_update.empty():
-            for _ in range(min(self.chunk_updates, self.chunks_to_update.unfinished_tasks)):
-                chunk_id = self.chunks_to_update.get()
+        elif not self.meshes_to_update.empty():
+            for _ in range(min(self.chunk_updates, self.meshes_to_update.unfinished_tasks)):
+                chunk_id = self.meshes_to_update.get()
                 self.update_mesh(chunk_id)
-                self.chunks_to_update.task_done()
+                self.meshes_to_update.task_done()
 
         elif not self.player_chunk == new_player_chunk:
             self.player_chunk = new_player_chunk
@@ -398,9 +393,7 @@ class ChunkManager(Entity):
             self.finished_loading = True
 
             if self.player_to_terrain:
-                terrain_height = self.get_terrain_height(Vec3(0))
-
-                if terrain_height:
+                if terrain_height := self.get_terrain_height(Vec3(0)):
                     player.position = terrain_height + Vec3(0, 2, 0)
 
                 self.player_to_terrain = False

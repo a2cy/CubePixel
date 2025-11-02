@@ -1,6 +1,6 @@
 from ursina import Entity, Text, Button, Checkbox, Func, Animator, Vec2, color, time, Quad, camera, window
 
-from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider, Scrollbar
+from .gui_prefabs import MenuButton, MenuContent, InputFieldPrefab, ButtonPrefab, FileButton, ItemButton, ThinSlider, Scrollbar
 from .resource_loader import resource_loader
 from .chunk_manager import chunk_manager
 from .player import player
@@ -171,13 +171,13 @@ class WorldCreation(MenuContent):
     def __init__(self, **kwargs) -> None:
         super().__init__("Create World", **kwargs)
 
-        self.world_name = InputField(parent=self, position=window.right + Vec2(-0.65, 0.3))
+        self.world_name = InputFieldPrefab(parent=self, position=window.right + Vec2(-0.65, 0.3))
 
         self.world_name_label = Text(
             parent=self, text="World Name", scale=1.2, position=self.world_name.position + Vec2(-0.5, 0), origin=Vec2(-0.5, 0)
         )
 
-        self.world_seed = InputField(parent=self, position=window.right + Vec2(-0.65, 0.2), limit_content_to="0123456789")
+        self.world_seed = InputFieldPrefab(parent=self, position=window.right + Vec2(-0.65, 0.2), limit_content_to="0123456789")
 
         self.world_seed_label = Text(
             parent=self, text="World Seed", scale=1.2, position=self.world_seed.position + Vec2(-0.5, 0), origin=Vec2(-0.5, 0)
@@ -512,7 +512,7 @@ class DebugOverlay(Entity):
         self.direction.text = f"Facing : {heading}"
         self.chunks_to_load.text = f"Chunks to load : {chunk_manager.chunks_to_load.unfinished_tasks}"
         self.chunks_to_unload.text = f"Chunks to unload : {chunk_manager.chunks_to_unload.unfinished_tasks}"
-        self.chunks_to_update.text = f"Chunks to update : {chunk_manager.chunks_to_update.unfinished_tasks}"
+        self.chunks_to_update.text = f"Meshes to update : {chunk_manager.meshes_to_update.unfinished_tasks}"
 
 
 gui = Gui()

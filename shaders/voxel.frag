@@ -1,6 +1,6 @@
 #version 150
 
-uniform mat4 p3d_ViewMatrix;
+uniform mat3 p3d_NormalMatrix;
 uniform sampler2DArray u_texture_array;
 uniform int u_fog_distance;
 
@@ -41,7 +41,7 @@ void main() {
 
     vec4 color = triplanar(model_fragcoord, model_normal, texture_id, u_texture_array);
 
-    vec3 light_direction = normalize(vec3(p3d_ViewMatrix * vec4(1.0, 0.8, 0.5, 0.0)));
+    vec3 light_direction = normalize(p3d_NormalMatrix * vec3(1.0, 0.8, 0.5));
     vec3 view_direction = normalize(-view_fragcoord);
     vec3 half_direction = normalize(light_direction + view_direction);
 

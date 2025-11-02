@@ -1,5 +1,4 @@
-# cython: language_level=3, boundscheck=False, wraparound=False, initializedcheck=False, cdivision=True
-# distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
+# cython: boundscheck=False, wraparound=False, initializedcheck=False, cdivision=True
 from fast_noise_lite cimport *
 
 cimport numpy as np
@@ -55,7 +54,6 @@ cdef int[18] neighbor_offsets = [-1,0,0,  0,-1,0,  0,0,-1,  1,0,0,  0,1,0,  0,0,
 
 
 cdef class WorldGenerator:
-
     cdef int [:] texture_types
     cdef int [:] occlusion_types
     cdef fnl_state noise2d
@@ -76,18 +74,14 @@ cdef class WorldGenerator:
         self.amp2d = 32
         self.y_offset = 12
 
-
     def generate_voxels(self, int chunk_size, int seed, int chunk_x, int chunk_y, int chunk_z):
         cdef int i, index, x, y, z, world_y, diff, height
-
-        self.noise2d.seed = seed
-
         cdef np.ndarray[unsigned char, ndim=1] voxel_data = np.zeros(chunk_size**3, dtype=np.ubyte)
+        self.noise2d.seed = seed
 
         for i in range(chunk_size**2):
             x = i // chunk_size
             z = i % chunk_size
-
             height = <int>(fnlGetNoise2D(&self.noise2d, x + chunk_x, z + chunk_z) * self.amp2d + self.y_offset)
 
             for y in range(chunk_size):
@@ -109,12 +103,10 @@ cdef class WorldGenerator:
 
         return voxel_data
 
-
     def generate_mesh(self, int chunk_size, unsigned char [:] voxel_data, long long [:] neighbors):
         cdef int i, x, y, z, side, up, down, occlusion
-
-        cdef np.ndarray[unsigned char, ndim=1] occlusion_state = np.zeros(chunk_size**3, dtype=np.ubyte)
         cdef int face_count = 0
+        cdef np.ndarray[unsigned char, ndim=1] occlusion_state = np.zeros(chunk_size**3, dtype=np.ubyte)
 
         for i in range(chunk_size**3):
             if not voxel_data[i]:
@@ -127,7 +119,6 @@ cdef class WorldGenerator:
             face_count += self.check_occlusion(chunk_size, x, y, z, i, &occlusion_state[0], &voxel_data[0], &neighbors[0])
 
         cdef np.ndarray[unsigned int, ndim=1] vertex_data = np.zeros(face_count * 6, dtype=np.uintc)
-
         cdef int index = 0
 
         for i in range(chunk_size**3):
@@ -176,30 +167,23 @@ cdef class WorldGenerator:
 
         return vertex_data
 
-
     cdef void copy_face(self, int index, int x, int y, int z, int texture_id, int normal_id, int* face, unsigned int* vertex_data) noexcept:
-        cdef int i
-        cdef unsigned int data
+        cdef int i, x_position, y_position, z_position
 
         for i in range(6):
-            data = face[i * 3 + 0] + x
-            data = data | ((face[i * 3 + 1] + y) << 6)
-            data = data | ((face[i * 3 + 2] + z) << 12)
+            x_position = face[i * 3 + 0] + x
+            y_position = face[i * 3 + 1] + y
+            z_position = face[i * 3 + 2] + z
 
-            data = data | (normal_id << 18)
-            data = data | (texture_id << 21)
-
-            vertex_data[index * 6 + i] = data
-
+            # pack vertex data into uint32
+            vertex_data[index * 6 + i] = x_position | y_position << 6 | z_position << 12 | normal_id << 18 | texture_id << 21
 
     cdef int check_occlusion(self, int chunk_size, int x, int y, int z, int index, unsigned char* occlusion, unsigned char* voxel_data, long long* neighbor_chunks) noexcept:
         cdef int i, x_position, y_position, z_position, neighbor_id
-        cdef unsigned char* neighbor_chunk
-
-        cdef unsigned char result = 0
-        cdef int face_count = 0
-
         cdef int voxel_id = voxel_data[x * chunk_size * chunk_size + y * chunk_size + z]
+        cdef int face_count = 0
+        cdef unsigned char* neighbor_chunk
+        cdef unsigned char result = 0
 
         for i in range(6):
             x_position = neighbor_offsets[i * 3 + 0] + x
