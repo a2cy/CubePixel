@@ -76,7 +76,8 @@ class AABBCollider:
 class Player(Entity):
     def __init__(self, **kwargs) -> None:
         self.cursor = Entity(parent=camera.ui, model="quad", color=color.pink, scale=0.008, rotation_z=45)
-        self.selector = Entity(model="cube", shader=resource_loader.selector_shader, scale=1.005)
+        self.selector = Entity(model="cube", color=color.black33, shader=resource_loader.outline_shader, scale=1.005)
+        self.selector.set_shader_inputs(u_outline_color=color.gray, u_thickness=0.015)
 
         super().__init__(**kwargs)
 

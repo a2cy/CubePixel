@@ -1,6 +1,8 @@
 from ursina import Entity, Button, Slider, Text, Mesh, Vec2, color, Quad, window
 from ursina import InputField as uInputField
 
+from .resource_loader import resource_loader
+
 
 class MenuButton(Entity):
     def __init__(self, text: str, default_color=color.black, **kwargs) -> None:
@@ -52,17 +54,15 @@ class MenuContent(Entity):
         super().__init__(**kwargs)
 
         self._background_panel = Entity(
-            parent=self, model="quad", color=color.black50, position=window.right + Vec2(-0.65, 0), scale=Vec2(1.2, 1), z=1
-        )
-
-        self._panel_overlay = Entity(
             parent=self,
-            model=Mesh(vertices=[(0.5, -0.5, 0), (0.5, 0.5, 0), (-0.5, 0.5, 0), (-0.5, -0.5, 0)], mode="line", thickness=2),
-            color=color.black90,
+            model="quad",
+            color=color.black50,
+            shader=resource_loader.outline_shader,
             position=window.right + Vec2(-0.65, 0),
-            scale=Vec2(1.2, 1),
+            scale=Vec2(1.2, 1.02),
             z=1,
         )
+        self._background_panel.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
 
         self._label = Text(parent=self, text=text, scale=1.5, position=window.right + Vec2(-0.65, 0.42), origin=Vec2(0, 0))
 
@@ -127,7 +127,8 @@ class ItemButton(Button):
         self.voxel_id = voxel_id
         self.scale = 0.05
 
-        self.selector = Entity(parent=self, scale=1.25, model="quad", shader=resource_loader.selector_shader)
+        self.selector = Entity(parent=self, scale=1.25, color=color.clear, model="quad", shader=resource_loader.outline_shader)
+        self.selector.set_shader_inputs(u_outline_color=color.black50, u_thickness=0.04)
 
         side_texture_id = resource_loader.texture_types[self.voxel_id * 3 - 1]
 

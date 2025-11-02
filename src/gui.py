@@ -1,4 +1,4 @@
-from ursina import Entity, Text, Button, Checkbox, Mesh, Func, Animator, Vec2, color, time, Quad, camera, window
+from ursina import Entity, Text, Button, Checkbox, Func, Animator, Vec2, color, time, Quad, camera, window
 
 from .gui_prefabs import MenuButton, MenuContent, InputField, ButtonPrefab, FileButton, ItemButton, ThinSlider, Scrollbar
 from .resource_loader import resource_loader
@@ -66,16 +66,16 @@ class MainMenu(Entity):
 
         self.background = Entity(parent=self, model="quad", texture="shore", scale_x=window.aspect_ratio, z=2)
 
-        self.background_panel = Entity(parent=self, model="quad", color=color.black50, position=window.left + Vec2(0.25, 0), scale=Vec2(0.4, 1), z=1)
-
-        self.panel_overlay = Entity(
+        self.background_panel = Entity(
             parent=self,
-            model=Mesh(vertices=[(0.5, -0.5, 0), (0.5, 0.8, 0), (-0.5, 0.8, 0), (-0.5, -0.5, 0)], mode="line", thickness=2),
-            color=color.black90,
+            model="quad",
+            color=color.black50,
+            shader=resource_loader.outline_shader,
             position=window.left + Vec2(0.25, 0),
-            scale=Vec2(0.4, 1),
+            scale=Vec2(0.4, 1.02),
             z=1,
         )
+        self.background_panel.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
 
         self.title = Text(parent=self, text="CubePixel", scale=2, position=window.left + Vec2(0.25, 0.43), origin=Vec2(0, 0))
 
@@ -131,16 +131,16 @@ class PauseMenu(Entity):
     def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, **kwargs)
 
-        self.background_panel = Entity(parent=self, model="quad", color=color.black50, position=window.left + Vec2(0.25, 0), scale=Vec2(0.4, 1), z=1)
-
-        self.panel_overlay = Entity(
+        self.background_panel = Entity(
             parent=self,
-            model=Mesh(vertices=[(0.5, -0.5, 0), (0.5, 0.8, 0), (-0.5, 0.8, 0), (-0.5, -0.5, 0)], mode="line", thickness=2),
-            color=color.black90,
+            model="quad",
+            color=color.black50,
+            shader=resource_loader.outline_shader,
             position=window.left + Vec2(0.25, 0),
-            scale=Vec2(0.4, 1),
+            scale=Vec2(0.4, 1.02),
             z=1,
         )
+        self.background_panel.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
 
         self.title = Text(parent=self, text="CubePixel", scale=2, position=window.left + Vec2(0.25, 0.43), origin=Vec2(0, 0))
 
