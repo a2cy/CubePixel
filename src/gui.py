@@ -273,6 +273,10 @@ class WorldLoading(MenuContent):
         for i, file in enumerate(files):
             FileButton(parent=self.button_parent, path=file, text=file, y=0.3 - i * 0.055)
 
+        if len(self.button_parent.children) < self.max_buttons:
+            self.scrollbar.enabled = False
+            return
+
         self.scrollbar.button_count = len(self.button_parent.children)
         self.scrollbar.reset()
 
@@ -414,6 +418,9 @@ class Inventory(Entity):
         self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons_y, position=Vec2(-0.54, 0.0))
         self.scrollbar.on_scroll = on_scroll
         self.scrollbar.button_count = len(self.button_parent.children) / self.max_buttons_x
+
+        if len(self.button_parent.children) < self.max_buttons_y:
+            self.scrollbar.enabled = False
 
     @property
     def selection(self) -> str:
