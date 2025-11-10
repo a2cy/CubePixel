@@ -5,7 +5,7 @@ from src.resource_loader import resource_loader
 from world_tools import WorldGenerator
 
 CHUNK_SIZE = 32
-RUN_NUM = 10000
+RUN_NUM = 36_000
 
 seed = 0
 position = (0, 0, 0)

@@ -6,7 +6,7 @@ from src.resource_loader import resource_loader
 from world_tools import WorldGenerator
 
 CHUNK_SIZE = 32
-RUN_NUM = 10000
+RUN_NUM = 36_000
 
 seed = 0
 position = (0, 0, 0)
@@ -16,26 +16,28 @@ world_generator = WorldGenerator(resource_loader.texture_types, resource_loader.
 data = world_generator.generate_voxels(CHUNK_SIZE, seed, *position)
 neighbors = np.zeros(6, dtype=np.longlong)
 
+threads_a = []
+for _ in range(RUN_NUM):
+    thread = threading.Thread(target=world_generator.generate_mesh, args=(CHUNK_SIZE, data, neighbors))
+    threads_a.append(thread)
 
 def test_a_threading():
-    threads = []
-    for _ in range(RUN_NUM):
-        thread = threading.Thread(target=world_generator.generate_mesh, args=(CHUNK_SIZE, data, neighbors))
+    for thread in threads_a:
         thread.start()
-        threads.append(thread)
 
-    for thread in threads:
+    for thread in threads_a:
         thread.join()
 
+threads_b = []
+for _ in range(RUN_NUM):
+    thread = threading.Thread(target=world_generator.generate_voxels, args=(CHUNK_SIZE, seed, *position))
+    threads_b.append(thread)
 
 def test_b_threading():
-    threads = []
-    for _ in range(RUN_NUM):
-        thread = threading.Thread(target=world_generator.generate_voxels, args=(CHUNK_SIZE, seed, *position))
+    for thread in threads_b:
         thread.start()
-        threads.append(thread)
 
-    for thread in threads:
+    for thread in threads_b:
         thread.join()
 
 
