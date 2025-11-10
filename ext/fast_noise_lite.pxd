@@ -63,7 +63,7 @@ cdef extern from "FastNoiseLite.h":
 
     fnl_state fnlCreateState()
 
-    float fnlGetNoise2D(fnl_state *state, FNLfloat x, FNLfloat y)
+    float fnlGetNoise2D(fnl_state *state, FNLfloat x, FNLfloat y) nogil
 
     float fnlGetNoise3D(fnl_state *state, FNLfloat x, FNLfloat y, FNLfloat z)
 
