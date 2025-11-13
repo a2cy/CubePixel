@@ -262,6 +262,7 @@ class WorldLoading(MenuContent):
 
         from ursina import destroy
 
+        self.scrollbar.enabled = False
         for _i in range(len(self.button_parent.children)):
             destroy(self.button_parent.children.pop())
 
@@ -274,11 +275,11 @@ class WorldLoading(MenuContent):
         for i, file in enumerate(files):
             FileButton(parent=self.button_parent, path=file, text=file, y=0.3 - i * 0.055)
 
-        if len(self.button_parent.children) < self.max_buttons:
-            self.scrollbar.enabled = False
+        if len(self.button_parent.children) <= self.max_buttons:
             return
 
         self.scrollbar.button_count = len(self.button_parent.children)
+        self.scrollbar.enabled = True
         self.scrollbar.reset()
 
 
