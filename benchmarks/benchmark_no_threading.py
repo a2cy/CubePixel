@@ -1,7 +1,8 @@
 import time
 
 import numpy as np
-from world_tools import WorldGenerator
+from data_generator import generate_data
+from mesh_generator import generate_mesh
 
 from src.resource_loader import resource_loader
 
@@ -11,20 +12,18 @@ RUN_NUM = 36_000
 seed = 0
 position = (0, 0, 0)
 
-world_generator = WorldGenerator(resource_loader.texture_types, resource_loader.occlusion_types)
-
-data = world_generator.generate_voxels(CHUNK_SIZE, seed, *position)
+data = generate_data(CHUNK_SIZE, seed, *position)
 neighbors = np.zeros(6, dtype=np.longlong)
 
 
 def test_a():
     for _ in range(RUN_NUM):
-        world_generator.generate_mesh(CHUNK_SIZE, data, neighbors)
+        generate_mesh(CHUNK_SIZE, resource_loader.texture_types, resource_loader.occlusion_types, data, neighbors)
 
 
 def test_b():
     for _ in range(RUN_NUM):
-        world_generator.generate_voxels(CHUNK_SIZE, seed, *position)
+        generate_data(CHUNK_SIZE, seed, *position)
 
 
 t1 = time.perf_counter()

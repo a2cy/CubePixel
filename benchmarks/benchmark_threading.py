@@ -2,7 +2,8 @@ import threading
 import time
 
 import numpy as np
-from world_tools import WorldGenerator
+from data_generator import generate_data
+from mesh_generator import generate_mesh
 
 from src.resource_loader import resource_loader
 
@@ -12,14 +13,14 @@ RUN_NUM = 36_000
 seed = 0
 position = (0, 0, 0)
 
-world_generator = WorldGenerator(resource_loader.texture_types, resource_loader.occlusion_types)
-
-data = world_generator.generate_voxels(CHUNK_SIZE, seed, *position)
+data = generate_data(CHUNK_SIZE, seed, *position)
 neighbors = np.zeros(6, dtype=np.longlong)
 
 threads_a = []
 for _ in range(RUN_NUM):
-    thread = threading.Thread(target=world_generator.generate_mesh, args=(CHUNK_SIZE, data, neighbors))
+    thread = threading.Thread(
+        target=generate_mesh, args=(CHUNK_SIZE, resource_loader.texture_types, resource_loader.occlusion_types, data, neighbors)
+    )
     threads_a.append(thread)
 
 
@@ -33,7 +34,7 @@ def test_a_threading():
 
 threads_b = []
 for _ in range(RUN_NUM):
-    thread = threading.Thread(target=world_generator.generate_voxels, args=(CHUNK_SIZE, seed, *position))
+    thread = threading.Thread(target=generate_data, args=(CHUNK_SIZE, seed, *position))
     threads_b.append(thread)
 
 

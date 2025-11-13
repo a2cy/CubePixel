@@ -2,9 +2,13 @@
 
 ![](./screenshot.png)
 
-## Getting started
+## Requirements
 
-Python 3.12+ required
+- Python 3.12+  
+- A C compiler like gcc or msvc
+- Using a venv is recommended
+
+## Running the game
 
 1. Install dependencies using pip:
 ```
@@ -13,10 +17,6 @@ python -m pip install -r requirements.txt
 2. Build the cython extension:
 ```
 python setup.py build_ext -i
-```
-- Or if you are using mingw on windows use:
-```
-python setup.py build_ext --compiler=mingw32 -i
 ```
 3. Run the game:
 ```

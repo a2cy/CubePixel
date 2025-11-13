@@ -3,8 +3,9 @@ import os
 from queue import Queue
 
 import numpy as np
+from data_generator import generate_data
+from mesh_generator import generate_mesh
 from ursina import Entity, Vec3, print_info, print_warning
-from world_tools import WorldGenerator
 
 from .resource_loader import resource_loader
 from .settings import settings
@@ -28,8 +29,6 @@ class ChunkManager(Entity):
         self.meshes_to_update = Queue()
         self.chunk_objects = {}
         self.loaded_chunks = {}
-
-        self.world_generator = WorldGenerator(resource_loader.texture_types, resource_loader.occlusion_types)
 
         self.reload()
 
@@ -267,7 +266,7 @@ class ChunkManager(Entity):
 
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
-        voxels = np.load(filename) if os.path.exists(filename) else self.world_generator.generate_voxels(CHUNK_SIZE, self.seed, *chunk_id)
+        voxels = np.load(filename) if os.path.exists(filename) else generate_data(CHUNK_SIZE, self.seed, *chunk_id)
 
         self.loaded_chunks[chunk_id] = voxels
 
@@ -311,7 +310,9 @@ class ChunkManager(Entity):
             if neighbor_id in self.loaded_chunks:
                 neighbors[i] = self.loaded_chunks[neighbor_id].ctypes.data
 
-        vertex_data = self.world_generator.generate_mesh(CHUNK_SIZE, self.loaded_chunks[chunk_id], neighbors)
+        vertex_data = generate_mesh(
+            CHUNK_SIZE, resource_loader.texture_types, resource_loader.occlusion_types, self.loaded_chunks[chunk_id], neighbors
+        )
 
         if len(vertex_data) == 0:
             if chunk_id in self.chunk_objects:

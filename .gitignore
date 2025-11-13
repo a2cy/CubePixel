@@ -5,5 +5,5 @@ build/
 .venv
 saves/
 settings.json
-ext/world_tools.c
-ext/world_tools.html
+*.c
+*.html

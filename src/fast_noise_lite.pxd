@@ -1,6 +1,4 @@
-
 cdef extern from "FastNoiseLite.h":
-
     ctypedef float FNLfloat
 
     ctypedef enum fnl_noise_type:
@@ -63,7 +61,7 @@ cdef extern from "FastNoiseLite.h":
 
     fnl_state fnlCreateState()
 
-    float fnlGetNoise2D(fnl_state *state, FNLfloat x, FNLfloat y) nogil
+    float fnlGetNoise2D(fnl_state *state, FNLfloat x, FNLfloat y)
 
     float fnlGetNoise3D(fnl_state *state, FNLfloat x, FNLfloat y, FNLfloat z)
 

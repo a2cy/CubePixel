@@ -1,2 +1,0 @@
-ruff==0.14.2
-types-panda3d==0.4.1

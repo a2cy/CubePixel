@@ -1,0 +1,3 @@
+ruff
+types-panda3d
+cython-lint
