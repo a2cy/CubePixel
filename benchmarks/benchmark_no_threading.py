@@ -1,8 +1,9 @@
 import time
+
 import numpy as np
+from world_tools import WorldGenerator
 
 from src.resource_loader import resource_loader
-from world_tools import WorldGenerator
 
 CHUNK_SIZE = 32
 RUN_NUM = 36_000

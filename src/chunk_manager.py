@@ -1,15 +1,14 @@
-import os
 import json
-import numpy as np
-
+import os
 from queue import Queue
-from ursina import Entity, Vec3, print_info, print_warning
 
-from .voxel_chunk import VoxelChunk
-from .settings import settings
-from .resource_loader import resource_loader
+import numpy as np
+from ursina import Entity, Vec3, print_info, print_warning
 from world_tools import WorldGenerator
 
+from .resource_loader import resource_loader
+from .settings import settings
+from .voxel_chunk import VoxelChunk
 
 CHUNK_SIZE = 32
 
@@ -59,37 +58,37 @@ class ChunkManager(Entity):
         player_rotation = self.world_data["player_rotation"]
 
         for key, value in keys.items():
-            if key not in self.world_data.keys():
+            if key not in self.world_data:
                 print_warning(f"Failed to load world '{world_name}' (missing key '{key}' in data.json)")
-                return
+                return False
 
             if not isinstance(self.world_data[key], value):
                 print_warning(f"Failed to load world '{world_name}' (key '{key}' has wrong type in data.json)")
-                return
+                return False
 
-        if not len(player_position) == 3:
+        if len(player_position) != 3:
             print_warning(f"Failed to load world '{world_name}' (invalid player position in data.json)")
-            return
+            return False
 
         for item in player_position:
             if not (isinstance(item, (int, float))):
                 print_warning(f"Failed to load world '{world_name}' (invalid player position in data.json)")
-                return
+                return False
 
-        if not len(player_rotation) == 2:
+        if len(player_rotation) != 2:
             print_warning(f"Failed to load world '{world_name}' (invalid player rotation in data.json)")
-            return
+            return False
 
         for item in player_rotation:
             if not (isinstance(item, (int, float))):
                 print_warning(f"Failed to load world '{world_name}' (invalid player rotation in data.json)")
-                return
+                return False
 
         return True
 
     def create_world(self, world_name: str, seed: int) -> bool:
         if os.path.exists(f"./saves/{world_name}/"):
-            return
+            return False
 
         os.makedirs(f"./saves/{world_name}/chunks/", exist_ok=True)
         world_data = {"seed": seed, "player_position": [0.0, 0.0, 0.0], "player_rotation": [0.0, 0.0], "player_noclip": False}
@@ -120,25 +119,25 @@ class ChunkManager(Entity):
         from src.player import player
 
         if self.world_loaded:
-            return
+            return False
 
         if not os.path.exists(f"./saves/{world_name}/chunks"):
             print_warning(f"Failed to load world '{world_name}' (missing folder)")
-            return
+            return False
 
         if not os.path.isfile(f"./saves/{world_name}/data.json"):
             print_warning(f"Failed to load world '{world_name}' (missing data.json)")
-            return
+            return False
 
         try:
             with open(f"./saves/{world_name}/data.json") as file:
                 self.world_data = json.load(file)
         except Exception as exeption:
             print_warning(f"Failed to load world '{world_name}' (invalid data.json) \n {exeption}")
-            return
+            return False
 
         if not self.validate_world(world_name):
-            return
+            return False
 
         player.position = self.world_data["player_position"]
         player.rotation_y = self.world_data["player_rotation"][0]
@@ -190,12 +189,12 @@ class ChunkManager(Entity):
 
     def get_voxel_id(self, position: Vec3) -> int:
         if not self.world_loaded:
-            return
+            return None
 
         chunk_id = self.get_chunk_id(position)
 
         if chunk_id not in self.loaded_chunks:
-            return
+            return None
 
         x_position = round(position[0] - chunk_id[0])
         y_position = round(position[1] - chunk_id[1])
@@ -260,25 +259,23 @@ class ChunkManager(Entity):
 
             current_position.y += step_y
 
+        return None
+
     def load_chunk(self, chunk_id: tuple) -> None:
         if chunk_id in self.loaded_chunks:
             return
 
         filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
 
-        if os.path.exists(filename):
-            voxels = np.load(filename)
-
-        else:
-            voxels = self.world_generator.generate_voxels(CHUNK_SIZE, self.seed, *chunk_id)
+        voxels = np.load(filename) if os.path.exists(filename) else self.world_generator.generate_voxels(CHUNK_SIZE, self.seed, *chunk_id)
 
         self.loaded_chunks[chunk_id] = voxels
 
-        for id in [(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]:
+        for offset in [(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]:
             neighbor_id = (
-                id[0] * CHUNK_SIZE + chunk_id[0],
-                id[1] * CHUNK_SIZE + chunk_id[1],
-                id[2] * CHUNK_SIZE + chunk_id[2],
+                offset[0] * CHUNK_SIZE + chunk_id[0],
+                offset[1] * CHUNK_SIZE + chunk_id[1],
+                offset[2] * CHUNK_SIZE + chunk_id[2],
             )
 
             if neighbor_id in self.chunk_objects:
@@ -304,11 +301,11 @@ class ChunkManager(Entity):
 
         neighbors = np.zeros(6, dtype=np.longlong)
 
-        for i, id in enumerate([(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]):
+        for i, offset in enumerate([(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]):
             neighbor_id = (
-                id[0] * CHUNK_SIZE + chunk_id[0],
-                id[1] * CHUNK_SIZE + chunk_id[1],
-                id[2] * CHUNK_SIZE + chunk_id[2],
+                offset[0] * CHUNK_SIZE + chunk_id[0],
+                offset[1] * CHUNK_SIZE + chunk_id[1],
+                offset[2] * CHUNK_SIZE + chunk_id[2],
             )
 
             if neighbor_id in self.loaded_chunks:
@@ -384,7 +381,7 @@ class ChunkManager(Entity):
                 self.update_mesh(chunk_id)
                 self.meshes_to_update.task_done()
 
-        elif not self.player_chunk == new_player_chunk:
+        elif self.player_chunk != new_player_chunk:
             self.player_chunk = new_player_chunk
             self.update_chunks_all()
 

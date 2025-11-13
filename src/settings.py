@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 
 class Settings:
@@ -17,9 +17,7 @@ class Settings:
 
     def load_settings(self) -> dict:
         with open("./settings.json") as file:
-            settings = json.load(file)
-
-        return settings
+            return json.load(file)
 
     def save_settings(self) -> None:
         with open("./settings.json", "w+") as file:

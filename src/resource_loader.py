@@ -1,10 +1,9 @@
-import os
 import json
+import os
+
 import numpy as np
-
+from panda3d.core import PNMImage, SamplerState, Shader, Texture
 from ursina import print_warning
-
-from panda3d.core import Texture, PNMImage, SamplerState, Shader
 
 
 class ResourceLoader:
@@ -73,15 +72,15 @@ class ResourceLoader:
             except Exception:
                 print_warning(f"failed to load texture '{texture_name}' (wrong format)")
 
-    def validate_type(self, type: dict) -> str:
+    def validate_type(self, voxel_type: dict) -> str:
         keys = {"index": int, "textures": list, "occlusion": bool, "collision": bool}
-        texture_names = type["textures"]
+        texture_names = voxel_type["textures"]
 
         for key, value in keys.items():
-            if key not in type.keys():
+            if key not in voxel_type:
                 return f"missing key '{key}'"
 
-            if not isinstance(type[key], value):
+            if not isinstance(voxel_type[key], value):
                 return f"key '{key}' has wrong type"
 
         if len(texture_names) not in (1, 3):
@@ -90,6 +89,8 @@ class ResourceLoader:
         for texture_name in texture_names:
             if not os.path.isfile(f"./assets/textures/voxels/{texture_name}.png"):
                 return f"missing texture '{texture_name}'"
+
+        return None
 
 
 resource_loader = ResourceLoader()

@@ -91,16 +91,16 @@ cdef class WorldGenerator:
                     diff = height - world_y
 
                     if diff == 0 and world_y >= 0:
-                        voxel_data[index] = 2 # grass
+                        voxel_data[index] = 2  # grass
 
                     elif diff < 5 and diff >= 0:
-                        voxel_data[index] = 1 # dirt
+                        voxel_data[index] = 1  # dirt
 
                     elif diff >= 5:
-                        voxel_data[index] = 3 # stone
+                        voxel_data[index] = 3  # stone
 
                     if world_y <= 0 and diff < 0:
-                        voxel_data[index] = 5 # water
+                        voxel_data[index] = 5  # water
 
         return voxel_data
 

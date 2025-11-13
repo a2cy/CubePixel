@@ -1,9 +1,10 @@
-import time
 import threading
+import time
+
 import numpy as np
+from world_tools import WorldGenerator
 
 from src.resource_loader import resource_loader
-from world_tools import WorldGenerator
 
 CHUNK_SIZE = 32
 RUN_NUM = 36_000
@@ -21,6 +22,7 @@ for _ in range(RUN_NUM):
     thread = threading.Thread(target=world_generator.generate_mesh, args=(CHUNK_SIZE, data, neighbors))
     threads_a.append(thread)
 
+
 def test_a_threading():
     for thread in threads_a:
         thread.start()
@@ -28,10 +30,12 @@ def test_a_threading():
     for thread in threads_a:
         thread.join()
 
+
 threads_b = []
 for _ in range(RUN_NUM):
     thread = threading.Thread(target=world_generator.generate_voxels, args=(CHUNK_SIZE, seed, *position))
     threads_b.append(thread)
+
 
 def test_b_threading():
     for thread in threads_b:

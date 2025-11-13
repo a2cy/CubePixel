@@ -1,7 +1,7 @@
-from ursina import Entity, Vec3, held_keys, time, color, clamp, lerp, camera, mouse
+from ursina import Entity, Vec3, camera, clamp, color, held_keys, lerp, mouse, time
 
-from .settings import settings
 from .resource_loader import resource_loader
+from .settings import settings
 
 
 class AABBCollider:

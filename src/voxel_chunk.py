@@ -1,5 +1,15 @@
-from panda3d.core import NodePath, BoundingSphere, TransparencyAttrib, Vec3
-from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomVertexArrayFormat, GeomVertexData, GeomTriangles
+from panda3d.core import (
+    BoundingSphere,
+    Geom,
+    GeomNode,
+    GeomTriangles,
+    GeomVertexArrayFormat,
+    GeomVertexData,
+    GeomVertexFormat,
+    NodePath,
+    TransparencyAttrib,
+    Vec3,
+)
 
 
 class VoxelChunk(NodePath):

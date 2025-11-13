@@ -4,3 +4,17 @@ line-length = 150
 quote-style = "double"
 indent-style = "space"
 line-ending = "native"
+
+[lint]
+select = [
+    "E", "W", # pycodestyle
+    "F",      # Pyflakes
+    "B",      # flake8-bugbear
+    "S",      # flake8-bandit
+    "A",      # flake8-builtins
+    "I",      # isort
+    "C4",     # flake8-comprehensions
+    "PIE",    # flake8-pie
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+    ]

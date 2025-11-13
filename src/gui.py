@@ -1,9 +1,9 @@
-from ursina import Entity, Text, Button, Checkbox, Func, Animator, Vec2, color, time, Quad, camera, window
+from ursina import Animator, Button, Checkbox, Entity, Func, Quad, Text, Vec2, camera, color, time, window
 
-from .gui_prefabs import MenuButton, MenuContent, InputFieldPrefab, ButtonPrefab, FileButton, ItemButton, ThinSlider, Scrollbar
-from .resource_loader import resource_loader
 from .chunk_manager import chunk_manager
+from .gui_prefabs import ButtonPrefab, FileButton, InputFieldPrefab, ItemButton, MenuButton, MenuContent, Scrollbar, ThinSlider
 from .player import player
+from .resource_loader import resource_loader
 from .settings import settings
 
 
@@ -259,9 +259,10 @@ class WorldLoading(MenuContent):
 
     def on_enable(self) -> None:
         import os
+
         from ursina import destroy
 
-        for i in range(len(self.button_parent.children)):
+        for _i in range(len(self.button_parent.children)):
             destroy(self.button_parent.children.pop())
 
         if not os.path.exists("./saves/"):
@@ -395,16 +396,13 @@ class Inventory(Entity):
         self.button_parent = Entity(parent=self, z=-1)
         self._background_panel = Entity(parent=self, model=Quad(aspect=1 / 0.8, radius=0.02), color=color.black50, scale=Vec2(1, 0.8), z=1)
 
-        button_count = 0
         for i in range(resource_loader.type_count):
             ItemButton(
                 parent=self.button_parent,
                 voxel_id=i + 1,
-                x=(button_count % self.max_buttons_x) * 0.1 - 0.45,
-                y=-(button_count // self.max_buttons_x) * 0.1 + 0.35,
+                x=(i % self.max_buttons_x) * 0.1 - 0.45,
+                y=-(i // self.max_buttons_x) * 0.1 + 0.35,
             )
-
-            button_count += 1
 
         def on_scroll(value):
             for i, button in enumerate(self.button_parent.children):

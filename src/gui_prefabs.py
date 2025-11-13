@@ -1,4 +1,4 @@
-from ursina import Entity, Button, Slider, Text, InputField, Mesh, Vec2, color, Quad, window
+from ursina import Button, Entity, InputField, Mesh, Quad, Slider, Text, Vec2, color, window
 
 from .resource_loader import resource_loader
 
