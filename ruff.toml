@@ -12,7 +12,6 @@ select = [
     "B",      # flake8-bugbear
     "S",      # flake8-bandit
     "A",      # flake8-builtins
-    "I",      # isort
     "C4",     # flake8-comprehensions
     "PIE",    # flake8-pie
     "RET",    # flake8-return

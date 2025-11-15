@@ -1,15 +1,25 @@
-# ruff: noqa: E402, F401
-
+# ruff: noqa: E402, F401, SIM112
+import os
+from panda3d.core import load_prc_file
 from ursina import Ursina, color, window
 
-# from panda3d.core import load_prc_file_data
-# load_prc_file_data("", "want-pstats 1")
-# load_prc_file_data("", "pstats-python-profiler 1")
+ENABLE_VSYNC = True
 
-app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel")
 
-window.color = color.black
+def main() -> None:
+    if os.uname().sysname == "Linux" and not ENABLE_VSYNC:
+        os.environ["vblank_mode"] = "0"
+        os.environ["__GL_SYNC_TO_VBLANK"] = "0"
 
-from src.gui import gui  # starts game
+    load_prc_file("config.prc")
 
-app.run()
+    app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel")
+    window.color = color.black
+
+    from src.gui import gui  # starts game
+
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,3 @@
-# ruff: noqa I
-
 import numpy as np
 from setuptools import Extension, setup
 from Cython.Build import cythonize
@@ -18,4 +16,4 @@ extensions = [
     ),
 ]
 
-setup(ext_modules=cythonize(extensions), include_dirs=[np.get_include()], inplace=True)
+setup(ext_modules=cythonize(extensions), include_dirs=[np.get_include()])
