@@ -1,4 +1,4 @@
 setuptools
-cython >= 3.1
+cython >= 3.1.0
 numpy
-ursina @ https://github.com/a2cy/ursina/archive/7c43f9fee2f77239b4e4ef9cbf58057cdd1b8362.zip
+ursina == 7.0.0
