@@ -168,7 +168,7 @@ class ChunkManager(Entity):
         self.meshes_to_update = Queue()
 
         for chunk_id in self.loaded_chunks.copy():
-            self.unload_chunk(chunk_id)
+            self.unload_data(chunk_id)
 
         with open(f"saves/{self.world_name}/data.json", "w+") as file:
             self.world_data["player_position"] = list(player.position)
