@@ -20,12 +20,11 @@ class VoxelChunk(NodePath):
     vertex_format.add_array(v_array)
     vertex_format = GeomVertexFormat.register_format(vertex_format)
 
-    def __init__(self, chunk_size: int, shader=None, **kwargs) -> None:
+    def __init__(self, chunk_size: int, shader, **kwargs) -> None:
         super().__init__("voxel_chunk", **kwargs)
 
-        if shader:
-            self.set_shader(shader)
-            self.set_transparency(TransparencyAttrib.M_dual)
+        self.set_shader(shader)
+        self.set_transparency(TransparencyAttrib.M_dual)
 
         self.geom_node = GeomNode("voxel_chunk")
         self.attach_new_node(self.geom_node)
@@ -44,12 +43,12 @@ class VoxelChunk(NodePath):
         geom = self.geom_node.modify_geom(0)
 
         v_data = geom.modify_vertex_data()
-        prim = geom.modify_primitive(0)
-
         v_data.unclean_set_num_rows(len(vertex_data))
+
+        prim = geom.modify_primitive(0)
+        prim.clear_vertices()
 
         memview = memoryview(v_data.modify_array(0)).cast("B").cast("I")
         memview[:] = vertex_data
 
-        prim.clear_vertices()
         prim.add_next_vertices(len(vertex_data))

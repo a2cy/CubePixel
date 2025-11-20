@@ -15,7 +15,7 @@ class ResourceLoader:
         files = os.listdir("./assets/voxel_types/")
 
         voxels = []
-        loaded_textures = []
+        textures = []
 
         for file_name in files:
             if not file_name.endswith(".json"):
@@ -42,29 +42,28 @@ class ResourceLoader:
             texture_names = voxel["textures"]
 
             for texture_name in texture_names:
-                if texture_name not in loaded_textures:
-                    loaded_textures.append(texture_name)
+                if texture_name not in textures:
+                    textures.append(texture_name)
 
             if len(texture_names) == 1:
-                self.texture_types[i * 3 + 0] = loaded_textures.index(texture_names[0])
-                self.texture_types[i * 3 + 1] = loaded_textures.index(texture_names[0])
-                self.texture_types[i * 3 + 2] = loaded_textures.index(texture_names[0])
-
+                self.texture_types[i * 3 + 0] = textures.index(texture_names[0])
+                self.texture_types[i * 3 + 1] = textures.index(texture_names[0])
+                self.texture_types[i * 3 + 2] = textures.index(texture_names[0])
             elif len(texture_names) == 3:
-                self.texture_types[i * 3 + 0] = loaded_textures.index(texture_names[0])
-                self.texture_types[i * 3 + 1] = loaded_textures.index(texture_names[1])
-                self.texture_types[i * 3 + 2] = loaded_textures.index(texture_names[2])
+                self.texture_types[i * 3 + 0] = textures.index(texture_names[0])
+                self.texture_types[i * 3 + 1] = textures.index(texture_names[1])
+                self.texture_types[i * 3 + 2] = textures.index(texture_names[2])
 
             self.collision_types[i] = voxel["collision"]
             self.occlusion_types[i] = voxel["occlusion"]
 
         self.texture_array = Texture()
-        self.texture_array.setup_2d_texture_array(len(loaded_textures))
+        self.texture_array.setup_2d_texture_array(len(textures))
         self.texture_array.set_minfilter(SamplerState.FT_linear_mipmap_linear)
         self.texture_array.set_magfilter(SamplerState.FT_nearest)
         self.texture_array.set_anisotropic_degree(16)
 
-        for i, texture_name in enumerate(loaded_textures):
+        for i, texture_name in enumerate(textures):
             try:
                 texture = PNMImage()
                 texture.read(f"./assets/textures/voxels/{texture_name}.png")

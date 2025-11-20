@@ -25,10 +25,9 @@ class MenuButton(Entity):
         )
 
     def input(self, key: str) -> None:
-        if key == "left mouse down":
-            if self.hovered:
-                self.background.color = self.pressed_color
-                self.text_entity.color = self.pressed_color
+        if key == "left mouse down" and self.hovered:
+            self.background.color = self.pressed_color
+            self.text_entity.color = self.pressed_color
 
         if key == "left mouse up":
             if self.hovered:
