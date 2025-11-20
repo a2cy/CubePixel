@@ -86,33 +86,33 @@ class ChunkManager(Entity):
         return True
 
     def create_world(self, world_name: str, seed: int) -> bool:
-        if os.path.exists(f"./saves/{world_name}/"):
+        if os.path.exists(f"saves/{world_name}/"):
             return False
 
-        os.makedirs(f"./saves/{world_name}/chunks/", exist_ok=True)
+        os.makedirs(f"saves/{world_name}/chunks/")
         world_data = {"seed": seed, "player_position": [0.0, 0.0, 0.0], "player_rotation": [0.0, 0.0], "player_noclip": False}
 
         self.player_to_terrain = True
 
-        with open(f"./saves/{world_name}/data.json", "w+") as file:
+        with open(f"saves/{world_name}/data.json", "w+") as file:
             json.dump(world_data, file, indent=4)
 
         return self.load_world(world_name)
 
     def delete_world(self, world_name: str) -> None:
-        if os.path.isfile(f"./saves/{world_name}/data.json"):
-            os.remove(f"./saves/{world_name}/data.json")
+        if os.path.isfile(f"saves/{world_name}/data.json"):
+            os.remove(f"saves/{world_name}/data.json")
 
-        if os.path.exists(f"./saves/{world_name}/chunks"):
-            files = os.listdir(f"./saves/{world_name}/chunks/")
+        if os.path.exists(f"saves/{world_name}/chunks"):
+            files = os.listdir(f"saves/{world_name}/chunks/")
 
             for file in files:
-                os.remove(f"./saves/{world_name}/chunks/{file}")
+                os.remove(f"saves/{world_name}/chunks/{file}")
 
-            os.removedirs(f"./saves/{world_name}/chunks")
+            os.removedirs(f"saves/{world_name}/chunks")
 
-        if os.path.exists(f"./saves/{world_name}"):
-            os.removedirs(f"./saves/{world_name}")
+        if os.path.exists(f"saves/{world_name}"):
+            os.removedirs(f"saves/{world_name}")
 
     def load_world(self, world_name: str) -> bool:
         from src.player import player
@@ -120,16 +120,16 @@ class ChunkManager(Entity):
         if self.world_loaded:
             return False
 
-        if not os.path.exists(f"./saves/{world_name}/chunks"):
+        if not os.path.exists(f"saves/{world_name}/chunks"):
             print_warning(f"Failed to load world '{world_name}' (missing folder)")
             return False
 
-        if not os.path.isfile(f"./saves/{world_name}/data.json"):
+        if not os.path.isfile(f"saves/{world_name}/data.json"):
             print_warning(f"Failed to load world '{world_name}' (missing data.json)")
             return False
 
         try:
-            with open(f"./saves/{world_name}/data.json") as file:
+            with open(f"saves/{world_name}/data.json") as file:
                 self.world_data = json.load(file)
         except Exception as exeption:
             print_warning(f"Failed to load world '{world_name}' (invalid data.json) \n {exeption}")
@@ -170,7 +170,7 @@ class ChunkManager(Entity):
         for chunk_id in self.loaded_chunks.copy():
             self.unload_chunk(chunk_id)
 
-        with open(f"./saves/{self.world_name}/data.json", "w+") as file:
+        with open(f"saves/{self.world_name}/data.json", "w+") as file:
             self.world_data["player_position"] = list(player.position)
             self.world_data["player_rotation"] = [player.rotation_y, player.camera_pivot.rotation_x]
             self.world_data["player_noclip"] = player.noclip_mode
@@ -260,7 +260,7 @@ class ChunkManager(Entity):
 
         return None
 
-    def load_chunk(self, chunk_id: tuple) -> None:
+    def load_data(self, chunk_id: tuple) -> None:
         if chunk_id in self.loaded_chunks:
             return
 
@@ -282,7 +282,7 @@ class ChunkManager(Entity):
 
         self.meshes_to_update.put(chunk_id)
 
-    def unload_chunk(self, chunk_id: tuple) -> None:
+    def unload_data(self, chunk_id: tuple) -> None:
         if chunk_id not in self.loaded_chunks:
             return
 
@@ -367,13 +367,13 @@ class ChunkManager(Entity):
         if not self.chunks_to_load.empty():
             for _ in range(min(self.chunk_updates, self.chunks_to_load.unfinished_tasks)):
                 chunk_id = self.chunks_to_load.get()
-                self.load_chunk(chunk_id)
+                self.load_data(chunk_id)
                 self.chunks_to_load.task_done()
 
         elif not self.chunks_to_unload.empty():
             for _ in range(min(self.chunk_updates, self.chunks_to_unload.unfinished_tasks)):
                 chunk_id = self.chunks_to_unload.get()
-                self.unload_chunk(chunk_id)
+                self.unload_data(chunk_id)
                 self.chunks_to_unload.task_done()
 
         elif not self.meshes_to_update.empty():

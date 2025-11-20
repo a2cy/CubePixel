@@ -1,6 +1,6 @@
 # CubePixel
 
-![](./screenshot.png)
+![](screenshot.png)
 
 ## Requirements
 

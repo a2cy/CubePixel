@@ -266,10 +266,10 @@ class WorldLoading(MenuContent):
         for _i in range(len(self.button_parent.children)):
             destroy(self.button_parent.children.pop())
 
-        if not os.path.exists("./saves/"):
+        if not os.path.exists("saves/"):
             return
 
-        files = os.listdir("./saves/")
+        files = os.listdir("saves/")
         files.sort()
 
         for i, file in enumerate(files):

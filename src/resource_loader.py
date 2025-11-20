@@ -8,11 +8,11 @@ from ursina import print_warning
 
 class ResourceLoader:
     def __init__(self) -> None:
-        self.voxel_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel.vert", "./shaders/voxel.frag")
-        self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "./shaders/voxel_display.vert", "./shaders/voxel_display.frag")
-        self.outline_shader = Shader.load(Shader.SL_GLSL, "./shaders/outline.vert", "./shaders/outline.frag")
+        self.voxel_shader = Shader.load(Shader.SL_GLSL, "shaders/voxel.vert", "shaders/voxel.frag")
+        self.voxel_display_shader = Shader.load(Shader.SL_GLSL, "shaders/voxel_display.vert", "shaders/voxel_display.frag")
+        self.outline_shader = Shader.load(Shader.SL_GLSL, "shaders/outline.vert", "shaders/outline.frag")
 
-        files = os.listdir("./assets/voxel_types/")
+        files = os.listdir("assets/voxel_types/")
 
         voxels = []
         textures = []
@@ -21,7 +21,7 @@ class ResourceLoader:
             if not file_name.endswith(".json"):
                 continue
 
-            with open(f"./assets/voxel_types/{file_name}") as file:
+            with open(f"assets/voxel_types/{file_name}") as file:
                 data = json.load(file)
                 result = self.validate_type(data)
 
@@ -66,7 +66,7 @@ class ResourceLoader:
         for i, texture_name in enumerate(textures):
             try:
                 texture = PNMImage()
-                texture.read(f"./assets/textures/voxels/{texture_name}.png")
+                texture.read(f"assets/textures/voxels/{texture_name}.png")
                 self.texture_array.load(texture, z=i, n=0)
             except Exception:
                 print_warning(f"failed to load texture '{texture_name}' (wrong format)")
@@ -86,7 +86,7 @@ class ResourceLoader:
             return "wrong texture definition"
 
         for texture_name in texture_names:
-            if not os.path.isfile(f"./assets/textures/voxels/{texture_name}.png"):
+            if not os.path.isfile(f"assets/textures/voxels/{texture_name}.png"):
                 return f"missing texture '{texture_name}'"
 
         return None

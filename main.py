@@ -11,6 +11,7 @@ def main() -> None:
 
     load_prc_file("config.prc")
 
+    # replace builtin for better performance
     Entity.has_disabled_ancestor = lambda self: not self.get_stashed_ancestor().is_empty()
 
     app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel")
