@@ -5,9 +5,8 @@ from ursina import Ursina, Entity, color, window
 
 
 def main() -> None:
-    if os.uname().sysname == "Linux":
-        os.environ["vblank_mode"] = "0"
-        os.environ["__GL_SYNC_TO_VBLANK"] = "0"
+    os.environ["vblank_mode"] = "0"
+    os.environ["__GL_SYNC_TO_VBLANK"] = "0"
 
     load_prc_file("config.prc")
 
