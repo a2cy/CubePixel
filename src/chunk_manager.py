@@ -1,3 +1,4 @@
+import shutil
 import json
 import os
 from queue import Queue
@@ -100,19 +101,8 @@ class ChunkManager(Entity):
         return self.load_world(world_name)
 
     def delete_world(self, world_name: str) -> None:
-        if os.path.isfile(f"saves/{world_name}/data.json"):
-            os.remove(f"saves/{world_name}/data.json")
-
-        if os.path.exists(f"saves/{world_name}/chunks"):
-            files = os.listdir(f"saves/{world_name}/chunks/")
-
-            for file in files:
-                os.remove(f"saves/{world_name}/chunks/{file}")
-
-            os.removedirs(f"saves/{world_name}/chunks")
-
         if os.path.exists(f"saves/{world_name}"):
-            os.removedirs(f"saves/{world_name}")
+            shutil.rmtree(f"saves/{world_name}")
 
     def load_world(self, world_name: str) -> bool:
         from src.player import player
