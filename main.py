@@ -1,6 +1,7 @@
 # ruff: noqa: E402, F401, SIM112
 import os
-from panda3d.core import load_prc_file
+from direct.filter.CommonFilters import CommonFilters
+from panda3d.core import AntialiasAttrib, load_prc_file
 from ursina import Ursina, Entity, color, window
 
 
@@ -15,6 +16,10 @@ def main() -> None:
 
     app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel")
     window.color = color.black
+
+    filter = CommonFilters(app.win, app.cam)
+    filter.setMSAA(4)
+    app.render.setAntialias(AntialiasAttrib.MMultisample)
 
     from src.gui import gui  # starts game
 

@@ -61,7 +61,7 @@ class ResourceLoader:
         self.texture_array.setup_2d_texture_array(len(textures))
         self.texture_array.set_minfilter(SamplerState.FT_linear_mipmap_linear)
         self.texture_array.set_magfilter(SamplerState.FT_nearest)
-        self.texture_array.set_anisotropic_degree(16)
+        self.texture_array.set_anisotropic_degree(4)
 
         for i, texture_name in enumerate(textures):
             try:
