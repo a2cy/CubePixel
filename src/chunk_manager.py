@@ -3,6 +3,7 @@ import json
 import os
 from queue import Queue
 
+import blosc
 import numpy as np
 from data_generator import generate_data
 from mesh_generator import generate_mesh
@@ -13,6 +14,15 @@ from .settings import settings
 from .voxel_chunk import VoxelChunk
 
 CHUNK_SIZE = 32
+
+
+def tuple_to_str(data: tuple) -> str:
+    result = ""
+
+    for item in data:
+        result += f"{item}_"
+
+    return result[0: -1]
 
 
 class ChunkManager(Entity):
@@ -254,11 +264,15 @@ class ChunkManager(Entity):
         if chunk_id in self.loaded_chunks:
             return
 
-        filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
+        filename = f"./saves/{self.world_name}/chunks/{tuple_to_str(chunk_id)}"
 
-        voxels = np.load(filename) if os.path.exists(filename) else generate_data(CHUNK_SIZE, self.seed, *chunk_id)
+        if os.path.exists(filename):
+            with open(filename, "rb") as file:
+                data = blosc.decompress(file.read(), as_bytearray=True)
+                self.loaded_chunks[chunk_id] = np.frombuffer(data, dtype=np.ubyte)
 
-        self.loaded_chunks[chunk_id] = voxels
+        else:
+            self.loaded_chunks[chunk_id] = generate_data(CHUNK_SIZE, self.seed, *chunk_id)
 
         for offset in [(-1, 0, 0), (0, -1, 0), (0, 0, -1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]:
             neighbor_id = (
@@ -280,9 +294,11 @@ class ChunkManager(Entity):
             chunk = self.chunk_objects.pop(chunk_id)
             chunk.remove_node()
 
-        filename = f"./saves/{self.world_name}/chunks/{chunk_id}.npy"
+        filename = f"./saves/{self.world_name}/chunks/{tuple_to_str(chunk_id)}"
 
-        np.save(filename, self.loaded_chunks.pop(chunk_id))
+        with open(filename, "wb") as file:
+            data = self.loaded_chunks.pop(chunk_id)
+            file.write(blosc.compress(data, typesize=data.itemsize, cname="lz4"))
 
     def update_mesh(self, chunk_id: tuple) -> None:
         if chunk_id not in self.loaded_chunks:
