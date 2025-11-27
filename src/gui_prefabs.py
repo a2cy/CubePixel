@@ -1,68 +1,60 @@
-from ursina import Button, Entity, InputField, Mesh, Quad, Slider, Text, Vec2, color, window
+from ursina import Button, Entity, InputField, Func, Quad, Slider, Text, Vec2, color
 
 from .resource_loader import resource_loader
 
 
 class MenuButton(Entity):
-    def __init__(self, text: str, default_color=color.black, **kwargs) -> None:
+    def __init__(self, text: str, **kwargs) -> None:
+        on_click = kwargs.pop("on_click") if "on_click" in kwargs else None
         super().__init__(**kwargs)
 
-        self.model = "quad"
-        self.collider = "box"
-        self.scale = Vec2(0.3, 0.08)
-        self.color = color.clear
+        self.default_color = color.black50
+        self.highlight_color = color.black66
+        self.pressed_color = color.black90
 
-        self.default_color = default_color
-        self.highlight_color = color.azure
-        self.pressed_color = color.orange
-
-        self.background = Entity(
-            parent=self, model=Mesh(vertices=[(-0.4, -0.4, 0), (0.4, -0.4, 0)], mode="line", thickness=2), color=self.default_color
+        self._background = Entity(
+            parent=self,
+            model="quad",
+            collider="box",
+            scale=Vec2(0.3, 0.08),
+            z=0.5,
+            color=self.default_color,
+            on_click=on_click,
+            shader=resource_loader.outline_shader,
         )
+        self._background.set_shader_inputs(u_outline_color=color.light_gray, u_thickness=0.04)
+        self._background.on_mouse_enter = Func(setattr, self._background, "color", self.highlight_color)
+        self._background.on_mouse_exit = Func(setattr, self._background, "color", self.default_color)
 
-        self.text_entity = Text(
-            parent=self, text=text, scale=(self.scale * 50).yx, origin=Vec2(0, 0), color=self.default_color, add_to_scene_entities=False
-        )
+        self._text_entity = Text(parent=self, text=text, origin=Vec2(0, 0), add_to_scene_entities=False)
 
     def input(self, key: str) -> None:
-        if key == "left mouse down" and self.hovered:
-            self.background.color = self.pressed_color
-            self.text_entity.color = self.pressed_color
+        if key == "left mouse down" and self._background.hovered:
+            self._background.color = self.pressed_color
 
         if key == "left mouse up":
-            if self.hovered:
-                self.background.color = self.highlight_color
-                self.text_entity.color = self.highlight_color
+            if self._background.hovered:
+                self._background.color = self.highlight_color
 
             else:
-                self.background.color = self.default_color
-                self.text_entity.color = self.default_color
-
-    def on_mouse_enter(self) -> None:
-        self.background.color = self.highlight_color
-        self.text_entity.color = self.highlight_color
-
-    def on_mouse_exit(self) -> None:
-        self.background.color = self.default_color
-        self.text_entity.color = self.default_color
+                self._background.color = self.default_color
 
 
 class MenuContent(Entity):
     def __init__(self, text: str, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(position=Vec2(0.25, 0), **kwargs)
 
-        self._background_panel = Entity(
+        self._background = Entity(
             parent=self,
             model="quad",
             color=color.black50,
             shader=resource_loader.outline_shader,
-            position=window.right + Vec2(-0.65, 0),
             scale=Vec2(1.2, 1.02),
             z=1,
         )
-        self._background_panel.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
+        self._background.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
 
-        self._label = Text(parent=self, text=text, scale=1.5, position=window.right + Vec2(-0.65, 0.42), origin=Vec2(0, 0))
+        self._label = Text(parent=self, text=text, scale=1.5, position=Vec2(0, 0.42), origin=Vec2(0, 0))
 
 
 class InputFieldPrefab(InputField):
@@ -76,11 +68,13 @@ class InputFieldPrefab(InputField):
 
 class ButtonPrefab(Button):
     def __init__(self, **kwargs) -> None:
-        super().__init__(scale=Vec2(0.2, 0.08), **kwargs)
-
-        self.color = color.black50
-        self.highlight_color = color.black66
-        self.pressed_color = color.black90
+        super().__init__(
+            scale=Vec2(0.2, 0.08),
+            color=color.black50,
+            highlight_color=color.black66,
+            pressed_color=color.black90,
+            **kwargs,
+        )
 
 
 class FileButton(Button):
@@ -178,42 +172,12 @@ class Scrollbar(Entity):
         self.on_scroll = None
         self._scroll = 0
 
-        self._bg = Entity(parent=self, model=Quad(scale=(0.01, 0.6), radius=0.005, segments=3), color=color.black66)
-        self._scroll_indicator = Entity(parent=self, model="quad", texture="caret-circle-up-down", y=0.3, color=color.white, scale=0.04)
-        self._up_indicator = Button(
-            parent=self,
-            model="quad",
-            texture="caret-circle-up",
-            color=color.white,
-            scale=0.04,
-            position=Vec2(0, 0.35),
-            highlight_scale=1.2,
-            on_click=self.scroll_up,
-        )
-        self._down_indicator = Button(
-            parent=self,
-            model="quad",
-            texture="caret-circle-down",
-            color=color.white,
-            scale=0.04,
-            position=Vec2(0, -0.35),
-            highlight_scale=1.2,
-            on_click=self.scroll_down,
-        )
-
-    def scroll_up(self) -> None:
-        if self._scroll > 0:
-            self._scroll -= 1
-            self.update_indicator()
-
-    def scroll_down(self) -> None:
-        if self._scroll + self.max_buttons < self.button_count:
-            self._scroll += 1
-            self.update_indicator()
+        self._bg = Entity(parent=self, model=Quad(scale=(0.01, 0.6), radius=0.005, segments=3), z=0.5, color=color.black66)
+        self._scroll_indicator = Entity(parent=self, model="quad", texture="mouse-scroll", y=0.3, color=color.smoke, scale=0.04)
 
     def update_indicator(self) -> None:
         scroll_percent = self._scroll / (self.button_count - self.max_buttons) if self.button_count > self.max_buttons else 0
-        self._scroll_indicator.y = 0.3 - scroll_percent * 0.6
+        self._scroll_indicator.y = 0.29 - scroll_percent * 0.58
 
         if callable(self.on_scroll):
             self.on_scroll(self._scroll)
@@ -223,8 +187,10 @@ class Scrollbar(Entity):
         self.update_indicator()
 
     def input(self, key: str) -> None:
-        if key == "scroll down":
-            self.scroll_down()
+        if key == "scroll down" and self._scroll + self.max_buttons < self.button_count:
+            self._scroll += 1
+            self.update_indicator()
 
-        if key == "scroll up":
-            self.scroll_up()
+        if key == "scroll up" and self._scroll > 0:
+            self._scroll -= 1
+            self.update_indicator()

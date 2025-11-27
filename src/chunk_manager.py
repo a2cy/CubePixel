@@ -22,7 +22,7 @@ def tuple_to_str(data: tuple) -> str:
     for item in data:
         result += f"{item}_"
 
-    return result[0: -1]
+    return result[0:-1]
 
 
 class ChunkManager(Entity):

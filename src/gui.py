@@ -71,13 +71,13 @@ class MainMenu(Entity):
             model="quad",
             color=color.black50,
             shader=resource_loader.outline_shader,
-            position=window.left + Vec2(0.25, 0),
+            position=Vec2(-0.65, 0),
             scale=Vec2(0.4, 1.02),
             z=1,
         )
         self.background_panel.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
 
-        self.title = Text(parent=self, text="CubePixel", scale=2, position=window.left + Vec2(0.25, 0.43), origin=Vec2(0, 0))
+        self.title = Text(parent=self, text="CubePixel", scale=2, position=Vec2(-0.65, 0.43), origin=Vec2(0, 0))
 
         self.notification = Notification()
 
@@ -100,24 +100,22 @@ class MainMenu(Entity):
         self.create_button = MenuButton(
             parent=self,
             text="Create World",
-            position=window.left + Vec2(0.25, 0.35),
+            position=Vec2(-0.65, 0.35),
             on_click=Func(setattr, self.content_state, "state", "world_creation"),
         )
 
         self.load_button = MenuButton(
             parent=self,
             text="Load World",
-            position=window.left + Vec2(0.25, 0.25),
+            position=Vec2(-0.65, 0.25),
             on_click=Func(setattr, self.content_state, "state", "world_loading"),
         )
 
         self.options_button = MenuButton(
-            parent=self, text="Options", position=window.left + Vec2(0.25, 0.15), on_click=Func(setattr, self.content_state, "state", "options")
+            parent=self, text="Options", position=Vec2(-0.65, 0.15), on_click=Func(setattr, self.content_state, "state", "options")
         )
 
-        self.exit_button = MenuButton(
-            parent=self, text="Exit", default_color=color.rgb(0.7, 0, 0), position=window.left + Vec2(0.25, 0.05), on_click=Func(application.quit)
-        )
+        self.exit_button = MenuButton(parent=self, text="Exit", position=Vec2(-0.65, 0.05), on_click=Func(application.quit))
 
     def on_enable(self) -> None:
         for child in self.children:
@@ -136,13 +134,13 @@ class PauseMenu(Entity):
             model="quad",
             color=color.black50,
             shader=resource_loader.outline_shader,
-            position=window.left + Vec2(0.25, 0),
+            position=Vec2(-0.65, 0),
             scale=Vec2(0.4, 1.02),
             z=1,
         )
         self.background_panel.set_shader_inputs(u_outline_color=color.black90, u_thickness=0.04)
 
-        self.title = Text(parent=self, text="CubePixel", scale=2, position=window.left + Vec2(0.25, 0.43), origin=Vec2(0, 0))
+        self.title = Text(parent=self, text="CubePixel", scale=2, position=Vec2(-0.65, 0.43), origin=Vec2(0, 0))
 
         self.options = Options(parent=self)
 
@@ -150,16 +148,14 @@ class PauseMenu(Entity):
             gui.ui_state.state = ""
             player.enable()
 
-        self.continue_button = MenuButton(parent=self, text="Continue Playing", position=window.left + Vec2(0.25, 0.35), on_click=_continue)
+        self.continue_button = MenuButton(parent=self, text="Continue Playing", position=Vec2(-0.65, 0.35), on_click=_continue)
 
         def _return() -> None:
             gui.ui_state.state = "main_menu"
             chunk_manager.unload_world()
             gui.sky.disable()
 
-        self.return_button = MenuButton(
-            parent=self, text="Return To Menu", default_color=color.rgb(0.7, 0, 0), position=window.left + Vec2(0.25, 0.25), on_click=_return
-        )
+        self.return_button = MenuButton(parent=self, text="Return To Menu", position=Vec2(-0.65, 0.25), on_click=_return)
 
     def on_enable(self) -> None:
         for child in self.children:
@@ -171,13 +167,13 @@ class WorldCreation(MenuContent):
     def __init__(self, **kwargs) -> None:
         super().__init__("Create World", **kwargs)
 
-        self.world_name = InputFieldPrefab(parent=self, position=window.right + Vec2(-0.65, 0.3))
+        self.world_name = InputFieldPrefab(parent=self, position=Vec2(0, 0.3))
 
         self.world_name_label = Text(
             parent=self, text="World Name", scale=1.2, position=self.world_name.position + Vec2(-0.5, 0), origin=Vec2(-0.5, 0)
         )
 
-        self.world_seed = InputFieldPrefab(parent=self, position=window.right + Vec2(-0.65, 0.2), limit_content_to="0123456789")
+        self.world_seed = InputFieldPrefab(parent=self, position=Vec2(0, 0.2), limit_content_to="0123456789")
 
         self.world_seed_label = Text(
             parent=self, text="World Seed", scale=1.2, position=self.world_seed.position + Vec2(-0.5, 0), origin=Vec2(-0.5, 0)
@@ -198,7 +194,7 @@ class WorldCreation(MenuContent):
 
             gui.ui_state.state = "loading_menu"
 
-        self.create_button = ButtonPrefab(parent=self, text="Create World", position=window.right + Vec2(-0.65, 0), on_click=create_world)
+        self.create_button = ButtonPrefab(parent=self, text="Create World", on_click=create_world)
 
         self.world_name.next_field = self.world_seed
 
@@ -212,7 +208,7 @@ class WorldLoading(MenuContent):
         super().__init__("Load World", **kwargs)
 
         self.max_buttons = 11
-        self.button_parent = Entity(parent=self, position=window.right + Vec2(-0.65, 0))
+        self.button_parent = Entity(parent=self)
 
         def on_scroll(value):
             for i, button in enumerate(self.button_parent.children):
@@ -223,7 +219,7 @@ class WorldLoading(MenuContent):
 
             self.button_parent.y = value * 0.055
 
-        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons, position=window.right + Vec2(-1.0, 0.025))
+        self.scrollbar = Scrollbar(parent=self, max_buttons=self.max_buttons, position=Vec2(-0.35, 0.025))
         self.scrollbar.on_scroll = on_scroll
 
         def load_world() -> None:
@@ -237,7 +233,7 @@ class WorldLoading(MenuContent):
 
             gui.ui_state.state = "loading_menu"
 
-        self.load_button = ButtonPrefab(parent=self, text="Load World", position=window.right + Vec2(-0.9, -0.4), on_click=load_world)
+        self.load_button = ButtonPrefab(parent=self, text="Load World", position=Vec2(-0.2, -0.4), on_click=load_world)
 
         def delete_world() -> None:
             if not self.selection:
@@ -251,7 +247,7 @@ class WorldLoading(MenuContent):
 
             self.on_enable()
 
-        self.delete_button = ButtonPrefab(parent=self, text="Delete World", position=window.right + Vec2(-0.4, -0.4), on_click=delete_world)
+        self.delete_button = ButtonPrefab(parent=self, text="Delete World", position=Vec2(0.2, -0.4), on_click=delete_world)
 
     @property
     def selection(self) -> str:
@@ -287,17 +283,8 @@ class Options(MenuContent):
     def __init__(self, **kwargs) -> None:
         super().__init__("Options", **kwargs)
 
-        self.render_distance_label = Text(parent=self, text="Render Distance", scale=1.2, position=Vec2(-0.28, 0.3), origin=Vec2(-0.5, 0))
-
-        self.render_distance = ThinSlider(
-            parent=self,
-            position=self.render_distance_label.position + Vec2(0.28, 0),
-            height=Text.size / 5,
-            radius=Text.size / 10,
-            min=2,
-            max=16,
-            step=1,
-        )
+        label_x = -0.5
+        slider_x = -0.2
 
         def render_distance_setter() -> None:
             settings.settings["render_distance"] = self.render_distance.value
@@ -305,11 +292,11 @@ class Options(MenuContent):
 
             chunk_manager.reload()
 
+        self.render_distance = ThinSlider(
+            parent=self, position=Vec2(slider_x, 0.3), height=Text.size / 5, radius=Text.size / 10, min=2, max=16, step=1
+        )
         self.render_distance.on_value_changed = render_distance_setter
-
-        self.chunk_updates_label = Text(parent=self, text="Chunk Updates", scale=1.2, position=Vec2(-0.28, 0.22), origin=Vec2(-0.5, 0))
-
-        self.chunk_updates = ThinSlider(parent=self, position=self.chunk_updates_label.position + Vec2(0.28, 0), min=1, max=40, step=1)
+        self.render_distance_label = Text(parent=self, text="Render Distance", scale=1.2, x=label_x, y=self.render_distance.y, origin=Vec2(-0.5, 0))
 
         def chunk_updates_setter() -> None:
             settings.settings["chunk_updates"] = self.chunk_updates.value
@@ -317,11 +304,9 @@ class Options(MenuContent):
 
             chunk_manager.reload()
 
+        self.chunk_updates = ThinSlider(parent=self, position=Vec2(slider_x, 0.22), min=1, max=40, step=1)
         self.chunk_updates.on_value_changed = chunk_updates_setter
-
-        self.mouse_sensitivity_label = Text(parent=self, text="Mouse Sensitivity", scale=1.2, position=Vec2(-0.28, 0.14), origin=Vec2(-0.5, 0))
-
-        self.mouse_sensitivity = ThinSlider(parent=self, position=self.mouse_sensitivity_label.position + Vec2(0.28, 0), min=60, max=120, step=1)
+        self.chunk_updates_label = Text(parent=self, text="Chunk Updates", scale=1.2, x=label_x, y=self.chunk_updates.y, origin=Vec2(-0.5, 0))
 
         def mouse_sensitivity_setter() -> None:
             settings.settings["mouse_sensitivity"] = self.mouse_sensitivity.value
@@ -329,11 +314,11 @@ class Options(MenuContent):
 
             player.reload()
 
+        self.mouse_sensitivity = ThinSlider(parent=self, position=Vec2(slider_x, 0.14), min=60, max=120, step=1)
         self.mouse_sensitivity.on_value_changed = mouse_sensitivity_setter
-
-        self.fov_label = Text(parent=self, text="Field of view", scale=1.2, position=Vec2(-0.28, 0.06), origin=Vec2(-0.5, 0))
-
-        self.fov = ThinSlider(parent=self, position=self.fov_label.position + Vec2(0.28, 0), min=60, max=120, dynamic=True, step=1)
+        self.mouse_sensitivity_label = Text(
+            parent=self, text="Mouse Sensitivity", scale=1.2, x=label_x, y=self.mouse_sensitivity.y, origin=Vec2(-0.5, 0)
+        )
 
         def fov_setter() -> None:
             settings.settings["fov"] = self.fov.value
@@ -341,18 +326,18 @@ class Options(MenuContent):
 
             player.reload()
 
+        self.fov = ThinSlider(parent=self, position=Vec2(slider_x, 0.06), min=60, max=120, dynamic=True, step=1)
         self.fov.on_value_changed = fov_setter
-
-        self.debug_label = Text(parent=self, text="Debug Overlay", scale=1.2, position=Vec2(-0.28, -0.02), origin=Vec2(-0.5, 0))
-
-        self.debug_toggle = CheckBox(parent=self, position=self.debug_label.position + Vec2(0.28, 0), start_value=False)
+        self.fov_label = Text(parent=self, text="Field of view", scale=1.2, x=label_x, y=self.fov.y, origin=Vec2(-0.5, 0))
 
         def toggle_debug() -> None:
             self.debug_toggle.value = not self.debug_toggle.value
 
             gui.debug_overlay.enabled = self.debug_toggle.value
 
+        self.debug_toggle = CheckBox(parent=self, position=Vec2(0, -0.02), start_value=False)
         self.debug_toggle.on_click = toggle_debug
+        self.debug_label = Text(parent=self, text="Debug Overlay", scale=1.2, x=label_x, y=self.debug_toggle.y, origin=Vec2(-0.5, 0))
 
         from ursina import Tooltip
 
@@ -376,7 +361,7 @@ class Options(MenuContent):
             parent=self,
             model="circle",
             text="?",
-            position=window.bottom_right + Vec2(-0.085, 0.03),
+            position=Vec2(0.4, -0.4),
             scale=0.025,
             tooltip=Tooltip(info_text, scale=0.75),
         )
@@ -489,11 +474,14 @@ class DebugOverlay(Entity):
     def __init__(self, **kwargs) -> None:
         super().__init__(parent=camera.ui, z=2, **kwargs)
 
-        self.coordinates = Text(parent=self, position=window.top_left)
-        self.direction = Text(parent=self, position=window.top_left + Vec2(0, -0.03))
-        self.chunks_to_load = Text(parent=self, position=window.top_left + Vec2(0, -0.06))
-        self.chunks_to_unload = Text(parent=self, position=window.top_left + Vec2(0, -0.09))
-        self.chunks_to_update = Text(parent=self, position=window.top_left + Vec2(0, -0.12))
+        self.coordinates = Text(parent=self, color=color.azure)
+        self.direction = Text(parent=self, position=Vec2(0, -0.03), color=color.azure)
+        self.updating_chunks = Text(parent=self, position=Vec2(0, -0.07), color=color.orange)
+        self.chunks_to_load = Text(parent=self, position=Vec2(0, -0.1), color=color.orange)
+        self.chunks_to_unload = Text(parent=self, position=Vec2(0, -0.13), color=color.orange)
+        self.chunks_to_update = Text(parent=self, position=Vec2(0, -0.16), color=color.orange)
+
+        self.position = window.top_left
 
     def update(self) -> None:
         rotation = player.rotation_y
@@ -516,6 +504,7 @@ class DebugOverlay(Entity):
 
         self.coordinates.text = f"Position : {round(player.position.x)}  {round(player.position.y)}  {round(player.position.z)}"
         self.direction.text = f"Facing : {heading}"
+        self.updating_chunks.text = f"Updating chunks : {chunk_manager.updating}"
         self.chunks_to_load.text = f"Chunks to load : {chunk_manager.chunks_to_load.unfinished_tasks}"
         self.chunks_to_unload.text = f"Chunks to unload : {chunk_manager.chunks_to_unload.unfinished_tasks}"
         self.chunks_to_update.text = f"Meshes to update : {chunk_manager.meshes_to_update.unfinished_tasks}"

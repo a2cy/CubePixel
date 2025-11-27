@@ -2,7 +2,7 @@
 import os
 from direct.filter.CommonFilters import CommonFilters
 from panda3d.core import AntialiasAttrib, load_prc_file
-from ursina import Ursina, Entity, color, window
+from ursina import Ursina, Entity, Texture, color, window
 
 
 def main() -> None:
@@ -14,11 +14,13 @@ def main() -> None:
     # replace builtin for better performance
     Entity.has_disabled_ancestor = lambda self: not self.get_stashed_ancestor().is_empty()
 
+    Texture.default_filtering = "linear"
+
     app = Ursina(development_mode=False, forced_aspect_ratio=1.778, title="CubePixel")
     window.color = color.black
 
-    filter = CommonFilters(app.win, app.cam)
-    filter.setMSAA(4)
+    msaa_filter = CommonFilters(app.win, app.cam)
+    msaa_filter.setMSAA(4)
     app.render.setAntialias(AntialiasAttrib.MMultisample)
 
     from src.gui import gui  # starts game
