@@ -299,14 +299,14 @@ class Options(MenuContent):
         self.render_distance_label = Text(parent=self, text="Render Distance", scale=1.2, x=label_x, y=self.render_distance.y, origin=Vec2(-0.5, 0))
 
         def chunk_updates_setter() -> None:
-            settings.settings["chunk_updates"] = self.chunk_updates.value
+            settings.settings["update_threads"] = self.update_threads.value
             settings.save_settings()
 
             chunk_manager.reload()
 
-        self.chunk_updates = ThinSlider(parent=self, position=Vec2(slider_x, 0.22), min=1, max=40, step=1)
-        self.chunk_updates.on_value_changed = chunk_updates_setter
-        self.chunk_updates_label = Text(parent=self, text="Chunk Updates", scale=1.2, x=label_x, y=self.chunk_updates.y, origin=Vec2(-0.5, 0))
+        self.update_threads = ThinSlider(parent=self, position=Vec2(slider_x, 0.22), min=1, max=8, step=1)
+        self.update_threads.on_value_changed = chunk_updates_setter
+        self.chunk_updates_label = Text(parent=self, text="Update Threads", scale=1.2, x=label_x, y=self.update_threads.y, origin=Vec2(-0.5, 0))
 
         def mouse_sensitivity_setter() -> None:
             settings.settings["mouse_sensitivity"] = self.mouse_sensitivity.value
@@ -368,7 +368,7 @@ class Options(MenuContent):
 
     def on_enable(self) -> None:
         self.render_distance.value = settings.settings["render_distance"]
-        self.chunk_updates.value = settings.settings["chunk_updates"]
+        self.update_threads.value = settings.settings["update_threads"]
         self.mouse_sensitivity.value = settings.settings["mouse_sensitivity"]
         self.fov.value = settings.settings["fov"]
 

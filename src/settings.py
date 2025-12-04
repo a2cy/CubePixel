@@ -10,7 +10,7 @@ class Settings:
         self.settings = self.load_settings()
 
     def default_settings(self) -> None:
-        settings = {"render_distance": 2, "chunk_updates": 2, "mouse_sensitivity": 80, "fov": 90}
+        settings = {"render_distance": 2, "update_threads": 2, "mouse_sensitivity": 80, "fov": 90}
 
         with open("settings.json", "w+") as file:
             json.dump(settings, file, indent=4)

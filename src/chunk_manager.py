@@ -5,9 +5,10 @@ from queue import Queue
 
 import blosc
 import numpy as np
+from direct.stdpy.file import *  # noqa: F403
 from data_generator import generate_data
 from mesh_generator import generate_mesh
-from ursina import Entity, Vec3, print_info, print_warning
+from ursina import Entity, Vec3, application, print_info, print_warning
 
 from .resource_loader import resource_loader
 from .settings import settings
@@ -49,7 +50,12 @@ class ChunkManager(Entity):
         self.render_distance = settings.settings["render_distance"]
         self.world_size = self.render_distance * 2 + 1
 
-        self.chunk_updates = settings.settings["chunk_updates"]
+        update_threads = settings.settings["update_threads"]
+        application.base.taskMgr.remove("chunk_manager_task")
+        application.base.taskMgr.setupTaskChain("chunk_manager_chain", numThreads=update_threads)
+
+        for _ in range(update_threads):
+            application.base.taskMgr.add(self.update_task, "chunk_manager_task", taskChain="chunk_manager_chain")
 
         if not self.world_loaded:
             return
@@ -360,6 +366,27 @@ class ChunkManager(Entity):
         for chunk_id in self.loaded_chunks.keys() - chunk_ids:
             self.chunks_to_unload.put(chunk_id)
 
+    def update_task(self, task) -> None:
+        if not self.world_loaded:
+            return task.cont
+
+        if not self.chunks_to_load.empty():
+            chunk_id = self.chunks_to_load.get()
+            self.load_data(chunk_id)
+            self.chunks_to_load.task_done()
+
+        elif not self.chunks_to_unload.empty():
+            chunk_id = self.chunks_to_unload.get()
+            self.unload_data(chunk_id)
+            self.chunks_to_unload.task_done()
+
+        elif not self.meshes_to_update.empty():
+            chunk_id = self.meshes_to_update.get()
+            self.update_mesh(chunk_id)
+            self.meshes_to_update.task_done()
+
+        return task.cont
+
     def update(self) -> None:
         from src.player import player
 
@@ -370,23 +397,8 @@ class ChunkManager(Entity):
 
         new_player_chunk = self.get_chunk_id(player.position)
 
-        if not self.chunks_to_load.empty():
-            for _ in range(min(self.chunk_updates, self.chunks_to_load.unfinished_tasks)):
-                chunk_id = self.chunks_to_load.get()
-                self.load_data(chunk_id)
-                self.chunks_to_load.task_done()
-
-        elif not self.chunks_to_unload.empty():
-            for _ in range(min(self.chunk_updates, self.chunks_to_unload.unfinished_tasks)):
-                chunk_id = self.chunks_to_unload.get()
-                self.unload_data(chunk_id)
-                self.chunks_to_unload.task_done()
-
-        elif not self.meshes_to_update.empty():
-            for _ in range(min(self.chunk_updates, self.meshes_to_update.unfinished_tasks)):
-                chunk_id = self.meshes_to_update.get()
-                self.update_mesh(chunk_id)
-                self.meshes_to_update.task_done()
+        if not self.chunks_to_load.empty() or not self.chunks_to_unload.empty() or not self.meshes_to_update.empty():
+            pass
 
         elif self.player_chunk != new_player_chunk:
             self.player_chunk = new_player_chunk
