@@ -93,6 +93,8 @@ class Player(Entity):
         self.noclip_acceleration = 6
         self.noclip_mode = False
 
+        self.keybinds = {"forward": "w", "backward": "s", "left": "a", "right": "d", "up": "q", "down": "e", "jump": "space", "sprint": "shift"}
+
         self.player_collider = AABBCollider(position=Vec3(0), origin=Vec3(0, -0.6, 0), scale=Vec3(0.8, 1.8, 0.8))
         self.voxel_collider = AABBCollider(position=Vec3(0), origin=Vec3(0), scale=Vec3(1))
 
@@ -180,22 +182,26 @@ class Player(Entity):
 
         if self.noclip_mode:
             self.direction = Vec3(
-                self.camera_pivot.forward * (held_keys["w"] - held_keys["s"]) + self.right * (held_keys["d"] - held_keys["a"])
+                self.camera_pivot.forward * (held_keys[self.keybinds["forward"]] - held_keys[self.keybinds["backward"]])
+                + self.right * (held_keys[self.keybinds["right"]] - held_keys[self.keybinds["left"]])
             ).normalized()
 
-            self.direction += self.up * (held_keys["e"] - held_keys["q"])
+            self.direction += self.up * (held_keys[self.keybinds["up"]] - held_keys[self.keybinds["down"]])
 
             self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, 0.5 ** (self.noclip_acceleration * time.dt))
 
             self.position += self.velocity * time.dt
 
         else:
-            if self.grounded and held_keys["space"]:
+            if self.grounded and held_keys[self.keybinds["jump"]]:
                 self.velocity.y = (self.gravity * self.jump_height * 2) ** 0.5
 
-            self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"]) + self.right * (held_keys["d"] - held_keys["a"])).normalized()
+            self.direction = Vec3(
+                self.forward * (held_keys[self.keybinds["forward"]] - held_keys[self.keybinds["backward"]])
+                + self.right * (held_keys[self.keybinds["right"]] - held_keys[self.keybinds["left"]])
+            ).normalized()
 
-            if held_keys["left shift"]:
+            if held_keys[self.keybinds["sprint"]]:
                 self.direction *= self.sprint_multiplier
                 camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, 0.5 ** (self.acceleration * time.dt))
 
