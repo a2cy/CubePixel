@@ -104,7 +104,6 @@ class Player(Entity):
         camera.position = Vec3(0)
         camera.rotation = Vec3(0)
 
-        self.direction = Vec3(0)
         self.velocity = Vec3(0)
 
         self.reload()
@@ -181,14 +180,14 @@ class Player(Entity):
         self.camera_pivot.rotation_x = clamp(self.camera_pivot.rotation_x, -89, 89)
 
         if self.noclip_mode:
-            self.direction = Vec3(
+            direction = Vec3(
                 self.camera_pivot.forward * (held_keys[self.keybinds["forward"]] - held_keys[self.keybinds["backward"]])
                 + self.right * (held_keys[self.keybinds["right"]] - held_keys[self.keybinds["left"]])
             ).normalized()
 
-            self.direction += self.up * (held_keys[self.keybinds["up"]] - held_keys[self.keybinds["down"]])
+            direction += self.up * (held_keys[self.keybinds["up"]] - held_keys[self.keybinds["down"]])
 
-            self.velocity = lerp(self.direction * self.noclip_speed, self.velocity, 0.5 ** (self.noclip_acceleration * time.dt))
+            self.velocity = lerp(direction * self.noclip_speed, self.velocity, 0.5 ** (self.noclip_acceleration * time.dt))
 
             self.position += self.velocity * time.dt
 
@@ -196,42 +195,48 @@ class Player(Entity):
             if self.grounded and held_keys[self.keybinds["jump"]]:
                 self.velocity.y = (self.gravity * self.jump_height * 2) ** 0.5
 
-            self.direction = Vec3(
+            direction = Vec3(
                 self.forward * (held_keys[self.keybinds["forward"]] - held_keys[self.keybinds["backward"]])
                 + self.right * (held_keys[self.keybinds["right"]] - held_keys[self.keybinds["left"]])
             ).normalized()
 
             if held_keys[self.keybinds["sprint"]]:
-                self.direction *= self.sprint_multiplier
+                direction *= self.sprint_multiplier
                 camera.fov = lerp(self.fov * self.fov_multiplier, camera.fov, 0.5 ** (self.acceleration * time.dt))
 
             else:
                 camera.fov = lerp(self.fov, camera.fov, 0.5 ** (self.acceleration * time.dt))
 
-            self.velocity.xz = lerp(self.direction * self.walk_speed, self.velocity, 0.5 ** (self.acceleration * time.dt)).xz
+            self.velocity.xz = lerp(direction * self.walk_speed, self.velocity, 0.5 ** (self.acceleration * time.dt)).xz
             self.velocity.y = self.velocity.y - self.gravity * min(time.dt, 0.5)
             self.velocity.y = max(self.velocity.y, -self.max_fall_speed)
 
             self.grounded = False
-            self.player_collider.position = self.position
+            position = self.position
             move_delta = self.velocity * time.dt
+            self.player_collider.position = position
+
+            possible_voxels = {}
+
+            for i in range(3 * 3 * 4):
+                offset = Vec3(
+                    i // 3 // 4 - 1,
+                    i // 3 % 4 - 2,
+                    i % 3 % 4 - 1,
+                )
+
+                voxel_id = chunk_manager.get_voxel_id(position + offset)
+
+                possible_voxels[offset] = voxel_id
 
             for _ in range(3):
                 collisions = []
 
-                for i in range(3 * 3 * 4):
-                    offset = Vec3(
-                        i // 3 // 4 - 1,
-                        i // 3 % 4 - 2,
-                        i % 3 % 4 - 1,
-                    )
-
-                    voxel_id = chunk_manager.get_voxel_id(self.position + offset)
-
+                for offset, voxel_id in possible_voxels.items():
                     if not voxel_id or not resource_loader.collision_types[voxel_id - 1]:
                         continue
 
-                    self.voxel_collider.position = round(self.position + offset, ndigits=0)
+                    self.voxel_collider.position = round(position + offset, ndigits=0)
 
                     collision_time, normal = self.player_collider.collide(self.voxel_collider, move_delta)
 
@@ -262,21 +267,13 @@ class Player(Entity):
 
             for _ in range(3):
                 collisions = []
-                self.player_collider.position = self.position + move_delta
+                self.player_collider.position = position + move_delta
 
-                for i in range(3 * 3 * 4):
-                    offset = Vec3(
-                        i // 3 // 4 - 1,
-                        i // 3 % 4 - 2,
-                        i % 3 % 4 - 1,
-                    )
-
-                    voxel_id = chunk_manager.get_voxel_id(self.position + offset)
-
+                for offset, voxel_id in possible_voxels.items():
                     if not voxel_id or not resource_loader.collision_types[voxel_id - 1]:
                         continue
 
-                    self.voxel_collider.position = round(self.position + offset, ndigits=0)
+                    self.voxel_collider.position = round(position + offset, ndigits=0)
 
                     min_dist, normal = self.player_collider.intersect(self.voxel_collider)
 
