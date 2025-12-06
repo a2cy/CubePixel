@@ -1,4 +1,5 @@
 import shutil
+import time
 import json
 import os
 from queue import Queue
@@ -367,9 +368,6 @@ class ChunkManager(Entity):
             self.chunks_to_unload.put(chunk_id)
 
     def update_task(self, task) -> None:
-        if not self.world_loaded:
-            return task.cont
-
         if not self.chunks_to_load.empty():
             chunk_id = self.chunks_to_load.get()
             self.load_data(chunk_id)
@@ -385,6 +383,8 @@ class ChunkManager(Entity):
             self.update_mesh(chunk_id)
             self.meshes_to_update.task_done()
 
+        time.sleep(0.0005)
+
         return task.cont
 
     def update(self) -> None:
@@ -398,7 +398,7 @@ class ChunkManager(Entity):
         new_player_chunk = self.get_chunk_id(player.position)
 
         if not self.chunks_to_load.empty() or not self.chunks_to_unload.empty() or not self.meshes_to_update.empty():
-            pass
+            return
 
         elif self.player_chunk != new_player_chunk:
             self.player_chunk = new_player_chunk
