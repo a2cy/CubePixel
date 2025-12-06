@@ -400,7 +400,7 @@ class ChunkManager(Entity):
         if not self.chunks_to_load.empty() or not self.chunks_to_unload.empty() or not self.meshes_to_update.empty():
             return
 
-        elif self.player_chunk != new_player_chunk:
+        if self.player_chunk != new_player_chunk:
             self.player_chunk = new_player_chunk
             self.update_chunks_all()
 

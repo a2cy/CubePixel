@@ -23,26 +23,27 @@ def generate_data(int chunk_size, int seed, int chunk_x, int chunk_y, int chunk_
     cdef np.ndarray[unsigned char, ndim=1] voxel_data = np.zeros(chunk_size**3, dtype=np.ubyte)
     noise2d.seed = seed
 
-    for i in range(chunk_size**2):
-        x = i / chunk_size
-        z = i % chunk_size
-        height = <int>(fnlGetNoise2D(&noise2d, x + chunk_x, z + chunk_z) * amp2d + y_offset)
+    with nogil:
+        for i in range(chunk_size**2):
+            x = i / chunk_size
+            z = i % chunk_size
+            height = <int>(fnlGetNoise2D(&noise2d, x + chunk_x, z + chunk_z) * amp2d + y_offset)
 
-        for y in range(chunk_size):
-            index = x * chunk_size * chunk_size + y * chunk_size + z
-            world_y = y + chunk_y
-            diff = height - world_y
+            for y in range(chunk_size):
+                index = x * chunk_size * chunk_size + y * chunk_size + z
+                world_y = y + chunk_y
+                diff = height - world_y
 
-            if diff == 0 and world_y >= 0:
-                voxel_data[index] = 2  # grass
+                if diff == 0 and world_y >= 0:
+                    voxel_data[index] = 2  # grass
 
-            elif diff < 5 and diff >= 0:
-                voxel_data[index] = 1  # dirt
+                elif diff < 5 and diff >= 0:
+                    voxel_data[index] = 1  # dirt
 
-            elif diff >= 5:
-                voxel_data[index] = 3  # stone
+                elif diff >= 5:
+                    voxel_data[index] = 3  # stone
 
-            if world_y <= 0 and diff < 0:
-                voxel_data[index] = 5  # water
+                if world_y <= 0 and diff < 0:
+                    voxel_data[index] = 5  # water
 
     return voxel_data

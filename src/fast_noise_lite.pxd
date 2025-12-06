@@ -59,12 +59,12 @@ cdef extern from "FastNoiseLite.h":
         fnl_domain_warp_type domain_warp_type
         float domain_warp_amp
 
-    fnl_state fnlCreateState()
+    fnl_state fnlCreateState() nogil
 
-    float fnlGetNoise2D(fnl_state *state, FNLfloat x, FNLfloat y)
+    float fnlGetNoise2D(const fnl_state *state, FNLfloat x, FNLfloat y) nogil
 
-    float fnlGetNoise3D(fnl_state *state, FNLfloat x, FNLfloat y, FNLfloat z)
+    float fnlGetNoise3D(const fnl_state *state, FNLfloat x, FNLfloat y, FNLfloat z) nogil
 
-    void fnlDomainWarp2D(fnl_state *state, FNLfloat *x, FNLfloat *y)
+    void fnlDomainWarp2D(const fnl_state *state, FNLfloat *x, FNLfloat *y) nogil
 
-    void fnlDomainWarp3D(fnl_state *state, FNLfloat *x, FNLfloat *y, FNLfloat *z)
+    void fnlDomainWarp3D(const fnl_state *state, FNLfloat *x, FNLfloat *y, FNLfloat *z) nogil
